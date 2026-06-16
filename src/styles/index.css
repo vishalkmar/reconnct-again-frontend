@@ -1,0 +1,249 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Theme tokens use raw "r g b" values so Tailwind's `rgb(var(--token) / <alpha>)`
+  pattern works for opacity utilities. The Theme Management admin module updates
+  these CSS variables at runtime to recolor the entire app.
+*/
+:root {
+  /* ---- Reconnct brand palette --------------------------------------------
+     White canvas, near-black text and a warm GOLD primary/accent — matching
+     the Reconnct landing reference. Values are raw "r g b" so Tailwind's
+     `rgb(var(--token) / <alpha>)` opacity utilities still work. */
+
+  /* Primary brand — warm gold */
+  --brand: 224 169 46;          /* #E0A92E gold        */
+  --brand-light: 240 201 105;   /* #F0C969 light gold  */
+  --brand-dark: 176 130 28;     /* #B0821C deep gold   */
+
+  /* Wellness — kept in the gold family so any legacy usage stays on-theme */
+  --wellness: 198 150 40;       /* #C69628 */
+  --wellness-light: 235 205 120;/* #EBCD78 */
+  --wellness-dark: 160 118 28;  /* #A0761C */
+
+  --accent: 224 169 46;         /* #E0A92E gold — buttons, highlights */
+
+  --ink: 24 24 27;              /* #18181B near-black text/headings */
+  --ink-muted: 113 113 122;     /* #71717A neutral grey            */
+
+  --surface: 255 255 255;       /* white background        */
+  --surface-alt: 247 247 244;   /* #F7F7F4 light panels    */
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: rgb(var(--ink));
+  background: rgb(var(--surface));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  /* Inherit color from the parent so headings inside dark/coloured banners
+     (e.g. `bg-brand text-white`) actually render white. The body sets ink
+     as the default for unstyled pages. */
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-dark shadow-soft;
+  }
+  .btn-wellness {
+    @apply btn bg-wellness text-white hover:bg-wellness-dark shadow-soft;
+  }
+  .btn-outline {
+    @apply btn border-2 border-brand text-brand hover:bg-brand hover:text-white;
+  }
+  .btn-ghost {
+    @apply btn text-ink hover:bg-surface-alt;
+  }
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition;
+  }
+  .label {
+    @apply block text-sm font-medium text-ink mb-1.5;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-card overflow-hidden;
+  }
+  .container-app {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  .section {
+    @apply py-12 md:py-20;
+  }
+  .heading {
+    @apply text-3xl md:text-4xl font-bold tracking-tight;
+  }
+  .heading-accent {
+    @apply text-brand;
+  }
+  .heading-accent-wellness {
+    @apply text-wellness;
+  }
+}
+
+/* Hide scrollbar in horizontal carousels */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Blog article prose styles (renders admin-pasted HTML) */
+.blog-prose {
+  @apply text-base leading-relaxed text-ink;
+}
+.blog-prose > * + * { margin-top: 1.1rem; }
+.blog-prose h1 { @apply text-3xl md:text-4xl font-display font-bold mt-10 mb-4; }
+.blog-prose h2 { @apply text-2xl md:text-3xl font-display font-bold mt-8 mb-3; }
+.blog-prose h3 { @apply text-xl md:text-2xl font-display font-semibold mt-6 mb-2; }
+.blog-prose h4 { @apply text-lg font-semibold mt-5 mb-2; }
+.blog-prose p { @apply text-ink-muted; }
+.blog-prose a { @apply text-brand underline hover:text-brand-dark; }
+.blog-prose strong { @apply font-semibold text-ink; }
+.blog-prose ul { @apply list-disc pl-6 space-y-1.5 text-ink-muted; }
+.blog-prose ol { @apply list-decimal pl-6 space-y-1.5 text-ink-muted; }
+.blog-prose blockquote { @apply border-l-4 border-brand pl-5 italic text-ink-muted my-6; }
+.blog-prose img { @apply rounded-xl shadow-soft max-w-full my-6; }
+.blog-prose code {
+  @apply bg-surface-alt px-1.5 py-0.5 rounded text-sm font-mono;
+}
+.blog-prose pre {
+  @apply bg-ink text-white p-4 rounded-xl overflow-x-auto text-sm font-mono my-6;
+}
+.blog-prose hr { @apply my-8 border-slate-200; }
+
+/*
+  Rich-text prose — used by:
+   - the in-admin contentEditable surface (RichTextEditor)
+   - the public PackageDetailPage to render the saved HTML
+
+  Sharing the same class makes the WYSIWYG output match the live UI 1:1.
+*/
+.rich-prose {
+  @apply text-base text-ink;
+  line-height: 1.5;
+}
+/* Word-style: a small, predictable gap between consecutive blocks instead of
+   the big 0.85rem step that used to add visible empty space. Inline styles
+   set by the Paragraph-Spacing dropdown still override this. */
+.rich-prose > * + * { margin-top: 0.35rem; }
+.rich-prose h1 { @apply text-2xl md:text-3xl font-display font-bold mt-5 mb-2; }
+.rich-prose h2 { @apply text-xl md:text-2xl font-display font-bold mt-4 mb-2; }
+.rich-prose h3 { @apply text-lg md:text-xl font-display font-semibold mt-3 mb-1.5; }
+.rich-prose h4 { @apply text-base font-semibold mt-2 mb-1; }
+.rich-prose p { @apply text-ink; margin: 0; }
+.rich-prose a { @apply text-brand underline hover:text-brand-dark; }
+.rich-prose strong { @apply font-semibold text-ink; }
+.rich-prose em { @apply italic; }
+.rich-prose ul { @apply list-disc pl-6 space-y-1.5; }
+.rich-prose ol { @apply list-decimal pl-6 space-y-1.5; }
+.rich-prose blockquote { @apply border-l-4 border-brand pl-4 italic text-ink-muted my-4; }
+.rich-prose code { @apply bg-surface-alt px-1.5 py-0.5 rounded text-sm font-mono; }
+.rich-prose pre { @apply bg-ink text-white p-4 rounded-xl overflow-x-auto text-sm font-mono my-4; }
+.rich-prose hr { @apply my-6 border-slate-200; }
+.rich-prose img { @apply rounded-lg max-w-full my-4; }
+
+/* Tables — inserted by the rich-text editor. Inline styles drive borders;
+   these rules add a clean default + horizontal scroll on small screens. */
+.rich-prose table { @apply w-full my-4 text-sm; border-collapse: collapse; display: block; overflow-x: auto; }
+.rich-prose th, .rich-prose td { @apply border border-slate-300 px-3 py-2 align-top; }
+.rich-prose thead th, .rich-prose tr:first-child th { @apply bg-slate-100 font-semibold text-left; }
+
+/* Inline icon span (emoji preset) — slightly bigger than text and aligned */
+.rich-prose .rte-icon {
+  display: inline-block;
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: -0.1em;
+  margin: 0 0.15em;
+}
+
+/* Custom uploaded icon — small, inline-aligned image. Override the default
+   block-image rules above so it sits beside text, not on its own line. */
+.rich-prose img.rte-custom-icon {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  margin: 0 0.2em;
+  vertical-align: -0.25em;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+/* Placeholder for empty contentEditable */
+.rich-prose:empty:before {
+  content: attr(data-placeholder);
+  color: rgb(var(--ink-muted));
+  pointer-events: none;
+}
+
+/* Client review arc carousel — fade non-active side cards so the centre
+   card pops, and style the white pagination dots / nav arrows for the
+   teal background. */
+.client-review-arc .swiper-slide {
+  opacity: 0.55;
+  transition: opacity 250ms ease, transform 250ms ease;
+}
+.client-review-arc .swiper-slide-active {
+  opacity: 1;
+  transform: scale(1.04);
+}
+.cr-pagination .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  opacity: 1;
+  margin: 0 3px !important;
+  transition: width 200ms ease, background 200ms ease;
+}
+.cr-pagination .swiper-pagination-bullet-active {
+  background: white;
+  width: 22px;
+  border-radius: 9999px;
+}
+
+/* DatePicker popover entrance — used by components/common/DatePicker.jsx */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Video testimonials band — pagination dots on the dark panel */
+.vb-pagination .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  opacity: 1;
+  margin: 0 3px !important;
+  transition: width 200ms ease, background 200ms ease;
+}
+.vb-pagination .swiper-pagination-bullet-active {
+  background: white;
+  width: 22px;
+  border-radius: 9999px;
+}
+
+/* Detail/voucher modals scroll internally on screen (max-h-[92vh]); when
+   printing they must expand to their full content height so nothing is
+   clipped to the on-screen viewport height. */
+@media print {
+  .admin-voucher-print,
+  .booking-voucher-print {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
