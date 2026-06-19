@@ -11,13 +11,22 @@ const ytId = (url) => {
 const METHOD_LABEL = { per_person: 'Per person', per_day: 'Per day', days: 'Days (multi-day)', per_hours: 'Price by hours' };
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-function PricingSummary({ priceMethod, pricing, gstRate, tcsRate, discount }) {
+function convenienceLabel(cf) {
+  if (!cf || !cf.type) return null;
+  if (cf.type === 'fixed' && Number(cf.value) > 0) return `₹${cf.value}`;
+  if (cf.type === 'percentage' && Number(cf.value) > 0) return `${cf.value}%`;
+  if (cf.type === 'free') return Number(cf.months) > 0 ? `Free for ${cf.months} month${cf.months > 1 ? 's' : ''}` : 'Free';
+  return null;
+}
+
+function PricingSummary({ priceMethod, pricing, gstRate, discount, convenienceFee }) {
   const p = pricing || {};
   const d = p.duration || {};
   const hasDuration = (priceMethod === 'per_day' || priceMethod === 'per_hours') && (d.hours || d.minutes);
   const disc = discount && Number(discount.value) > 0
     ? (discount.type === 'fixed' ? `₹${discount.value}` : `${discount.value}%`)
     : null;
+  const conv = convenienceLabel(convenienceFee);
   return (
     <div className="bg-white rounded-2xl shadow-soft p-6 mb-5">
       <h2 className="font-semibold text-lg mb-3 inline-flex items-center gap-2"><IndianRupee size={18} className="text-brand" /> Pricing</h2>
@@ -28,7 +37,7 @@ function PricingSummary({ priceMethod, pricing, gstRate, tcsRate, discount }) {
         <Field label="Adult" value={rupee(p.adultPrice)} />
         {Number(gstRate) > 0 && <Field label="GST" value={`${gstRate}%`} />}
         {disc && <Field label="Discount" value={disc} />}
-        {Number(tcsRate) > 0 && <Field label="TCS" value={`${tcsRate}%`} />}
+        {conv && <Field label="Convenience fee" value={conv} />}
       </div>
       {p.childrenEnabled && p.childBands?.length > 0 && (
         <div className="mt-4">
@@ -136,7 +145,7 @@ export default function ExperienceViewPage() {
       {/* Pricing */}
       {(e.priceMethod || e.pricing) && (
         <PricingSummary priceMethod={e.priceMethod} pricing={e.pricing || {}}
-          gstRate={e.gstRate} tcsRate={e.tcsRate} discount={e.discount} />
+          gstRate={e.gstRate} discount={e.discount} convenienceFee={e.convenienceFee} />
       )}
 
       {/* Gallery */}
@@ -252,27 +261,26 @@ export default function ExperienceViewPage() {
       )}
 
       {/* Policies */}
-      {[
-        ['Terms & Conditions', e.termsConditions],
-        ['Privacy Policy', e.privacyPolicy],
-        ['Refund Policy', e.refundPolicy],
-        ['Cancellation Policy', e.cancellationPolicy],
-      ].some(([, html]) => html) && (
+      {(() => {
+        const refundCancellation = e.refundCancellationPolicy
+          || [e.refundPolicy, e.cancellationPolicy].filter(Boolean).join('<br/><br/>');
+        const policies = [
+          ['Terms & Conditions', e.termsConditions],
+          ['Privacy Policy', e.privacyPolicy],
+          ['Refund & Cancellation Policy', refundCancellation],
+        ];
+        return policies.some(([, html]) => html) && (
         <div className="bg-white rounded-2xl shadow-soft p-6 mb-5 space-y-4">
           <h2 className="font-semibold text-lg">Policies &amp; terms</h2>
-          {[
-            ['Terms & Conditions', e.termsConditions],
-            ['Privacy Policy', e.privacyPolicy],
-            ['Refund Policy', e.refundPolicy],
-            ['Cancellation Policy', e.cancellationPolicy],
-          ].filter(([, html]) => html).map(([label, html]) => (
+          {policies.filter(([, html]) => html).map(([label, html]) => (
             <details key={label} className="border border-gray-100 rounded-lg p-3">
               <summary className="cursor-pointer font-medium text-ink">{label}</summary>
               <div className="rich-prose mt-2" dangerouslySetInnerHTML={{ __html: html }} />
             </details>
           ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -47,12 +47,11 @@ const blank = {
   nearbyPlaces: [],
   termsConditions: '',
   privacyPolicy: '',
-  refundPolicy: '',
-  cancellationPolicy: '',
+  refundCancellationPolicy: '',
   schedule: { dates: [] },
   gstRate: 0,
-  tcsRate: 0,
   discount: { type: 'percentage', value: 0 },
+  convenienceFee: { type: 'free', value: 0, months: 0, cutThrough: 0 },
 };
 
 export default function ExperienceFormPage() {
@@ -99,12 +98,16 @@ export default function ExperienceFormPage() {
             nearbyPlaces: Array.isArray(e.nearbyPlaces) ? e.nearbyPlaces : [],
             termsConditions: e.termsConditions || '',
             privacyPolicy: e.privacyPolicy || '',
-            refundPolicy: e.refundPolicy || '',
-            cancellationPolicy: e.cancellationPolicy || '',
+            // Back-compat: fall back to the old split fields if the merged one is empty.
+            refundCancellationPolicy: e.refundCancellationPolicy
+              || [e.refundPolicy, e.cancellationPolicy].filter(Boolean).join('<br/><br/>')
+              || '',
             schedule: e.schedule && Array.isArray(e.schedule.dates) ? e.schedule : { dates: [] },
             gstRate: Number(e.gstRate) || 0,
-            tcsRate: Number(e.tcsRate) || 0,
             discount: e.discount && e.discount.type ? e.discount : { type: 'percentage', value: 0 },
+            convenienceFee: e.convenienceFee && e.convenienceFee.type
+              ? { type: 'free', value: 0, months: 0, cutThrough: 0, ...e.convenienceFee }
+              : { type: 'free', value: 0, months: 0, cutThrough: 0 },
           });
         }
       } catch {
@@ -326,23 +329,19 @@ export default function ExperienceFormPage() {
           <RichTextEditor value={value.privacyPolicy} onChange={(v) => patch({ privacyPolicy: v })} minHeight={160} />
         </div>
         <div>
-          <label className="label">Refund Policy</label>
-          <RichTextEditor value={value.refundPolicy} onChange={(v) => patch({ refundPolicy: v })} minHeight={160} />
-        </div>
-        <div>
-          <label className="label">Cancellation Policy</label>
-          <RichTextEditor value={value.cancellationPolicy} onChange={(v) => patch({ cancellationPolicy: v })} minHeight={160} />
+          <label className="label">Refund &amp; Cancellation Policy</label>
+          <RichTextEditor value={value.refundCancellationPolicy} onChange={(v) => patch({ refundCancellationPolicy: v })} minHeight={200} />
         </div>
       </div>
 
-      {/* GST + discount + TCS (live calc) */}
+      {/* GST + discount + convenience fee (live calc) */}
       <div className="bg-white rounded-2xl shadow-soft p-6 mt-5">
-        <h2 className="font-semibold text-lg mb-1">GST, discount &amp; TCS</h2>
-        <p className="text-sm text-ink-muted mb-4">Discount applies before GST; the totals update instantly using the adult price from Pricing.</p>
+        <h2 className="font-semibold text-lg mb-1">GST, discount &amp; convenience fee</h2>
+        <p className="text-sm text-ink-muted mb-4">Discount applies before GST; the convenience fee is added on the final amount. Totals update instantly using the adult price from Pricing.</p>
         <ExperienceTaxPricing
           gstRate={value.gstRate}
-          tcsRate={value.tcsRate}
           discount={value.discount}
+          convenienceFee={value.convenienceFee}
           basePrice={value.pricing?.adultPrice || 0}
           onChange={patch}
         />
