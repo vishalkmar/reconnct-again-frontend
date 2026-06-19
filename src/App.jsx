@@ -34,6 +34,10 @@ import ExperiencesPage from './pages/admin/ExperiencesPage.jsx';
 import ExperienceFormPage from './pages/admin/ExperienceFormPage.jsx';
 import ExperienceViewPage from './pages/admin/ExperienceViewPage.jsx';
 import ExperienceSetupPage from './pages/admin/ExperienceSetupPage.jsx';
+import SuppliersPage from './pages/admin/SuppliersPage.jsx';
+import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
+import ContractFormPage from './pages/admin/ContractFormPage.jsx';
+import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
 
 export default function App() {
@@ -108,6 +112,12 @@ export default function App() {
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/view" element={<ExperienceViewPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="suppliers/new" element={<SupplierFormPage />} />
+          <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
+          <Route path="contracts/new" element={<ContractFormPage />} />
+          <Route path="contracts/:id/edit" element={<ContractFormPage />} />
+          <Route path="company-profile" element={<CompanyProfilePage />} />
           <Route path="experience-setup" element={<ExperienceSetupPage />} />
         </Route>
 

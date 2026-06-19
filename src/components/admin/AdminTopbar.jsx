@@ -1,10 +1,19 @@
-import { Menu, LogOut, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Menu, LogOut, ExternalLink, ChevronDown, Building2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function AdminTopbar({ onMenuClick }) {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -30,22 +39,44 @@ export default function AdminTopbar({ onMenuClick }) {
           >
             <ExternalLink size={14} /> View site
           </Link>
-          <div className="hidden md:flex items-center gap-2 text-sm">
-            <div className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center font-bold">
-              {admin?.name?.charAt(0) || 'A'}
-            </div>
-            <div className="leading-tight">
-              <div className="font-medium">{admin?.name || 'Admin'}</div>
-              <div className="text-xs text-ink-muted">{admin?.email}</div>
-            </div>
+
+          {/* Profile dropdown */}
+          <div className="relative" ref={ref}>
+            <button
+              onClick={() => setOpen((o) => !o)}
+              className="flex items-center gap-2 text-sm px-1.5 py-1 rounded-lg hover:bg-surface-alt"
+            >
+              <div className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center font-bold">
+                {admin?.name?.charAt(0) || 'A'}
+              </div>
+              <div className="leading-tight text-left hidden md:block">
+                <div className="font-medium">{admin?.name || 'Admin'}</div>
+                <div className="text-xs text-ink-muted">{admin?.email}</div>
+              </div>
+              <ChevronDown size={16} className="text-ink-muted" />
+            </button>
+
+            {open && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40">
+                <div className="px-4 py-2 border-b border-gray-100 md:hidden">
+                  <div className="font-medium text-sm">{admin?.name || 'Admin'}</div>
+                  <div className="text-xs text-ink-muted">{admin?.email}</div>
+                </div>
+                <button
+                  onClick={() => { setOpen(false); navigate('/admin/company-profile'); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink hover:bg-surface-alt"
+                >
+                  <Building2 size={16} className="text-brand" /> Company profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-wellness hover:bg-surface-alt"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-wellness/10 text-wellness hover:bg-wellness hover:text-white text-sm font-semibold transition"
-            title="Logout"
-          >
-            <LogOut size={16} /> Logout
-          </button>
         </div>
       </div>
     </header>

@@ -8,6 +8,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   LineChart,
+  Truck,
 } from 'lucide-react';
 
 // This build ships the admin "Main" dashboard (booking management) plus the
@@ -18,6 +19,7 @@ const mainItems = [
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarIcon },
   { to: '/admin/revenue', label: 'Revenue', icon: LineChart },
   { to: '/admin/experiences', label: 'Experiences', icon: Sparkles },
+  { to: '/admin/suppliers', label: 'Suppliers & Contract', icon: Truck },
   { to: '/admin/users', label: 'Users', icon: UsersIcon },
   { to: '/admin/transactions', label: 'Transactions', icon: Wallet },
   { to: '/admin/experience-setup', label: 'Experience Setup', icon: SlidersHorizontal },

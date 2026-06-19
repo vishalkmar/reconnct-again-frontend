@@ -15,7 +15,7 @@ import api from '../../services/api';
  * Controlled via `value = { audiences:number[], categoryId, typeId }` and
  * `onChange(patch)`.
  */
-export default function ExperienceTaxonomyPicker({ value, onChange }) {
+export default function ExperienceTaxonomyPicker({ value, onChange, hideAudiences = false, hideCategoryType = false }) {
   const audiences = value?.audiences || [];
   const { categoryId = null, typeId = null } = value || {};
 
@@ -64,6 +64,7 @@ export default function ExperienceTaxonomyPicker({ value, onChange }) {
   return (
     <div className="space-y-6">
       {/* 1) Audiences — multi */}
+      {!hideAudiences && (
       <Section icon={Tag} title="Who is this for?" hint="Pick one or more — an experience can suit several groups (multi-select).">
         <ChipRow>
           {audienceList.map((a) => (
@@ -83,7 +84,9 @@ export default function ExperienceTaxonomyPicker({ value, onChange }) {
           />
         </ChipRow>
       </Section>
+      )}
 
+      {!hideCategoryType && (<>
       {/* 2) Broad category — single */}
       <Section icon={Layers} title="Broad category" hint="Choose one. The type list below fills from this category.">
         <ChipRow>
@@ -134,6 +137,7 @@ export default function ExperienceTaxonomyPicker({ value, onChange }) {
           </ChipRow>
         )}
       </Section>
+      </>)}
     </div>
   );
 }

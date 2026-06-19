@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Pencil, Loader2, Star, MapPin, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Pencil, Loader2, Star, MapPin, IndianRupee, Truck } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
 
 const ytId = (url) => {
@@ -131,6 +131,24 @@ export default function ExperienceViewPage() {
               {a.name}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Supplier */}
+      {e.supplier && (
+        <div className="bg-white rounded-2xl shadow-soft p-6 mb-5">
+          <h2 className="font-semibold text-lg mb-3 inline-flex items-center gap-2"><Truck size={18} className="text-brand" /> Supplier</h2>
+          <div className="flex items-center gap-4">
+            {e.supplier.image && <img src={fileUrl(e.supplier.image)} alt="" className="w-14 h-14 rounded-lg object-cover border" />}
+            <div className="text-sm">
+              <div className="font-semibold text-ink">{e.supplier.companyName}</div>
+              {e.supplier.supplierName && <div className="text-ink-muted">{e.supplier.supplierName}</div>}
+              <div className="text-ink-muted flex flex-wrap gap-x-4">
+                {e.supplier.email && <span>{e.supplier.email}</span>}
+                {e.supplier.phone && <span>{e.supplier.phone}</span>}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
