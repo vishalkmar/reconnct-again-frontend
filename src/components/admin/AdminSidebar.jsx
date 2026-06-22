@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   LineChart,
   Truck,
+  Smartphone,
 } from 'lucide-react';
 
 // This build ships the admin "Main" dashboard (booking management) plus the
@@ -23,6 +24,7 @@ const mainItems = [
   { to: '/admin/users', label: 'Users', icon: UsersIcon },
   { to: '/admin/transactions', label: 'Transactions', icon: Wallet },
   { to: '/admin/experience-setup', label: 'Experience Setup', icon: SlidersHorizontal },
+  { to: '/admin/app-screens', label: 'App Screens Control', icon: Smartphone },
 ];
 
 export default function AdminSidebar({ open, onClose }) {

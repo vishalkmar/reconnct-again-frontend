@@ -38,6 +38,7 @@ import SuppliersPage from './pages/admin/SuppliersPage.jsx';
 import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
 import ContractFormPage from './pages/admin/ContractFormPage.jsx';
 import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
+import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
 
 export default function App() {
@@ -119,6 +120,7 @@ export default function App() {
           <Route path="contracts/:id/edit" element={<ContractFormPage />} />
           <Route path="company-profile" element={<CompanyProfilePage />} />
           <Route path="experience-setup" element={<ExperienceSetupPage />} />
+          <Route path="app-screens" element={<AppScreensControlPage />} />
         </Route>
 
         {/* Anything else → landing */}
