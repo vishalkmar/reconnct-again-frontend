@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Smartphone, Save, Upload, Loader2 } from 'lucide-react';
+import { Smartphone, Save, Upload, Loader2, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import api from '../../services/api.js';
 
 /**
@@ -84,10 +84,112 @@ export default function AppScreensControlPage() {
       <div className="flex items-center gap-4 mt-6">
         <button onClick={save} disabled={saving}
           className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-lg disabled:opacity-60">
-          {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Save
+          {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Save login screen
         </button>
         {!!msg && <span className="text-sm text-gray-600">{msg}</span>}
       </div>
+
+      <OfferBanners />
+    </div>
+  );
+}
+
+function OfferBanners() {
+  const [banners, setBanners] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    api.get('/admin/app-screens/offer-banners')
+      .then((r) => setBanners(r.data.data.banners || []))
+      .catch(() => {});
+  }, []);
+
+  const add = () => setBanners((b) => [...b, { id: Date.now(), type: 'image_text', active: true, image: '', title: '', subtitle: '', ctaText: '' }]);
+  const set = (i, patch) => setBanners((b) => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
+  const remove = (i) => setBanners((b) => b.filter((_, idx) => idx !== i));
+  const save = async () => {
+    setSaving(true); setMsg('');
+    try {
+      await api.put('/admin/app-screens/offer-banners', { banners });
+      setMsg('Saved ✓');
+    } catch (e) { setMsg(e.response?.data?.message || 'Save failed'); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center gap-3 mb-1">
+        <ImageIcon className="text-amber-500" />
+        <h2 className="text-xl font-bold">Offer Banners</h2>
+      </div>
+      <p className="text-gray-500 mb-4">The auto-sliding advert carousel on the app Home. Type “image” = plain advert; “image + text” = title, subtitle &amp; button.</p>
+
+      <div className="space-y-4">
+        {banners.map((b, i) => (
+          <div key={b.id || i} className="bg-white rounded-xl border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <select className="border rounded-lg px-3 py-1.5" value={b.type} onChange={(e) => set(i, { type: e.target.value })}>
+                  <option value="image_text">Image + text</option>
+                  <option value="image">Image only</option>
+                </select>
+                <label className="inline-flex items-center gap-1.5 text-sm">
+                  <input type="checkbox" checked={b.active !== false} onChange={(e) => set(i, { active: e.target.checked })} /> Active
+                </label>
+              </div>
+              <button onClick={() => remove(i)} className="text-red-500 inline-flex items-center gap-1 text-sm"><Trash2 size={15} /> Remove</button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <BannerImage value={b.image} onChange={(url) => set(i, { image: url })} />
+              </div>
+              {b.type === 'image_text' && (
+                <div className="space-y-2">
+                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Title" value={b.title || ''} onChange={(e) => set(i, { title: e.target.value })} />
+                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Subtitle" value={b.subtitle || ''} onChange={(e) => set(i, { subtitle: e.target.value })} />
+                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Button text (e.g. BOOK NOW)" value={b.ctaText || ''} onChange={(e) => set(i, { ctaText: e.target.value })} />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-4 mt-4">
+        <button onClick={add} className="inline-flex items-center gap-2 border rounded-lg px-4 py-2 text-sm hover:bg-gray-50"><Plus size={16} /> Add banner</button>
+        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-lg disabled:opacity-60">
+          {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Save banners
+        </button>
+        {!!msg && <span className="text-sm text-gray-600">{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+function BannerImage({ value, onChange }) {
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const upload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await api.post('/uploads/inline', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      onChange(r.data.data.url);
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e.response?.data?.message || 'Upload failed');
+    } finally { setUploading(false); }
+  };
+  return (
+    <div>
+      <input className="w-full border rounded-lg px-3 py-2 mb-2" placeholder="Image URL" value={value || ''} onChange={(e) => onChange(e.target.value)} />
+      <button onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 border rounded-lg px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-60">
+        {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />} Upload
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => upload(e.target.files?.[0])} />
+      {value && <img src={value} alt="" className="mt-2 w-full h-32 object-cover rounded-lg border" />}
     </div>
   );
 }
