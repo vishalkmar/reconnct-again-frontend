@@ -56,6 +56,7 @@ const blankActivity = () => ({
 
 const blank = {
   supplierId: null,
+  showSupplierPublic: true,
   audiences: [],
   status: 'draft',
   activities: [blankActivity()],
@@ -123,6 +124,7 @@ export default function ExperienceFormPage() {
         if (!cancelled && e) {
           hydrateFromServer({
             supplierId: e.supplierId || null,
+            showSupplierPublic: e.showSupplierPublic !== false,
             audiences: Array.isArray(e.audiences) ? e.audiences : [],
             status: e.status || 'draft',
             activities: [toActivity(e)],
@@ -158,7 +160,7 @@ export default function ExperienceFormPage() {
     }
     setSaving(true);
     try {
-      const shared = { supplierId: value.supplierId || null, audiences: value.audiences, status: value.status };
+      const shared = { supplierId: value.supplierId || null, showSupplierPublic: value.showSupplierPublic !== false, audiences: value.audiences, status: value.status };
       if (editing) {
         await api.put(`/experiences/${id}`, { ...acts[0], ...shared });
         toast.success('Experience updated');
@@ -210,6 +212,23 @@ export default function ExperienceFormPage() {
                 ))}
               </select>
               <p className="text-[11px] text-ink-muted mt-1">Tells you which supplier runs this/these activities. Manage suppliers from the Suppliers tab.</p>
+
+              {/* Show / hide the supplier's info publicly (website + app). */}
+              <button
+                type="button"
+                onClick={() => patch({ showSupplierPublic: !(value.showSupplierPublic !== false) })}
+                className="mt-3 w-full flex items-center justify-between rounded-xl border border-gray-200 px-3.5 py-2.5 hover:border-brand/40 transition"
+              >
+                <span className="text-sm font-medium text-ink text-left">
+                  Show supplier on website &amp; app
+                  <span className="block text-[11px] text-ink-muted font-normal">
+                    {value.showSupplierPublic !== false ? 'Visible to users (host shown on the listing)' : 'Hidden from users'}
+                  </span>
+                </span>
+                <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${value.showSupplierPublic !== false ? 'bg-brand' : 'bg-gray-300'}`}>
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${value.showSupplierPublic !== false ? 'translate-x-5' : 'translate-x-1'}`} />
+                </span>
+              </button>
             </div>
             <ExperienceTaxonomyPicker value={{ audiences: value.audiences }} onChange={patch} hideCategoryType />
           </div>
@@ -220,6 +239,7 @@ export default function ExperienceFormPage() {
               key={i}
               index={i}
               activity={a}
+              audiences={value.audiences}
               total={activities.length}
               editing={editing}
               onChange={(p) => patchActivity(i, p)}
@@ -267,7 +287,7 @@ export default function ExperienceFormPage() {
 }
 
 // ─── One activity = one Experience ─────────────────────────────────────────
-function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) {
+function ActivityBlock({ index, activity, audiences, total, editing, onChange, onRemove }) {
   const value = activity;
   const patch = (p) => onChange(p);
 
@@ -284,8 +304,9 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
         </div>
       )}
 
-      {/* Category + type cascade (per activity) */}
-      <ExperienceTaxonomyPicker value={{ categoryId: value.categoryId, typeId: value.typeId }} onChange={patch} hideAudiences />
+      {/* Category + type cascade (per activity) — categories filter to the
+          shared "Who is this for?" selection. */}
+      <ExperienceTaxonomyPicker value={{ categoryId: value.categoryId, typeId: value.typeId, audiences }} onChange={patch} hideAudiences />
 
       {/* Basics */}
       <div className="space-y-4 pt-2 border-t border-gray-100">

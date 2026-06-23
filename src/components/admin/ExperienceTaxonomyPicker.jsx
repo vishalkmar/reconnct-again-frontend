@@ -55,6 +55,36 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
     onChange({ audiences: next });
   };
 
+  // "All" (no specific audience) shows every category. Picking audience(s)
+  // filters to categories TAGGED with the selected audience(s). A tagged
+  // category that doesn't match is hidden (so e.g. "Wellness & Healing" never
+  // shows under "Kids & Teens").
+  const isTagged = (c) => Array.isArray(c.audiences) && c.audiences.length > 0;
+  const selectedSlugs = audienceList.filter((a) => audiences.includes(a.id)).map((a) => a.slug);
+  let filteredCategories = audiences.length === 0
+    ? categoryList
+    : categoryList.filter((c) => isTagged(c) && c.audiences.some((s) => selectedSlugs.includes(s)));
+  // Keep a chosen LEGACY (untagged) category visible so editing older data
+  // doesn't silently lose its category. Tagged-but-mismatched ones are dropped
+  // by the effect below instead.
+  if (audiences.length > 0 && categoryId) {
+    const sel = categoryList.find((c) => c.id === categoryId);
+    if (sel && !isTagged(sel) && !filteredCategories.some((c) => c.id === categoryId)) {
+      filteredCategories = [...filteredCategories, sel];
+    }
+  }
+
+  // Drop a TAGGED category that no longer matches the selected audience(s).
+  useEffect(() => {
+    if (hideCategoryType || !categoryId || !categoryList.length || !audienceList.length || audiences.length === 0) return;
+    const slugs = audienceList.filter((a) => audiences.includes(a.id)).map((a) => a.slug);
+    const sel = categoryList.find((c) => c.id === categoryId);
+    if (!sel) return;
+    const tagged = Array.isArray(sel.audiences) && sel.audiences.length > 0;
+    if (tagged && !sel.audiences.some((s) => slugs.includes(s))) onChange({ categoryId: null, typeId: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audiences.join(','), categoryList.length, audienceList.length]);
+
   const pickCategory = (id) => {
     // Changing the broad category invalidates the previously-chosen type.
     if (id === categoryId) return;
@@ -65,8 +95,12 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
     <div className="space-y-6">
       {/* 1) Audiences — multi */}
       {!hideAudiences && (
-      <Section icon={Tag} title="Who is this for?" hint="Pick one or more — an experience can suit several groups (multi-select).">
+      <Section icon={Tag} title="Who is this for?" hint="Pick “All”, or one or more groups — the broad categories below filter to match.">
         <ChipRow>
+          <Chip active={audiences.length === 0} onClick={() => onChange({ audiences: [] })}>
+            All
+            {audiences.length === 0 && <Check size={13} className="ml-1" />}
+          </Chip>
           {audienceList.map((a) => (
             <Chip key={a.id} active={audiences.includes(a.id)} onClick={() => toggleAudience(a.id)}>
               {a.name}
@@ -88,9 +122,12 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
 
       {!hideCategoryType && (<>
       {/* 2) Broad category — single */}
-      <Section icon={Layers} title="Broad category" hint="Choose one. The type list below fills from this category.">
+      <Section icon={Layers} title="Broad category" hint={audiences.length === 0 ? 'Choose one. The type list below fills from this category.' : 'Showing categories for the selected audience(s).'}>
         <ChipRow>
-          {categoryList.map((c) => (
+          {filteredCategories.length === 0 && (
+            <span className="text-sm text-ink-muted italic">No categories for this audience yet — add one below.</span>
+          )}
+          {filteredCategories.map((c) => (
             <Chip key={c.id} active={categoryId === c.id} onClick={() => pickCategory(c.id)}>
               {c.icon ? `${c.icon} ` : ''}{c.name}
             </Chip>
@@ -98,7 +135,9 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
           <InlineAdd
             label="Add category"
             onCreate={async (name) => {
-              const res = await api.post('/experience-taxonomy/categories', { name });
+              // Tag the new category with the current audience selection so it
+              // immediately shows under that audience's filter.
+              const res = await api.post('/experience-taxonomy/categories', { name, audiences: selectedSlugs });
               const item = res.data?.data?.item;
               await loadCategories();
               if (item) onChange({ categoryId: item.id, typeId: null });
