@@ -27,6 +27,7 @@ const blankPricing = {
 // One "activity" = one Experience record. Everything here is per-activity;
 // supplier + audiences + status are shared across all activities in the form.
 const blankActivity = () => ({
+  audiences: [],
   categoryId: null,
   typeId: null,
   name: '',
@@ -57,13 +58,13 @@ const blankActivity = () => ({
 const blank = {
   supplierId: null,
   showSupplierPublic: true,
-  audiences: [],
   status: 'draft',
   activities: [blankActivity()],
 };
 
 // Map a server experience record → one activity object.
 const toActivity = (e) => ({
+  audiences: Array.isArray(e.audiences) ? e.audiences : [],
   categoryId: e.categoryId || null,
   typeId: e.typeId || null,
   name: e.name || '',
@@ -125,7 +126,6 @@ export default function ExperienceFormPage() {
           hydrateFromServer({
             supplierId: e.supplierId || null,
             showSupplierPublic: e.showSupplierPublic !== false,
-            audiences: Array.isArray(e.audiences) ? e.audiences : [],
             status: e.status || 'draft',
             activities: [toActivity(e)],
           });
@@ -160,7 +160,9 @@ export default function ExperienceFormPage() {
     }
     setSaving(true);
     try {
-      const shared = { supplierId: value.supplierId || null, showSupplierPublic: value.showSupplierPublic !== false, audiences: value.audiences, status: value.status };
+      // Audiences are now per-activity (each activity carries its own); only
+      // supplier + status are shared across the activities being saved.
+      const shared = { supplierId: value.supplierId || null, showSupplierPublic: value.showSupplierPublic !== false, status: value.status };
       if (editing) {
         await api.put(`/experiences/${id}`, { ...acts[0], ...shared });
         toast.success('Experience updated');
@@ -194,14 +196,14 @@ export default function ExperienceFormPage() {
         </button>
         <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit experience' : 'New experience'}</h1>
         <p className="text-sm text-ink-muted">
-          Pick the supplier &amp; who it's for once, then add one or more activities below. Each activity is saved as its own experience. Everything auto-saves as a draft.
+          Pick the supplier once, then add one or more activities below — set <strong>who each is for</strong> and its category inside the activity. Each activity is saved as its own experience. Everything auto-saves as a draft.
         </p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         {/* Main column */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Shared — supplier + audiences */}
+          {/* Shared — supplier only (audiences moved into each activity) */}
           <div className="bg-white rounded-2xl shadow-soft p-6 space-y-6">
             <div>
               <label className="label inline-flex items-center gap-1.5"><Truck size={14} /> Supplier <span className="text-ink-muted font-normal">(optional)</span></label>
@@ -230,7 +232,6 @@ export default function ExperienceFormPage() {
                 </span>
               </button>
             </div>
-            <ExperienceTaxonomyPicker value={{ audiences: value.audiences }} onChange={patch} hideCategoryType />
           </div>
 
           {/* Activity blocks */}
@@ -239,7 +240,6 @@ export default function ExperienceFormPage() {
               key={i}
               index={i}
               activity={a}
-              audiences={value.audiences}
               total={activities.length}
               editing={editing}
               onChange={(p) => patchActivity(i, p)}
@@ -287,7 +287,7 @@ export default function ExperienceFormPage() {
 }
 
 // ─── One activity = one Experience ─────────────────────────────────────────
-function ActivityBlock({ index, activity, audiences, total, editing, onChange, onRemove }) {
+function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) {
   const value = activity;
   const patch = (p) => onChange(p);
 
@@ -304,9 +304,8 @@ function ActivityBlock({ index, activity, audiences, total, editing, onChange, o
         </div>
       )}
 
-      {/* Category + type cascade (per activity) — categories filter to the
-          shared "Who is this for?" selection. */}
-      <ExperienceTaxonomyPicker value={{ categoryId: value.categoryId, typeId: value.typeId, audiences }} onChange={patch} hideAudiences />
+      {/* Per-activity: Who is this for? → audience-filtered category → type. */}
+      <ExperienceTaxonomyPicker value={{ audiences: value.audiences, categoryId: value.categoryId, typeId: value.typeId }} onChange={patch} />
 
       {/* Basics */}
       <div className="space-y-4 pt-2 border-t border-gray-100">
