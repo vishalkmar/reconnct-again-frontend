@@ -40,6 +40,7 @@ import ContractFormPage from './pages/admin/ContractFormPage.jsx';
 import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
 import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
+import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
 
 export default function App() {
   return (
@@ -121,6 +122,7 @@ export default function App() {
           <Route path="company-profile" element={<CompanyProfilePage />} />
           <Route path="experience-setup" element={<ExperienceSetupPage />} />
           <Route path="app-screens" element={<AppScreensControlPage />} />
+          <Route path="chat-support" element={<ChatSupportPage />} />
         </Route>
 
         {/* Anything else → landing */}
