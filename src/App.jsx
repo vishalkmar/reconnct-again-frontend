@@ -12,6 +12,7 @@ import LandingPage from './pages/LandingPage.jsx';
 // User dashboard
 import UserDashboardHomePage from './pages/user/UserDashboardHomePage.jsx';
 import UserProfilePage from './pages/user/UserProfilePage.jsx';
+import UserSupportPage from './pages/user/UserSupportPage.jsx';
 import UserBookingsPage from './pages/user/UserBookingsPage.jsx';
 import UserTransactionsPage from './pages/user/UserTransactionsPage.jsx';
 import UserWishlistPage from './pages/user/UserWishlistPage.jsx';
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="bookings" element={<UserBookingsPage />} />
           <Route path="transactions" element={<UserTransactionsPage />} />
           <Route path="wishlist" element={<UserWishlistPage />} />
+          <Route path="support" element={<UserSupportPage />} />
           <Route path="refer" element={<UserReferEarnPage />} />
         </Route>
 

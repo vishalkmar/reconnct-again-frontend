@@ -65,6 +65,8 @@ export default function ChatSupportPage() {
   const fileRef = useRef(null);
   const typingSentRef = useRef(false);
   const typingTimerRef = useRef(null);
+  const hadConnectedRef = useRef(false);
+  const unreadMapRef = useRef({});
 
   activeIdRef.current = activeId;
   queueRef.current = queue;
@@ -97,7 +99,21 @@ export default function ChatSupportPage() {
     socketRef.current = s;
     if (!s) return undefined;
 
-    const onConnect = () => setConnected(true);
+    const onConnect = () => {
+      setConnected(true);
+      if (hadConnectedRef.current) {
+        // reconnected → resync the list + the open thread (fill any gap)
+        loadConversations(queueRef.current, '');
+        const id = activeIdRef.current;
+        if (id) {
+          s.emit('support:join', { conversationId: id });
+          api.get(`/support/admin/conversations/${id}/messages`)
+            .then(({ data }) => setMessages(data.data?.messages || data.messages || []))
+            .catch(() => {});
+        }
+      }
+      hadConnectedRef.current = true;
+    };
     const onDisconnect = () => setConnected(false);
     const onMessage = (m) => {
       if (m.conversationId !== activeIdRef.current) return;
@@ -109,7 +125,14 @@ export default function ChatSupportPage() {
       s.emit('support:read', { conversationId: m.conversationId });
     };
     const onConversation = (c) => {
+      const prevU = unreadMapRef.current[c.id] || 0;
+      unreadMapRef.current[c.id] = c.unreadAdmin || 0;
       if (c.queue === queueRef.current) setConversations((prev) => upsertConv(prev, c));
+      // Toast only on a genuinely new incoming message (unread went up) for a
+      // conversation we're not currently viewing.
+      if ((c.unreadAdmin || 0) > prevU && c.id !== activeIdRef.current && c.lastSenderRole !== 'admin') {
+        toast(`New message from ${c.subjectLabel || 'a user'}`, { icon: '💬' });
+      }
       refreshUnread();
     };
     const onRead = ({ conversationId, by }) => {
@@ -137,7 +160,7 @@ export default function ChatSupportPage() {
       s.off('support:read', onRead);
       s.off('support:typing', onTyping);
     };
-  }, [refreshUnread]);
+  }, [refreshUnread, loadConversations]);
 
   useEffect(() => () => disconnectSupport(), []);
 

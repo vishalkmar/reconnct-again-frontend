@@ -9,12 +9,14 @@ const ORIGIN = (() => {
 })();
 
 let socket = null;
+let currentRole = null;
 
 export function connectSupport(role = 'admin') {
   const token = localStorage.getItem(role === 'admin' ? 'admin_token' : 'user_token');
   if (!token) return null;
-  if (socket && socket.connected) return socket;
+  if (socket && socket.connected && currentRole === role) return socket;
   if (socket) { socket.disconnect(); socket = null; }
+  currentRole = role;
   socket = io(`${ORIGIN}/support`, {
     auth: { token, role },
     transports: ['websocket', 'polling'],
