@@ -264,17 +264,7 @@ export default function ChatSupportPage() {
 
   /* ── render ── */
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-4 flex items-center gap-2">
-        <MessageCircle className="text-brand" size={22} />
-        <h1 className="text-xl font-semibold text-ink">Chat Support</h1>
-        <span className={`ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${connected ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-slate-400'}`} />
-          {connected ? 'Live' : 'Offline'}
-        </span>
-      </div>
-
-      <div className="flex h-[calc(100vh-11rem)] bg-white rounded-xl shadow-soft overflow-hidden border border-slate-200">
+    <div className="flex h-[calc(100vh-1.25rem)] bg-white rounded-lg shadow-soft overflow-hidden border border-slate-200">
         {/* ── Left: list ── */}
         <div className={`w-full md:w-80 lg:w-96 border-r border-slate-200 flex flex-col ${activeId ? 'hidden md:flex' : 'flex'}`}>
           {/* tabs */}
@@ -468,7 +458,6 @@ export default function ChatSupportPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }
 
