@@ -365,7 +365,12 @@ export default function ChatSupportPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-semibold text-ink truncate">{activeConv.subjectLabel || 'User'}</div>
-                  <div className="text-xs text-slate-400">{typingPeer ? 'typing…' : (activeConv.queue === 'supplier' ? 'Supplier' : 'User')}</div>
+                  <div className="text-xs text-slate-400 truncate">
+                    {typingPeer
+                      ? 'typing…'
+                      : [activeConv.subjectEmail, activeConv.subjectPhone].filter(Boolean).join('  ·  ')
+                        || (activeConv.queue === 'supplier' ? 'Supplier' : 'User')}
+                  </div>
                 </div>
               </div>
 
