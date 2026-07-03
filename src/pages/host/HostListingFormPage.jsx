@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import { categoryAudiences } from '../../data/categoryAudiences';
 
 const STEPS = ['Basic info', 'Description', 'Pricing', 'Photos'];
 const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
@@ -40,15 +41,20 @@ export default function HostListingFormPage() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(blank);
+  const [audienceList, setAudienceList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const patch = (p) => setForm((f) => ({ ...f, ...p }));
 
-  // Taxonomy (categories); types load when a category is picked.
+  // Taxonomy (audiences + categories); types load when a category is picked.
   useEffect(() => {
-    api.get('/public/taxonomy').then(({ data }) => setCategories((data.data || data).categories || [])).catch(() => {});
+    api.get('/public/taxonomy').then(({ data }) => {
+      const d = data.data || data;
+      setAudienceList(d.audiences || []);
+      setCategories(d.categories || []);
+    }).catch(() => {});
   }, []);
   useEffect(() => {
     if (!form.categoryId) { setTypes([]); return; }
@@ -118,7 +124,7 @@ export default function HostListingFormPage() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
         <div className="max-w-3xl mx-auto">
-          {step === 1 && <Step1 form={form} patch={patch} categories={categories} types={types} />}
+          {step === 1 && <Step1 form={form} patch={patch} audienceList={audienceList} categories={categories} types={types} />}
           {step === 2 && <Step2 form={form} patch={patch} />}
           {step === 3 && <Step3 form={form} patch={patch} />}
           {step === 4 && <Step4 form={form} patch={patch} />}
@@ -164,20 +170,49 @@ function Chip({ active, onClick, children }) {
 }
 
 /* ---------- Step 1 ---------- */
-function Step1({ form, patch, categories, types }) {
+function Step1({ form, patch, audienceList, categories, types }) {
+  const audiences = form.audiences || [];
+  // "All" (none selected) shows every category; otherwise only categories tagged
+  // with a selected audience (taxonomy value wins, else the fallback map).
+  const selectedSlugs = audienceList.filter((a) => audiences.includes(a.id)).map((a) => a.slug);
+  const filteredCategories = audiences.length === 0
+    ? categories
+    : categories.filter((c) => {
+        const tags = categoryAudiences(c);
+        return tags.length > 0 && tags.some((s) => selectedSlugs.includes(s));
+      });
+
+  const toggleAudience = (id) => {
+    const next = audiences.includes(id) ? audiences.filter((x) => x !== id) : [...audiences, id];
+    patch({ audiences: next, categoryId: null, typeId: null, typeName: '' });
+  };
+
   return (
     <Card>
       <h2 className="text-xl font-display font-bold mb-4">Let’s start with the basics</h2>
       <div className="space-y-5">
         <div>
-          <L>Broad category</L>
-          <Hint>Pick the category your experience fits under.</Hint>
+          <L>Who is this for?</L>
+          <Hint>Pick “All”, or one or more groups — the categories below filter to match.</Hint>
           <div className="flex flex-wrap gap-2">
-            {categories.length === 0 && <span className="text-sm text-ink-muted">Loading…</span>}
-            {categories.map((c) => (
-              <Chip key={c.id} active={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id, typeId: null, typeName: '' })}>{c.name}</Chip>
+            <Chip active={audiences.length === 0} onClick={() => patch({ audiences: [], categoryId: null, typeId: null, typeName: '' })}>All</Chip>
+            {audienceList.map((a) => (
+              <Chip key={a.id} active={audiences.includes(a.id)} onClick={() => toggleAudience(a.id)}>{a.name}</Chip>
             ))}
           </div>
+        </div>
+        <div>
+          <L>Broad category</L>
+          <Hint>{audiences.length === 0 ? 'Choose one. The type list fills from this category.' : 'Showing categories for the selected audience(s).'}</Hint>
+          {filteredCategories.length === 0 ? (
+            <p className="text-sm text-ink-muted italic">No categories for this audience yet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {filteredCategories.map((c) => (
+                <Chip key={c.id} active={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id, typeId: null, typeName: '' })}>{c.name}</Chip>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <L>Type of activity / event</L>
@@ -479,20 +514,30 @@ function Step4({ form, patch }) {
     <>
       <Card>
         <h2 className="text-xl font-display font-bold mb-1">Add photos &amp; videos</h2>
-        <Hint>The first photo is your cover. Great photos increase bookings by up to 3×.</Hint>
+        <Hint>The first photo is your cover. Great photos increase bookings by up to 3×. Add at least a few — 6 works best.</Hint>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {form.photos.map((url, i) => (
-            <div key={i} className="relative aspect-square rounded-xl overflow-hidden border">
-              <img src={fileUrl(url)} alt="" className="w-full h-full object-cover" />
-              {i === 0 && <span className="absolute bottom-1.5 left-1.5 bg-brand text-ink text-[10px] font-bold px-1.5 py-0.5 rounded">Cover</span>}
-              <button type="button" onClick={() => patch({ photos: form.photos.filter((_, idx) => idx !== i) })} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"><X size={13} /></button>
-            </div>
-          ))}
-          <label className="aspect-square rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:border-brand hover:text-brand transition">
-            {uploading ? <Loader2 className="animate-spin" size={22} /> : <ImagePlus size={22} />}
-            <span className="text-xs mt-1 font-medium">{uploading ? 'Uploading…' : 'Add photo'}</span>
-            <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={(e) => { upload([...e.target.files]); e.target.value = ''; }} />
-          </label>
+          {/* At least 6 slots shown by default; a trailing "add more" tile once
+              all 6 are filled — mirrors the app's photo grid. */}
+          {Array.from({ length: Math.max(6, form.photos.length + 1) }).map((_, i) => {
+            const url = form.photos[i];
+            if (url) {
+              return (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden border">
+                  <img src={fileUrl(url)} alt="" className="w-full h-full object-cover" />
+                  {i === 0 && <span className="absolute bottom-1.5 left-1.5 bg-brand text-ink text-[10px] font-bold px-1.5 py-0.5 rounded">Cover</span>}
+                  <button type="button" onClick={() => patch({ photos: form.photos.filter((_, idx) => idx !== i) })} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"><X size={13} /></button>
+                </div>
+              );
+            }
+            const isCover = i === 0 && form.photos.length === 0;
+            return (
+              <label key={i} className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition ${isCover ? 'border-brand/40 bg-brand/5 text-brand' : 'border-slate-300 text-slate-400 hover:border-brand hover:text-brand'}`}>
+                {uploading ? <Loader2 className="animate-spin" size={22} /> : <ImagePlus size={22} />}
+                <span className="text-xs mt-1 font-medium">{uploading ? 'Uploading…' : isCover ? 'Cover' : 'Add photo'}</span>
+                <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={(e) => { upload([...e.target.files]); e.target.value = ''; }} />
+              </label>
+            );
+          })}
         </div>
       </Card>
 
