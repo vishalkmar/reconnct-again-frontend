@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, Calendar, Users, MapPin, Loader2, ChevronRight, Hotel as HotelIcon,
-  Sparkles, Bed, Trophy, FileText,
+  Sparkles, Bed, Trophy, FileText, Compass,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -16,6 +16,8 @@ const TYPE_ICON = {
   room: Bed,
   event: Trophy,
   addon: HotelIcon,
+  experience: Compass,
+  event_activity: Compass,
 };
 
 const TABS = [

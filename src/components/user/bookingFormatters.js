@@ -6,6 +6,8 @@ export const TYPE_LABEL = {
   room: 'Hotel Room',
   event: 'Event',
   addon: 'Add-on Activity',
+  experience: 'Experience',
+  event_activity: 'Activity',
 };
 
 export const STATUS_BADGE = {
