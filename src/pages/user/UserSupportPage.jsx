@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, Paperclip, FileText, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { Send, Paperclip, FileText, Check, CheckCheck, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api.js';
 import { connectSupport, disconnectSupport } from '../../services/supportSocket.js';
@@ -143,13 +143,8 @@ export default function UserSupportPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-4 flex items-center gap-2">
-        <MessageCircle className="text-brand" size={22} />
-        <h1 className="text-xl font-semibold text-ink">Support</h1>
-      </div>
-
-      <div className="flex flex-col h-[calc(100vh-12rem)] bg-white rounded-xl shadow-soft overflow-hidden border border-slate-200">
+    <div className="h-[calc(100vh-1.25rem)]">
+      <div className="flex flex-col h-full bg-white rounded-xl shadow-soft overflow-hidden border border-slate-200">
         <div className="flex items-center gap-3 px-4 h-14 border-b border-slate-200 bg-slate-50">
           <div className="w-9 h-9 rounded-full bg-amber-100 text-brand-dark font-bold flex items-center justify-center">R</div>
           <div>
