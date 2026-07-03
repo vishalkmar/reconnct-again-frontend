@@ -6,6 +6,7 @@ import {
   Wallet,
   Heart,
   Gift,
+  Bell,
   MessageCircle,
   Store,
   X,
@@ -18,6 +19,7 @@ const items = [
   { to: '/dashboard/bookings', label: 'My Bookings', icon: BookOpen },
   { to: '/dashboard/transactions', label: 'Transactions', icon: Wallet },
   { to: '/dashboard/wishlist', label: 'Wishlist', icon: Heart },
+  { to: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { to: '/dashboard/support', label: 'Support', icon: MessageCircle },
   // Refer & Earn is temporarily hidden from the member nav (logic kept intact —
   // the /dashboard/refer route and backend refer-earn flow still work). Un-comment

@@ -16,6 +16,7 @@ import UserSupportPage from './pages/user/UserSupportPage.jsx';
 import UserBookingsPage from './pages/user/UserBookingsPage.jsx';
 import UserTransactionsPage from './pages/user/UserTransactionsPage.jsx';
 import UserWishlistPage from './pages/user/UserWishlistPage.jsx';
+import UserNotificationsPage from './pages/user/UserNotificationsPage.jsx';
 import UserReferEarnPage from './pages/user/UserReferEarnPage.jsx';
 
 // Host ("Switch to Host") — a member manages their own experience listings.
@@ -98,6 +99,7 @@ export default function App() {
           <Route path="bookings" element={<UserBookingsPage />} />
           <Route path="transactions" element={<UserTransactionsPage />} />
           <Route path="wishlist" element={<UserWishlistPage />} />
+          <Route path="notifications" element={<UserNotificationsPage />} />
           <Route path="support" element={<UserSupportPage />} />
           <Route path="refer" element={<UserReferEarnPage />} />
         </Route>

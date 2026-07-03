@@ -1,4 +1,4 @@
-import { Menu, LogOut, ExternalLink, Store } from 'lucide-react';
+import { Menu, LogOut, ExternalLink, Store, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
@@ -35,6 +35,9 @@ export default function UserDashboardTopbar({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link to="/dashboard/notifications" className="p-2 rounded-lg hover:bg-surface-alt text-ink" title="Notifications" aria-label="Notifications">
+            <Bell size={18} />
+          </Link>
           <Link
             to="/host"
             className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold bg-brand text-ink hover:brightness-105 transition"

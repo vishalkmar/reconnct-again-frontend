@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Heart, Loader2, Trash2, MapPin, Calendar, Users, Bed, Sparkles, Trophy, Hotel as HotelIcon,
+  Heart, Loader2, Trash2, MapPin, Calendar, Users, Bed, Sparkles, Trophy, Hotel as HotelIcon, Compass,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -12,6 +12,7 @@ const TYPE_LABELS = {
   room: 'Hotel Rooms',
   event: 'Events',
   addon: 'Add-on Activities',
+  experience: 'Experiences',
 };
 
 const TYPE_ICONS = {
@@ -19,6 +20,7 @@ const TYPE_ICONS = {
   room: Bed,
   event: Trophy,
   addon: HotelIcon,
+  experience: Compass,
 };
 
 export default function UserWishlistPage() {
@@ -71,7 +73,7 @@ export default function UserWishlistPage() {
             <Heart className="text-rose-500" /> Wishlist
             {items.length > 0 && <span className="text-base text-ink-muted font-medium">({items.length})</span>}
           </h1>
-          <p className="text-sm text-ink-muted mt-1">Your saved retreats, rooms, events and add-ons — book any of them in one click.</p>
+          <p className="text-sm text-ink-muted mt-1">Your saved retreats, rooms, events, add-ons and experiences — book any of them in one click.</p>
         </div>
       </div>
 
@@ -204,7 +206,7 @@ function WishlistCard({ item, onRemove, removing }) {
             </div>
           </div>
           <div className="flex flex-col gap-1.5 items-stretch">
-            {item.detailHref && (
+            {item.detailHref && item.type !== 'experience' && (
               <Link to={item.detailHref} className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-surface-alt text-ink text-center transition">
                 View
               </Link>
