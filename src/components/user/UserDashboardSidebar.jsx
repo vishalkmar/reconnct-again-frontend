@@ -7,6 +7,7 @@ import {
   Heart,
   Gift,
   MessageCircle,
+  Store,
   X,
 } from 'lucide-react';
 import useSiteLogo from '../../hooks/useSiteLogo.js';
@@ -66,6 +67,17 @@ export default function UserDashboardSidebar({ open, onClose }) {
               <item.icon size={18} /> {item.label}
             </NavLink>
           ))}
+
+          {/* Switch to hosting — same account, manage your own experiences. */}
+          <div className="pt-3 mt-3 border-t border-white/10">
+            <Link
+              to="/host"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold bg-brand/15 text-brand hover:bg-brand hover:text-ink transition"
+            >
+              <Store size={18} /> Switch to Host
+            </Link>
+          </div>
         </nav>
       </aside>
     </>

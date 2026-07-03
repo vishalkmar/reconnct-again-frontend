@@ -24,7 +24,7 @@ api.interceptors.response.use(
   (err) => {
     const status = err.response?.status;
     const url = err.config?.url || '';
-    const isUserRoute = url.includes('/user-auth') || url.includes('/users') || url.includes('/bookings/me') || url.includes('/wishlist');
+    const isUserRoute = url.includes('/user-auth') || url.includes('/users') || url.includes('/bookings/me') || url.includes('/wishlist') || url.includes('/host');
 
     if (status === 401) {
       if (isUserRoute && localStorage.getItem('user_token')) {

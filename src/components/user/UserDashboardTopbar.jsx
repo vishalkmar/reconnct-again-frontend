@@ -1,4 +1,4 @@
-import { Menu, LogOut, ExternalLink } from 'lucide-react';
+import { Menu, LogOut, ExternalLink, Store } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
@@ -36,8 +36,14 @@ export default function UserDashboardTopbar({ onMenuClick }) {
 
         <div className="flex items-center gap-3">
           <Link
+            to="/host"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold bg-brand text-ink hover:brightness-105 transition"
+          >
+            <Store size={14} /> Switch to Host
+          </Link>
+          <Link
             to="/"
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border hover:bg-surface-alt"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border hover:bg-surface-alt"
           >
             <ExternalLink size={14} /> View site
           </Link>

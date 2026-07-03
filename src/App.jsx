@@ -18,6 +18,13 @@ import UserTransactionsPage from './pages/user/UserTransactionsPage.jsx';
 import UserWishlistPage from './pages/user/UserWishlistPage.jsx';
 import UserReferEarnPage from './pages/user/UserReferEarnPage.jsx';
 
+// Host ("Switch to Host") — a member manages their own experience listings.
+import HostLayout from './layouts/HostLayout.jsx';
+import HostDashboardPage from './pages/host/HostDashboardPage.jsx';
+import HostListingsPage from './pages/host/HostListingsPage.jsx';
+import HostListingFormPage from './pages/host/HostListingFormPage.jsx';
+import HostProfilePage from './pages/host/HostProfilePage.jsx';
+
 // Booking flow (kept — part of the member experience / payment via Cashfree)
 import BookingPreviewPage from './pages/user/BookingPreviewPage.jsx';
 import BookingCheckoutPage from './pages/user/BookingCheckoutPage.jsx';
@@ -93,6 +100,22 @@ export default function App() {
           <Route path="wishlist" element={<UserWishlistPage />} />
           <Route path="support" element={<UserSupportPage />} />
           <Route path="refer" element={<UserReferEarnPage />} />
+        </Route>
+
+        {/* Host mode — same member account, hosting their own experiences */}
+        <Route
+          path="/host"
+          element={
+            <UserProtectedRoute>
+              <HostLayout />
+            </UserProtectedRoute>
+          }
+        >
+          <Route index element={<HostDashboardPage />} />
+          <Route path="listings" element={<HostListingsPage />} />
+          <Route path="listings/new" element={<HostListingFormPage />} />
+          <Route path="listings/:id/edit" element={<HostListingFormPage />} />
+          <Route path="profile" element={<HostProfilePage />} />
         </Route>
 
         {/* Admin — Main dashboard (bookings, users, transactions) */}
