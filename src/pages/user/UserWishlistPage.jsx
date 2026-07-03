@@ -47,7 +47,7 @@ export default function UserWishlistPage() {
   const handleRemove = async (item) => {
     setRemovingId(item.wishlistId);
     try {
-      await api.delete('/wishlist', { data: { entityType: item.type, entityId: item.id } });
+      await api.delete('/wishlist', { data: { entityType: item.type, entityId: item.id }, params: { entityType: item.type, entityId: item.id } });
       setItems((prev) => prev.filter((x) => x.wishlistId !== item.wishlistId));
       refresh();
       toast.success('Removed from wishlist');

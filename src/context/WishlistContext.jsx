@@ -73,7 +73,7 @@ export const WishlistProvider = ({ children }) => {
 
       try {
         if (wasWished) {
-          await api.delete('/wishlist', { data: { entityType: type, entityId: id } });
+          await api.delete('/wishlist', { data: { entityType: type, entityId: id }, params: { entityType: type, entityId: id } });
           if (opts.silent !== true) toast.success('Removed from wishlist');
         } else {
           await api.post('/wishlist', { entityType: type, entityId: id });
