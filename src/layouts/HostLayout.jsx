@@ -9,8 +9,11 @@ export default function HostLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useUserAuth();
   const navigate = useNavigate();
-  // The listing wizard runs edge-to-edge; everything else gets normal padding.
-  const isWizard = /\/host\/listings\/(new|[^/]+\/edit)/.test(useLocation().pathname);
+  const path = useLocation().pathname;
+  // The listing wizard runs edge-to-edge; support chat runs full-bleed with a
+  // tiny margin; everything else gets normal padding.
+  const isWizard = /\/host\/listings\/(new|[^/]+\/edit)/.test(path);
+  const isChat = path.startsWith('/host/support');
 
   const handleLogout = () => {
     logout();
@@ -45,7 +48,7 @@ export default function HostLayout() {
             </div>
           </div>
         </header>
-        <main className={isWizard ? 'flex-1 p-0' : 'flex-1 p-4 md:p-8'}>
+        <main className={isWizard ? 'flex-1 p-0' : isChat ? 'flex-1 p-2.5 overflow-hidden' : 'flex-1 p-4 md:p-8'}>
           <Outlet />
         </main>
       </div>

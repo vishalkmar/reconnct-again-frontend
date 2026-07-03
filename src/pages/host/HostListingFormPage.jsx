@@ -171,20 +171,26 @@ function Step1({ form, patch, categories, types }) {
       <div className="space-y-5">
         <div>
           <L>Broad category</L>
-          <select className="win" value={form.categoryId || ''} onChange={(e) => patch({ categoryId: Number(e.target.value) || null, typeId: null, typeName: '' })}>
-            <option value="">Select a category…</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <Hint>Pick the category your experience fits under.</Hint>
+          <div className="flex flex-wrap gap-2">
+            {categories.length === 0 && <span className="text-sm text-ink-muted">Loading…</span>}
+            {categories.map((c) => (
+              <Chip key={c.id} active={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id, typeId: null, typeName: '' })}>{c.name}</Chip>
+            ))}
+          </div>
         </div>
         <div>
           <L>Type of activity / event</L>
-          <select className="win" value={form.typeId || ''} disabled={!form.categoryId} onChange={(e) => {
-            const t = types.find((x) => x.id === Number(e.target.value));
-            patch({ typeId: t ? t.id : null, typeName: t ? t.name : '' });
-          }}>
-            <option value="">{form.categoryId ? 'Select a type…' : 'Pick a category first'}</option>
-            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          {!form.categoryId ? (
+            <p className="text-sm text-ink-muted">Pick a category first.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {types.length === 0 && <span className="text-sm text-ink-muted">No types — loading…</span>}
+              {types.map((t) => (
+                <Chip key={t.id} active={form.typeId === t.id} onClick={() => patch({ typeId: t.id, typeName: t.name })}>{t.name}</Chip>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <L>Experience title</L>

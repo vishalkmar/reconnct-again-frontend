@@ -13,8 +13,10 @@ const dayLabel = (d) => {
   return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-// Website member support — a single thread with the reconnct team (user queue).
-export default function UserSupportPage() {
+// Website member support — a single thread with the reconnct team. `queue`
+// selects the traveller ('user') or host ('supplier') conversation; the host
+// dashboard reuses this same component with queue="supplier".
+export default function UserSupportPage({ queue = 'user' }) {
   const [conv, setConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -38,7 +40,7 @@ export default function UserSupportPage() {
     let alive = true;
     (async () => {
       try {
-        const { data } = await api.get('/support/me/conversation', { params: { queue: 'user' } });
+        const { data } = await api.get('/support/me/conversation', { params: { queue } });
         const d = data.data || data;
         if (!alive) return;
         setConv(d.conversation);
@@ -57,7 +59,7 @@ export default function UserSupportPage() {
       const onConnect = () => {
         if (convIdRef.current) s.emit('support:join', { conversationId: convIdRef.current });
         if (hadConnected) {
-          api.get('/support/me/conversation', { params: { queue: 'user' } })
+          api.get('/support/me/conversation', { params: { queue } })
             .then(({ data }) => setMessages((data.data || data).messages || [])).catch(() => {});
         }
         hadConnected = true;
@@ -116,12 +118,12 @@ export default function UserSupportPage() {
     const failMark = () => setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, _pending: false, _failed: true } : m)));
 
     if (s && s.connected) {
-      s.emit('support:message', { queue: 'user', conversationId: convIdRef.current, body, attachments, tempId }, (res) => {
+      s.emit('support:message', { queue, conversationId: convIdRef.current, body, attachments, tempId }, (res) => {
         if (res?.error) { toast.error('Message failed'); failMark(); }
         else if (res?.message) settle(res.message);
       });
     } else {
-      api.post('/support/me/messages', { queue: 'user', body, attachments })
+      api.post('/support/me/messages', { queue, body, attachments })
         .then(({ data }) => settle((data.data || data).message))
         .catch(() => { toast.error('Message failed'); failMark(); });
     }

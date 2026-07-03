@@ -1,11 +1,13 @@
 import { Link, NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListChecks, PlusCircle, UserCircle, ArrowLeft, X } from 'lucide-react';
+import { LayoutDashboard, ListChecks, PlusCircle, UserCircle, Wallet, MessageCircle, ArrowLeft, X } from 'lucide-react';
 import useSiteLogo from '../../hooks/useSiteLogo.js';
 
 const items = [
   { to: '/host', label: 'Host Dashboard', icon: LayoutDashboard, end: true },
   { to: '/host/listings', label: 'My Listings', icon: ListChecks },
   { to: '/host/listings/new', label: 'Create Listing', icon: PlusCircle },
+  { to: '/host/transactions', label: 'Transactions', icon: Wallet },
+  { to: '/host/support', label: 'Support', icon: MessageCircle },
   { to: '/host/profile', label: 'Host Profile', icon: UserCircle },
 ];
 

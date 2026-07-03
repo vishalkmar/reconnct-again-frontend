@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
@@ -86,6 +86,9 @@ export default function HostListingsPage() {
                     {l.price ? `₹${Number(l.price).toLocaleString('en-IN')}` : '—'}<span className="text-xs font-normal text-ink-muted"> / {l.priceUnit}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                    <Link to={`/host/listings/${l.id}/bookings`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition" title="Bookings">
+                      <CalendarCheck size={14} />
+                    </Link>
                     <Link to={`/host/listings/${l.id}/edit`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                       <Pencil size={14} /> Edit
                     </Link>
