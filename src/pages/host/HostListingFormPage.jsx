@@ -298,7 +298,7 @@ function Step2({ form, patch }) {
           const upd = (p) => patch({ nearbyPlaces: form.nearbyPlaces.map((x, idx) => (idx === i ? { ...x, ...p } : x)) });
           return (
             <div key={i} className="flex gap-2 mb-2">
-              <input className="win flex-1" value={it.name} onChange={(e) => upd({ name: e.target.value })} placeholder="Place" />
+              <input className="win flex-1" value={it.name} onChange={(e) => upd({ name: e.target.value })} placeholder="Place name" />
               <input className="win w-20" value={it.distance} onChange={(e) => upd({ distance: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" />
               <select className="win w-24" value={it.unit || 'km'} onChange={(e) => upd({ unit: e.target.value })}>
                 <option value="km">km</option><option value="min">min</option><option value="hr">hrs</option>
