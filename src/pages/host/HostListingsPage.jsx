@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
@@ -13,6 +13,7 @@ export default function HostListingsPage() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(null);
+  const [query, setQuery] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -22,6 +23,18 @@ export default function HostListingsPage() {
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
+
+  // Search by name, location or price — client-side, over the host's own
+  // (small) listing set.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return listings;
+    return listings.filter((l) => (
+      (l.title || '').toLowerCase().includes(q)
+      || (l.city || '').toLowerCase().includes(q)
+      || String(l.price || '').includes(q)
+    ));
+  }, [listings, query]);
 
   const remove = async (id) => {
     if (!window.confirm('Delete this listing? This cannot be undone.')) return;
@@ -49,6 +62,24 @@ export default function HostListingsPage() {
         </Link>
       </div>
 
+      {listings.length > 0 && (
+        <div className="relative mb-5 max-w-md">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, location or price…"
+            className="w-full pl-10 pr-9 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+          />
+          {query && (
+            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink" aria-label="Clear search">
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-20 text-slate-400"><Loader2 className="animate-spin" size={24} /></div>
       ) : listings.length === 0 ? (
@@ -62,9 +93,13 @@ export default function HostListingsPage() {
             <PlusCircle size={18} /> Create Listing
           </Link>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-soft p-10 text-center text-ink-muted">
+          No listings match "{query}".
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {listings.map((l) => {
+          {filtered.map((l) => {
             const badge = l.isPublished ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' } : (STATUS_BADGE[l.status] || STATUS_BADGE.draft);
             return (
               <div key={l.id} className="bg-white rounded-2xl shadow-soft overflow-hidden flex flex-col">
@@ -86,13 +121,13 @@ export default function HostListingsPage() {
                     {l.price ? `₹${Number(l.price).toLocaleString('en-IN')}` : '—'}<span className="text-xs font-normal text-ink-muted"> / {l.priceUnit}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                    <Link to={`/host/listings/${l.id}/bookings`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition" title="Bookings">
-                      <CalendarCheck size={14} />
-                    </Link>
-                    <Link to={`/host/listings/${l.id}/edit`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                    <Link to={`/host/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                       <Pencil size={14} /> Edit
                     </Link>
-                    <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
+                    <Link to={`/host/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
+                      <CalendarCheck size={15} /> See Booking
+                    </Link>
+                    <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
                       {removing === l.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>
                   </div>
