@@ -62,7 +62,7 @@ function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 z-40">
+        <div className="absolute right-0 mt-2 w-[26rem] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 z-40">
           <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm">Notifications</div>
           {items.length === 0 ? (
             <div className="px-4 py-6 text-sm text-ink-muted text-center">Nothing yet</div>
@@ -74,9 +74,9 @@ function NotificationBell() {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${tint}`}>
                   <Icon size={15} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-ink">{n.title}</div>
-                  <div className="text-xs text-ink-muted truncate">{n.body}</div>
+                  <div className="text-xs text-ink-muted break-words">{n.body}</div>
                   <div className="text-[11px] text-ink-muted mt-0.5">{timeAgo(n.at)}</div>
                 </div>
               </div>
