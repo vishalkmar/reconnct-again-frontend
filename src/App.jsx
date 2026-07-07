@@ -28,6 +28,8 @@ import HostProfilePage from './pages/host/HostProfilePage.jsx';
 import HostTransactionsPage from './pages/host/HostTransactionsPage.jsx';
 import HostSupportPage from './pages/host/HostSupportPage.jsx';
 import HostListingBookingsPage from './pages/host/HostListingBookingsPage.jsx';
+import HostBookingDetailPage from './pages/host/HostBookingDetailPage.jsx';
+import HostNotificationsPage from './pages/host/HostNotificationsPage.jsx';
 
 // Booking flow (kept — part of the member experience / payment via Cashfree)
 import BookingPreviewPage from './pages/user/BookingPreviewPage.jsx';
@@ -121,6 +123,8 @@ export default function App() {
           <Route path="listings/new" element={<HostListingFormPage />} />
           <Route path="listings/:id/edit" element={<HostListingFormPage />} />
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage />} />
+          <Route path="bookings/:id" element={<HostBookingDetailPage />} />
+          <Route path="notifications" element={<HostNotificationsPage />} />
           <Route path="transactions" element={<HostTransactionsPage />} />
           <Route path="support" element={<HostSupportPage />} />
           <Route path="profile" element={<HostProfilePage />} />

@@ -110,7 +110,7 @@ export default function HostListingBookingsPage() {
           {shown.map((b) => {
             const pill = BOOKING_PILL[b.status] || BOOKING_PILL.upcoming;
             return (
-              <div key={b.id} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3">
+              <Link key={b.id} to={`/host/bookings/${b.id}`} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3 hover:shadow-md transition">
                 <div className="min-w-0">
                   <div className="font-semibold text-ink truncate">{b.guest || 'Guest'}</div>
                   <div className="text-xs text-ink-muted">{b.date} · {b.guests} guest(s)</div>
@@ -119,7 +119,7 @@ export default function HostListingBookingsPage() {
                   <div className="font-bold text-brand-dark">₹{Number(b.amount || 0).toLocaleString('en-IN')}</div>
                   <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${pill.cls}`}>{pill.label}</span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
