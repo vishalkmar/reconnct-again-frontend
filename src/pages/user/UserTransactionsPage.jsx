@@ -10,9 +10,13 @@ import {
   TYPE_LABEL, fmtMoney, fmtDateTime, isPaid,
 } from '../../components/user/bookingFormatters.js';
 
+// Payment status, not the experience's — a transaction is "Completed" the
+// moment money is actually paid, regardless of whether the experience itself
+// has happened yet (My Bookings' Upcoming/Completed tabs are for that).
 const TABS = [
   { key: 'all', label: 'All', match: () => true },
-  { key: 'paid', label: 'Payments', match: (b) => b.status === 'confirmed' || b.status === 'completed' },
+  { key: 'pending', label: 'Pending', match: (b) => b.status === 'pending_payment' },
+  { key: 'completed', label: 'Completed', match: (b) => b.status === 'confirmed' || b.status === 'completed' },
   { key: 'refunded', label: 'Refunds', match: (b) => b.status === 'refunded' },
 ];
 
