@@ -3,6 +3,11 @@ import { UploadCloud, X, FileVideo, Link2, Clipboard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
+// Global rule: every image upload on the platform must be under 5MB (videos
+// keep their own, more generous limit — this check only applies to images).
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_MB = 5;
+
 /**
  * Reusable upload dropzone — click-to-pick, drag-and-drop, paste an image
  * from the clipboard, AND paste an image URL (server-proxied so CORS can't
@@ -77,8 +82,16 @@ export default function Dropzone({
 
   // De-dupe by name+size so re-picking the same file doesn't double it.
   const appendFiles = async (incoming) => {
-    const list = Array.from(incoming).filter(Boolean);
+    let list = Array.from(incoming).filter(Boolean);
     if (!list.length) return;
+    if (!isVideoMode) {
+      const oversized = list.filter((f) => f.size > MAX_IMAGE_BYTES);
+      if (oversized.length) {
+        oversized.forEach((f) => toast.error(`"${f.name}" is ${(f.size / (1024 * 1024)).toFixed(1)}MB — images must be smaller than ${MAX_IMAGE_MB}MB.`));
+        list = list.filter((f) => f.size <= MAX_IMAGE_BYTES);
+      }
+      if (!list.length) return;
+    }
     if (instant) {
       setUploading(true);
       try {
@@ -225,7 +238,7 @@ export default function Dropzone({
                   : (placeholder || (multiple ? 'Drag & drop files, or click to browse' : 'Drag & drop a file, or click to browse')))}
         </div>
         <p className="text-xs text-ink-muted mt-1">
-          {subLabel || (isVideoMode ? 'Videos: MP4, WebM, MOV (max 50MB)' : 'Images: JPG, PNG, WebP, GIF, SVG')}
+          {subLabel || (isVideoMode ? 'Videos: MP4, WebM, MOV (max 50MB)' : `Images: JPG, PNG, WebP, GIF, SVG · max ${MAX_IMAGE_MB}MB`)}
           {' · '}<span className="inline-flex items-center gap-0.5"><Clipboard size={10} /> paste works too</span>
         </p>
         <input

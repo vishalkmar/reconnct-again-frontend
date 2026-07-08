@@ -382,7 +382,7 @@ export default function TrainerFormPage() {
               onChange={setPhoto}
               existingUrl={trainer?.photo ? fileUrl(trainer.photo) : ''}
               placeholder="Upload trainer photo"
-              subLabel="Square ratio looks best (e.g. 600×600)"
+              subLabel="Square ratio looks best (e.g. 600×600) · max 5MB"
             />
           </Section>
 

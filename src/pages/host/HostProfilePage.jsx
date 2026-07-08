@@ -4,6 +4,9 @@ import { Loader2, Save, Camera, Building2 } from 'lucide-react';
 import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 
+// Global rule: every image upload must be under 5MB.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 const initialForm = (user) => ({
   name: user?.name || '',
   company: user?.company || '',
@@ -28,6 +31,10 @@ export default function HostProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!/^image\//.test(file.type)) { toast.error('Please choose an image'); return; }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(`Image is ${(file.size / (1024 * 1024)).toFixed(1)}MB — please choose one smaller than 5MB.`);
+      return;
+    }
     setUploading(true);
     try {
       const fd = new FormData();

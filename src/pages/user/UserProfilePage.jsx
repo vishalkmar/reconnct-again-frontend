@@ -5,6 +5,9 @@ import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
 
+// Global rule: every image upload must be under 5MB.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 const GENDERS = [
   { value: '', label: '—' },
   { value: 'male', label: 'Male' },
@@ -53,6 +56,10 @@ export default function UserProfilePage() {
     if (!file) return;
     if (!/^image\//.test(file.type)) {
       toast.error('Please choose an image file');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(`Image is ${(file.size / (1024 * 1024)).toFixed(1)}MB — please choose one smaller than 5MB.`);
       return;
     }
     setUploading(true);

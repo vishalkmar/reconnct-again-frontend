@@ -340,7 +340,7 @@ function ChecklistFormModal({ initial, onClose, onSaved }) {
               existingUrl={!clearIconUrl && initial.iconUrl ? fileUrl(initial.iconUrl) : ''}
               onClearExisting={() => setClearIconUrl(true)}
               placeholder="Drop an icon image (PNG/SVG)"
-              subLabel="Custom uploads override the default icon"
+              subLabel="Custom uploads override the default icon · max 5MB"
             />
           </div>
 

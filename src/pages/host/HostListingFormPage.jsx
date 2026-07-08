@@ -7,6 +7,9 @@ import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { categoryAudiences } from '../../data/categoryAudiences';
 
+// Global rule: every image upload must be under 5MB.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 const STEPS = ['Basic info', 'Description', 'Pricing', 'Photos'];
 const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
 const FACILITIES = ['Restrooms', 'Parking', 'Locker', 'Wifi', 'Cafe', 'First Aid', 'Changing Room', 'Guide', 'Equipment'];
@@ -491,6 +494,12 @@ function Step4({ form, patch }) {
 
   const upload = async (files) => {
     if (!files?.length) return;
+    const oversized = files.filter((f) => f.size > MAX_IMAGE_BYTES);
+    if (oversized.length) {
+      oversized.forEach((f) => toast.error(`"${f.name}" is ${(f.size / (1024 * 1024)).toFixed(1)}MB — images must be smaller than 5MB.`));
+      files = files.filter((f) => f.size <= MAX_IMAGE_BYTES);
+    }
+    if (!files.length) return;
     setUploading(true);
     try {
       const urls = [];
@@ -514,7 +523,7 @@ function Step4({ form, patch }) {
     <>
       <Card>
         <h2 className="text-xl font-display font-bold mb-1">Add photos &amp; videos</h2>
-        <Hint>The first photo is your cover. Great photos increase bookings by up to 3×. Add at least a few — 6 works best.</Hint>
+        <Hint>The first photo is your cover. Great photos increase bookings by up to 3×. Add at least a few — 6 works best. Each image must be under 5MB.</Hint>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {/* At least 6 slots shown by default; a trailing "add more" tile once
               all 6 are filled — mirrors the app's photo grid. */}

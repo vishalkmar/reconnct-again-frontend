@@ -154,7 +154,7 @@ function FeaturedTabCard({ tab, onSaved }) {
             existingUrl={!clearImage && tab.imageUrl ? fileUrl(tab.imageUrl) : ''}
             onClearExisting={() => setClearImage(true)}
             placeholder="Upload banner image"
-            subLabel="Wide-format works best (1600×600 or similar)"
+            subLabel="Wide-format works best (1600×600 or similar) · max 5MB"
           />
         </div>
 
