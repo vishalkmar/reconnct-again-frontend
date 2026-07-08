@@ -440,16 +440,7 @@ function Availability({ form, patch }) {
 
 function DateSlots({ row, dur, onChange, onRemove }) {
   const [start, setStart] = useState('09:00');
-  const [winStart, setWinStart] = useState('09:00');
-  const [winEnd, setWinEnd] = useState('17:00');
   const add = (s) => { if (row.slots.some((x) => x.start === s)) return; onChange([...row.slots, { start: s, end: toHHMM(toMin(s) + dur) }].sort((a, b) => toMin(a.start) - toMin(b.start))); };
-  const generate = () => {
-    const ws = toMin(winStart); const we = toMin(winEnd);
-    if (we <= ws) { toast.error('End time must be after start'); return; }
-    const merged = [...row.slots];
-    for (let t = ws; t + dur <= we; t += dur) { const s = toHHMM(t); if (!merged.some((x) => x.start === s)) merged.push({ start: s, end: toHHMM(t + dur) }); }
-    onChange(merged.sort((a, b) => toMin(a.start) - toMin(b.start)));
-  };
   return (
     <div className="border rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
@@ -458,16 +449,7 @@ function DateSlots({ row, dur, onChange, onRemove }) {
       </div>
       <div className="flex flex-wrap items-end gap-2 mb-2">
         <div className="text-xs text-ink-muted">
-          Auto-generate:
-          <div className="flex items-center gap-2 mt-1">
-            <input type="time" className="win w-28" value={winStart} onChange={(e) => setWinStart(e.target.value)} />
-            <span>to</span>
-            <input type="time" className="win w-28" value={winEnd} onChange={(e) => setWinEnd(e.target.value)} />
-            <button type="button" onClick={generate} className="px-3 py-2 rounded-lg bg-brand/15 text-brand-dark font-semibold text-sm">Generate</button>
-          </div>
-        </div>
-        <div className="text-xs text-ink-muted">
-          Or add one:
+          Add a slot:
           <div className="flex items-center gap-2 mt-1">
             <input type="time" className="win w-28" value={start} onChange={(e) => setStart(e.target.value)} />
             <button type="button" onClick={() => add(start)} className="px-3 py-2 rounded-lg border font-semibold text-sm inline-flex items-center gap-1"><Plus size={13} /> Add slot</button>
