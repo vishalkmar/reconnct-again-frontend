@@ -5,8 +5,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
-import { categoryAudiences } from '../../data/categoryAudiences';
 import ExperienceScheduling from '../../components/admin/ExperienceScheduling.jsx';
+import ExperienceTaxonomyPicker from '../../components/admin/ExperienceTaxonomyPicker.jsx';
 
 // Global rule: every image upload must be under 5MB.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -23,7 +23,7 @@ const PRICE_METHODS = [
 const MODES = ['offline', 'online', 'hybrid'];
 
 const blank = {
-  audiences: [], categoryId: null, typeId: null, typeName: '',
+  audiences: [], categoryIds: [], typeIds: [],
   name: '', location: '', city: '', nearbyLocation: '', durationLabel: '',
   about: '', mode: 'offline',
   inclusions: [''], facilities: [], nearbyPlaces: [{ name: '', distance: '', unit: 'km' }], faqs: [],
@@ -40,27 +40,9 @@ export default function HostListingFormPage() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(blank);
-  const [audienceList, setAudienceList] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const patch = (p) => setForm((f) => ({ ...f, ...p }));
-
-  // Taxonomy (audiences + categories); types load when a category is picked.
-  useEffect(() => {
-    api.get('/public/taxonomy').then(({ data }) => {
-      const d = data.data || data;
-      setAudienceList(d.audiences || []);
-      setCategories(d.categories || []);
-    }).catch(() => {});
-  }, []);
-  useEffect(() => {
-    if (!form.categoryId) { setTypes([]); return; }
-    api.get('/public/types', { params: { categoryId: form.categoryId } })
-      .then(({ data }) => setTypes((data.data || data).types || []))
-      .catch(() => {});
-  }, [form.categoryId]);
 
   // Existing listing → prefill.
   useEffect(() => {
@@ -74,7 +56,7 @@ export default function HostListingFormPage() {
   }, [editing, id]);
 
   const canNext = useMemo(() => {
-    if (step === 1) return !!form.name.trim() && !!form.categoryId && !!form.typeId;
+    if (step === 1) return !!form.name.trim() && !!form.categoryIds?.length && !!form.typeIds?.length;
     return true;
   }, [step, form]);
 
@@ -123,7 +105,7 @@ export default function HostListingFormPage() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
         <div className="max-w-3xl mx-auto">
-          {step === 1 && <Step1 form={form} patch={patch} audienceList={audienceList} categories={categories} types={types} />}
+          {step === 1 && <Step1 form={form} patch={patch} />}
           {step === 2 && <Step2 form={form} patch={patch} />}
           {step === 3 && <Step3 form={form} patch={patch} />}
           {step === 4 && <Step4 form={form} patch={patch} />}
@@ -169,63 +151,16 @@ function Chip({ active, onClick, children }) {
 }
 
 /* ---------- Step 1 ---------- */
-function Step1({ form, patch, audienceList, categories, types }) {
-  const audiences = form.audiences || [];
-  // "All" (none selected) shows every category; otherwise only categories tagged
-  // with a selected audience (taxonomy value wins, else the fallback map).
-  const selectedSlugs = audienceList.filter((a) => audiences.includes(a.id)).map((a) => a.slug);
-  const filteredCategories = audiences.length === 0
-    ? categories
-    : categories.filter((c) => {
-        const tags = categoryAudiences(c);
-        return tags.length > 0 && tags.some((s) => selectedSlugs.includes(s));
-      });
-
-  const toggleAudience = (id) => {
-    const next = audiences.includes(id) ? audiences.filter((x) => x !== id) : [...audiences, id];
-    patch({ audiences: next, categoryId: null, typeId: null, typeName: '' });
-  };
-
+function Step1({ form, patch }) {
   return (
     <Card>
       <h2 className="text-xl font-display font-bold mb-4">Let’s start with the basics</h2>
       <div className="space-y-5">
-        <div>
-          <L>Who is this for?</L>
-          <Hint>Pick “All”, or one or more groups — the categories below filter to match.</Hint>
-          <div className="flex flex-wrap gap-2">
-            <Chip active={audiences.length === 0} onClick={() => patch({ audiences: [], categoryId: null, typeId: null, typeName: '' })}>All</Chip>
-            {audienceList.map((a) => (
-              <Chip key={a.id} active={audiences.includes(a.id)} onClick={() => toggleAudience(a.id)}>{a.name}</Chip>
-            ))}
-          </div>
-        </div>
-        <div>
-          <L>Broad category</L>
-          <Hint>{audiences.length === 0 ? 'Choose one. The type list fills from this category.' : 'Showing categories for the selected audience(s).'}</Hint>
-          {filteredCategories.length === 0 ? (
-            <p className="text-sm text-ink-muted italic">No categories for this audience yet.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {filteredCategories.map((c) => (
-                <Chip key={c.id} active={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id, typeId: null, typeName: '' })}>{c.name}</Chip>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
-          <L>Type of activity / event</L>
-          {!form.categoryId ? (
-            <p className="text-sm text-ink-muted">Pick a category first.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {types.length === 0 && <span className="text-sm text-ink-muted">No types — loading…</span>}
-              {types.map((t) => (
-                <Chip key={t.id} active={form.typeId === t.id} onClick={() => patch({ typeId: t.id, typeName: t.name })}>{t.name}</Chip>
-              ))}
-            </div>
-          )}
-        </div>
+        <ExperienceTaxonomyPicker
+          source="public"
+          value={{ audiences: form.audiences, categoryIds: form.categoryIds, typeIds: form.typeIds }}
+          onChange={patch}
+        />
         <div>
           <L>Experience title</L>
           <input className="win" value={form.name} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. Sunrise Kayaking at Goa Beach" />

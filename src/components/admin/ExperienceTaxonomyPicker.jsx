@@ -15,8 +15,19 @@ import api from '../../services/api';
  *
  * Controlled via `value = { audiences:number[], categoryIds:number[], typeIds:number[] }`
  * and `onChange(patch)`.
+ *
+ * `source`:
+ *   - 'admin'  (default) — reads/writes /experience-taxonomy/* (admin-auth),
+ *     and lets the admin add new audiences/categories/types inline.
+ *   - 'public' — reads the same taxonomy read-only via the no-auth
+ *     /public/taxonomy + /public/types (so a host, not an admin, can use this
+ *     same picker in their own listing wizard); no inline "add" — creating
+ *     new global taxonomy entries stays an admin-only, curatorial action.
  */
-export default function ExperienceTaxonomyPicker({ value, onChange, hideAudiences = false, hideCategoryType = false }) {
+export default function ExperienceTaxonomyPicker({
+  value, onChange, hideAudiences = false, hideCategoryType = false, source = 'admin',
+}) {
+  const isPublic = source === 'public';
   const audiences = value?.audiences || [];
   const categoryIds = value?.categoryIds || [];
   const typeIds = value?.typeIds || [];
@@ -28,27 +39,36 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
 
   const loadAudiences = useCallback(async () => {
     try {
+      if (isPublic) {
+        const res = await api.get('/public/taxonomy');
+        const d = res.data?.data || res.data;
+        setAudienceList(d?.audiences || []);
+        setCategoryList(d?.categories || []);
+        return;
+      }
       const res = await api.get('/experience-taxonomy/audiences');
       setAudienceList(res.data?.data?.items || []);
     } catch { /* ignore */ }
-  }, []);
+  }, [isPublic]);
 
   const loadCategories = useCallback(async () => {
+    if (isPublic) return; // fetched together with audiences above
     try {
       const res = await api.get('/experience-taxonomy/categories');
       setCategoryList(res.data?.data?.items || []);
     } catch { /* ignore */ }
-  }, []);
+  }, [isPublic]);
 
   // Union of types across every selected category.
   const loadTypes = useCallback(async (catIds) => {
     if (!catIds.length) { setTypeList([]); return; }
     setLoadingTypes(true);
     try {
-      const res = await api.get('/experience-taxonomy/types', { params: { categoryIds: catIds.join(',') } });
-      setTypeList(res.data?.data?.items || []);
+      const res = await api.get(isPublic ? '/public/types' : '/experience-taxonomy/types', { params: { categoryIds: catIds.join(',') } });
+      const items = isPublic ? (res.data?.data?.types || res.data?.types) : res.data?.data?.items;
+      setTypeList(items || []);
     } catch { /* ignore */ } finally { setLoadingTypes(false); }
-  }, []);
+  }, [isPublic]);
 
   useEffect(() => { loadAudiences(); loadCategories(); }, [loadAudiences, loadCategories]);
   useEffect(() => { loadTypes(categoryIds); }, [categoryIds.join(','), loadTypes]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -129,15 +149,17 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
               {audiences.includes(a.id) && <Check size={13} className="ml-1" />}
             </Chip>
           ))}
-          <InlineAdd
-            label="Add audience"
-            onCreate={async (name) => {
-              const res = await api.post('/experience-taxonomy/audiences', { name });
-              const item = res.data?.data?.item;
-              await loadAudiences();
-              if (item) onChange({ audiences: [...audiences, item.id] });
-            }}
-          />
+          {!isPublic && (
+            <InlineAdd
+              label="Add audience"
+              onCreate={async (name) => {
+                const res = await api.post('/experience-taxonomy/audiences', { name });
+                const item = res.data?.data?.item;
+                await loadAudiences();
+                if (item) onChange({ audiences: [...audiences, item.id] });
+              }}
+            />
+          )}
         </ChipRow>
       </Section>
       )}
@@ -147,7 +169,7 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
       <Section icon={Layers} title="Broad category" hint={audiences.length === 0 ? 'Pick one or more — the type list below fills from all of them.' : 'Showing categories for the selected audience(s).'}>
         <ChipRow>
           {filteredCategories.length === 0 && (
-            <span className="text-sm text-ink-muted italic">No categories for this audience yet — add one below.</span>
+            <span className="text-sm text-ink-muted italic">No categories for this audience yet{isPublic ? '.' : ' — add one below.'}</span>
           )}
           {filteredCategories.map((c) => (
             <Chip key={c.id} active={categoryIds.includes(c.id)} onClick={() => toggleCategory(c.id)}>
@@ -155,17 +177,19 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
               {categoryIds.includes(c.id) && <Check size={13} className="ml-1" />}
             </Chip>
           ))}
-          <InlineAdd
-            label="Add category"
-            onCreate={async (name) => {
-              // Tag the new category with the current audience selection so it
-              // immediately shows under that audience's filter.
-              const res = await api.post('/experience-taxonomy/categories', { name, audiences: selectedSlugs });
-              const item = res.data?.data?.item;
-              await loadCategories();
-              if (item) onChange({ categoryIds: [...categoryIds, item.id] });
-            }}
-          />
+          {!isPublic && (
+            <InlineAdd
+              label="Add category"
+              onCreate={async (name) => {
+                // Tag the new category with the current audience selection so it
+                // immediately shows under that audience's filter.
+                const res = await api.post('/experience-taxonomy/categories', { name, audiences: selectedSlugs });
+                const item = res.data?.data?.item;
+                await loadCategories();
+                if (item) onChange({ categoryIds: [...categoryIds, item.id] });
+              }}
+            />
+          )}
         </ChipRow>
       </Section>
 
@@ -173,7 +197,7 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
       <Section
         icon={ListTree}
         title="Type of activity / event"
-        hint={categoryIds.length ? 'Pick one or more specific types, or add a custom one.' : 'Select a broad category first.'}
+        hint={categoryIds.length ? `Pick one or more specific types${isPublic ? '.' : ', or add a custom one.'}` : 'Select a broad category first.'}
       >
         {!categoryIds.length ? (
           <div className="text-sm text-ink-muted italic">Choose a broad category above to see its types.</div>
@@ -187,18 +211,20 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
                 {typeIds.includes(t.id) && <Check size={13} className="ml-1" />}
               </Chip>
             ))}
-            <InlineAdd
-              label="Add type"
-              onCreate={async (name) => {
-                // New custom types need exactly one parent category — the most
-                // recently selected one.
-                const targetCategoryId = categoryIds[categoryIds.length - 1];
-                const res = await api.post('/experience-taxonomy/types', { name, categoryId: targetCategoryId });
-                const item = res.data?.data?.item;
-                await loadTypes(categoryIds);
-                if (item) onChange({ typeIds: [...typeIds, item.id] });
-              }}
-            />
+            {!isPublic && (
+              <InlineAdd
+                label="Add type"
+                onCreate={async (name) => {
+                  // New custom types need exactly one parent category — the most
+                  // recently selected one.
+                  const targetCategoryId = categoryIds[categoryIds.length - 1];
+                  const res = await api.post('/experience-taxonomy/types', { name, categoryId: targetCategoryId });
+                  const item = res.data?.data?.item;
+                  await loadTypes(categoryIds);
+                  if (item) onChange({ typeIds: [...typeIds, item.id] });
+                }}
+              />
+            )}
           </ChipRow>
         )}
       </Section>
