@@ -105,7 +105,12 @@ export default function ExperienceViewPage() {
 
       <div className="flex items-center gap-2 flex-wrap mb-2">
         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand/10 text-brand capitalize">{e.status}</span>
-        {e.category?.name && <span className="text-xs px-2 py-0.5 rounded-full bg-surface-alt text-ink-muted">{e.category.name}{e.type?.name ? ` · ${e.type.name}` : ''}</span>}
+        {(e.categoryItems || []).map((c) => (
+          <span key={c.id} className="text-xs px-2 py-0.5 rounded-full bg-surface-alt text-ink-muted">{c.name}</span>
+        ))}
+        {(e.typeItems || []).map((t) => (
+          <span key={t.id} className="text-xs px-2 py-0.5 rounded-full bg-surface-alt text-ink-muted">{t.name}</span>
+        ))}
         <span className="text-xs px-2 py-0.5 rounded-full bg-surface-alt text-ink-muted capitalize">{e.mode}</span>
       </div>
 

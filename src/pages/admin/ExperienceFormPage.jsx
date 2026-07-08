@@ -28,8 +28,8 @@ const blankPricing = {
 // supplier + audiences + status are shared across all activities in the form.
 const blankActivity = () => ({
   audiences: [],
-  categoryId: null,
-  typeId: null,
+  categoryIds: [],
+  typeIds: [],
   name: '',
   location: '',
   city: '',
@@ -65,8 +65,8 @@ const blank = {
 // Map a server experience record → one activity object.
 const toActivity = (e) => ({
   audiences: Array.isArray(e.audiences) ? e.audiences : [],
-  categoryId: e.categoryId || null,
-  typeId: e.typeId || null,
+  categoryIds: Array.isArray(e.categoryIds) && e.categoryIds.length ? e.categoryIds : (e.categoryId ? [e.categoryId] : []),
+  typeIds: Array.isArray(e.typeIds) && e.typeIds.length ? e.typeIds : (e.typeId ? [e.typeId] : []),
   name: e.name || '',
   location: e.location || '',
   city: e.city || '',
@@ -155,8 +155,8 @@ export default function ExperienceFormPage() {
       const a = acts[i];
       const tag = acts.length > 1 ? ` (activity ${i + 1})` : '';
       if (!a.name.trim()) return toast.error(`Name is required${tag}`);
-      if (!a.categoryId) return toast.error(`Pick a broad category${tag}`);
-      if (!a.typeId) return toast.error(`Pick a type${tag}`);
+      if (!a.categoryIds?.length) return toast.error(`Pick at least one broad category${tag}`);
+      if (!a.typeIds?.length) return toast.error(`Pick at least one type${tag}`);
     }
     setSaving(true);
     try {
@@ -305,7 +305,7 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
       )}
 
       {/* Per-activity: Who is this for? → audience-filtered category → type. */}
-      <ExperienceTaxonomyPicker value={{ audiences: value.audiences, categoryId: value.categoryId, typeId: value.typeId }} onChange={patch} />
+      <ExperienceTaxonomyPicker value={{ audiences: value.audiences, categoryIds: value.categoryIds, typeIds: value.typeIds }} onChange={patch} />
 
       {/* Basics */}
       <div className="space-y-4 pt-2 border-t border-gray-100">

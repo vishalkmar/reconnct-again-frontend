@@ -57,14 +57,14 @@ export default function ExperiencesPage() {
 
   const typeOptions = useMemo(() => {
     const map = new Map();
-    items.forEach((e) => { if (e.type?.id) map.set(e.type.id, e.type.name); });
+    items.forEach((e) => (e.typeItems || []).forEach((t) => map.set(t.id, t.name)));
     return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [items]);
 
   const filtered = items.filter((e) => {
     if (q.trim() && !e.name?.toLowerCase().includes(q.trim().toLowerCase())) return false;
     if (supplierId && String(e.supplier?.id || '') !== String(supplierId)) return false;
-    if (typeId && String(e.type?.id || '') !== String(typeId)) return false;
+    if (typeId && !(e.typeItems || []).some((t) => String(t.id) === String(typeId))) return false;
     return true;
   });
 
@@ -139,7 +139,8 @@ export default function ExperiencesPage() {
                   ) : <span className="text-slate-300">—</span>}
                 </div>
                 <div className="col-span-6 md:col-span-3 text-sm text-ink-muted truncate">
-                  {e.category?.name || '—'}{e.type?.name ? ` · ${e.type.name}` : ''}
+                  {(e.categoryItems || []).map((c) => c.name).join(', ') || '—'}
+                  {(e.typeItems || []).length ? ` · ${e.typeItems.map((t) => t.name).join(', ')}` : ''}
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{e.status}</span>

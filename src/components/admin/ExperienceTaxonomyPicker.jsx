@@ -6,18 +6,20 @@ import api from '../../services/api';
 /**
  * The Reconnct experience cascade (Task 1):
  *   1. Audiences  — multi-select chips  ("Experiences for every you")
- *   2. Category   — single-select chip  (broad "Experience Categories")
- *   3. Type       — dependent single-select, filled from the chosen category
+ *   2. Category   — multi-select chips  (broad "Experience Categories")
+ *   3. Type       — dependent multi-select, filled from the UNION of types
+ *                   across every selected category
  *
  * Every level supports inline "+ Add custom" which POSTs to the taxonomy API
  * and immediately becomes selectable — so the admin never leaves the form.
  *
- * Controlled via `value = { audiences:number[], categoryId, typeId }` and
- * `onChange(patch)`.
+ * Controlled via `value = { audiences:number[], categoryIds:number[], typeIds:number[] }`
+ * and `onChange(patch)`.
  */
 export default function ExperienceTaxonomyPicker({ value, onChange, hideAudiences = false, hideCategoryType = false }) {
   const audiences = value?.audiences || [];
-  const { categoryId = null, typeId = null } = value || {};
+  const categoryIds = value?.categoryIds || [];
+  const typeIds = value?.typeIds || [];
 
   const [audienceList, setAudienceList] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
@@ -38,17 +40,18 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
     } catch { /* ignore */ }
   }, []);
 
-  const loadTypes = useCallback(async (catId) => {
-    if (!catId) { setTypeList([]); return; }
+  // Union of types across every selected category.
+  const loadTypes = useCallback(async (catIds) => {
+    if (!catIds.length) { setTypeList([]); return; }
     setLoadingTypes(true);
     try {
-      const res = await api.get('/experience-taxonomy/types', { params: { categoryId: catId } });
+      const res = await api.get('/experience-taxonomy/types', { params: { categoryIds: catIds.join(',') } });
       setTypeList(res.data?.data?.items || []);
     } catch { /* ignore */ } finally { setLoadingTypes(false); }
   }, []);
 
   useEffect(() => { loadAudiences(); loadCategories(); }, [loadAudiences, loadCategories]);
-  useEffect(() => { loadTypes(categoryId); }, [categoryId, loadTypes]);
+  useEffect(() => { loadTypes(categoryIds); }, [categoryIds.join(','), loadTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleAudience = (id) => {
     const next = audiences.includes(id) ? audiences.filter((x) => x !== id) : [...audiences, id];
@@ -64,31 +67,50 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
   let filteredCategories = audiences.length === 0
     ? categoryList
     : categoryList.filter((c) => isTagged(c) && c.audiences.some((s) => selectedSlugs.includes(s)));
-  // Keep a chosen LEGACY (untagged) category visible so editing older data
-  // doesn't silently lose its category. Tagged-but-mismatched ones are dropped
-  // by the effect below instead.
-  if (audiences.length > 0 && categoryId) {
-    const sel = categoryList.find((c) => c.id === categoryId);
-    if (sel && !isTagged(sel) && !filteredCategories.some((c) => c.id === categoryId)) {
-      filteredCategories = [...filteredCategories, sel];
-    }
+  // Keep chosen LEGACY (untagged) categories visible so editing older data
+  // doesn't silently lose them. Tagged-but-mismatched ones are dropped by the
+  // effect below instead.
+  if (audiences.length > 0 && categoryIds.length) {
+    const missing = categoryList.filter((c) => categoryIds.includes(c.id) && !isTagged(c) && !filteredCategories.some((f) => f.id === c.id));
+    if (missing.length) filteredCategories = [...filteredCategories, ...missing];
   }
 
-  // Drop a TAGGED category that no longer matches the selected audience(s).
+  // Drop any TAGGED selected category that no longer matches the selected audience(s).
   useEffect(() => {
-    if (hideCategoryType || !categoryId || !categoryList.length || !audienceList.length || audiences.length === 0) return;
+    if (hideCategoryType || !categoryIds.length || !categoryList.length || !audienceList.length || audiences.length === 0) return;
     const slugs = audienceList.filter((a) => audiences.includes(a.id)).map((a) => a.slug);
-    const sel = categoryList.find((c) => c.id === categoryId);
-    if (!sel) return;
-    const tagged = Array.isArray(sel.audiences) && sel.audiences.length > 0;
-    if (tagged && !sel.audiences.some((s) => slugs.includes(s))) onChange({ categoryId: null, typeId: null });
+    const stillValid = categoryIds.filter((id) => {
+      const sel = categoryList.find((c) => c.id === id);
+      if (!sel) return true;
+      const tagged = Array.isArray(sel.audiences) && sel.audiences.length > 0;
+      return !tagged || sel.audiences.some((s) => slugs.includes(s));
+    });
+    if (stillValid.length !== categoryIds.length) {
+      const validTypeCategoryIds = new Set(stillValid);
+      const nextTypeIds = typeIds.filter((tid) => {
+        const t = typeList.find((x) => x.id === tid);
+        return t ? validTypeCategoryIds.has(t.categoryId) : true;
+      });
+      onChange({ categoryIds: stillValid, typeIds: nextTypeIds });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audiences.join(','), categoryList.length, audienceList.length]);
 
-  const pickCategory = (id) => {
-    // Changing the broad category invalidates the previously-chosen type.
-    if (id === categoryId) return;
-    onChange({ categoryId: id, typeId: null });
+  const toggleCategory = (id) => {
+    const next = categoryIds.includes(id) ? categoryIds.filter((x) => x !== id) : [...categoryIds, id];
+    // Dropping a category also drops any selected type that belonged only to it.
+    const nextTypeIds = categoryIds.includes(id)
+      ? typeIds.filter((tid) => {
+        const t = typeList.find((x) => x.id === tid);
+        return t ? next.includes(t.categoryId) : true;
+      })
+      : typeIds;
+    onChange({ categoryIds: next, typeIds: nextTypeIds });
+  };
+
+  const toggleType = (id) => {
+    const next = typeIds.includes(id) ? typeIds.filter((x) => x !== id) : [...typeIds, id];
+    onChange({ typeIds: next });
   };
 
   return (
@@ -121,15 +143,16 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
       )}
 
       {!hideCategoryType && (<>
-      {/* 2) Broad category — single */}
-      <Section icon={Layers} title="Broad category" hint={audiences.length === 0 ? 'Choose one. The type list below fills from this category.' : 'Showing categories for the selected audience(s).'}>
+      {/* 2) Broad category — multi */}
+      <Section icon={Layers} title="Broad category" hint={audiences.length === 0 ? 'Pick one or more — the type list below fills from all of them.' : 'Showing categories for the selected audience(s).'}>
         <ChipRow>
           {filteredCategories.length === 0 && (
             <span className="text-sm text-ink-muted italic">No categories for this audience yet — add one below.</span>
           )}
           {filteredCategories.map((c) => (
-            <Chip key={c.id} active={categoryId === c.id} onClick={() => pickCategory(c.id)}>
+            <Chip key={c.id} active={categoryIds.includes(c.id)} onClick={() => toggleCategory(c.id)}>
               {c.icon ? `${c.icon} ` : ''}{c.name}
+              {categoryIds.includes(c.id) && <Check size={13} className="ml-1" />}
             </Chip>
           ))}
           <InlineAdd
@@ -140,37 +163,40 @@ export default function ExperienceTaxonomyPicker({ value, onChange, hideAudience
               const res = await api.post('/experience-taxonomy/categories', { name, audiences: selectedSlugs });
               const item = res.data?.data?.item;
               await loadCategories();
-              if (item) onChange({ categoryId: item.id, typeId: null });
+              if (item) onChange({ categoryIds: [...categoryIds, item.id] });
             }}
           />
         </ChipRow>
       </Section>
 
-      {/* 3) Type — dependent single */}
+      {/* 3) Type — dependent multi, union across every selected category */}
       <Section
         icon={ListTree}
         title="Type of activity / event"
-        hint={categoryId ? 'Pick the specific type, or add a custom one.' : 'Select a broad category first.'}
+        hint={categoryIds.length ? 'Pick one or more specific types, or add a custom one.' : 'Select a broad category first.'}
       >
-        {!categoryId ? (
+        {!categoryIds.length ? (
           <div className="text-sm text-ink-muted italic">Choose a broad category above to see its types.</div>
         ) : loadingTypes ? (
           <div className="text-sm text-ink-muted inline-flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading types…</div>
         ) : (
           <ChipRow>
             {typeList.map((t) => (
-              <Chip key={t.id} active={typeId === t.id} onClick={() => onChange({ typeId: t.id })}>
+              <Chip key={t.id} active={typeIds.includes(t.id)} onClick={() => toggleType(t.id)}>
                 {t.name}
-                {typeId === t.id && <Check size={13} className="ml-1" />}
+                {typeIds.includes(t.id) && <Check size={13} className="ml-1" />}
               </Chip>
             ))}
             <InlineAdd
               label="Add type"
               onCreate={async (name) => {
-                const res = await api.post('/experience-taxonomy/types', { name, categoryId });
+                // New custom types need exactly one parent category — the most
+                // recently selected one.
+                const targetCategoryId = categoryIds[categoryIds.length - 1];
+                const res = await api.post('/experience-taxonomy/types', { name, categoryId: targetCategoryId });
                 const item = res.data?.data?.item;
-                await loadTypes(categoryId);
-                if (item) onChange({ typeId: item.id });
+                await loadTypes(categoryIds);
+                if (item) onChange({ typeIds: [...typeIds, item.id] });
               }}
             />
           </ChipRow>
