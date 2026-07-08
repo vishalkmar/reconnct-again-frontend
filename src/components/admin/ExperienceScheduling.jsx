@@ -324,10 +324,13 @@ function SlotModal({ title, slots, durationMinutes, requireApplyAll = false, onS
   const [applyAll, setApplyAll] = useState(false);
 
   const add = (s, e) => {
-    if (toMin(e) <= toMin(s)) { toast.error('End time must be after start'); return false; }
-    if (list.some((x) => x.start === s && x.end === e)) return false;
+    if (toMin(e) <= toMin(s)) { toast.error('End time must be after start'); return; }
+    if (list.some((x) => x.start === s && x.end === e)) { toast.error('That slot is already added'); return; }
     setList((prev) => [...prev, { start: s, end: e }].sort((a, b) => toMin(a.start) - toMin(b.start)));
-    return true;
+    // Advance the pickers to the NEXT slot so repeated clicks build a
+    // back-to-back sequence (9-10, 10-11, ...) without retyping times.
+    setStart(e);
+    setEnd(toHHMM(toMin(e) + dur));
   };
 
   const remove = (i) => setList(list.filter((_, idx) => idx !== i));

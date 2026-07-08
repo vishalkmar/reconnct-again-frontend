@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ChevronLeft, Loader2, Plus, Trash2, X, Upload, ImagePlus, Clock, CalendarDays,
+  ChevronLeft, Loader2, Plus, Trash2, X, Upload, ImagePlus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { categoryAudiences } from '../../data/categoryAudiences';
+import ExperienceScheduling from '../../components/admin/ExperienceScheduling.jsx';
 
 // Global rule: every image upload must be under 5MB.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -29,13 +30,8 @@ const blank = {
   termsConditions: '', privacyPolicy: '', refundCancellationPolicy: '',
   priceMethod: 'per_person', adultPrice: '', childrenEnabled: false, childBands: [],
   capacity: 8, durationHours: 0, durationMinutes: 0,
-  dateRows: [], photos: [], videos: [],
+  schedule: { dates: [] }, photos: [], videos: [],
 };
-
-const pad = (n) => String(n).padStart(2, '0');
-const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-const toHHMM = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
-const fmtTime = (s) => { const [h, m] = s.split(':').map(Number); const ap = h < 12 ? 'AM' : 'PM'; return `${h % 12 || 12}:${pad(m)} ${ap}`; };
 
 export default function HostListingFormPage() {
   const { id } = useParams();
@@ -402,70 +398,15 @@ function Step3({ form, patch }) {
         </div>
       </Card>
 
-      <Card><Availability form={form} patch={patch} /></Card>
+      <Card>
+        <L>Availability &amp; scheduling</L>
+        <ExperienceScheduling
+          value={form.schedule}
+          onChange={(s) => patch({ schedule: s })}
+          durationMinutes={(Number(form.durationHours) || 0) * 60 + (Number(form.durationMinutes) || 0)}
+        />
+      </Card>
     </>
-  );
-}
-
-function Availability({ form, patch }) {
-  const [newDate, setNewDate] = useState('');
-  const dur = (Number(form.durationHours) || 0) * 60 + (Number(form.durationMinutes) || 0) || 60;
-  const rows = form.dateRows;
-  const addDate = () => {
-    if (!newDate || rows.some((r) => r.date === newDate)) return;
-    patch({ dateRows: [...rows, { date: newDate, slots: [] }].sort((a, b) => a.date.localeCompare(b.date)) });
-    setNewDate('');
-  };
-  const setSlots = (date, slots) => patch({ dateRows: rows.map((r) => (r.date === date ? { ...r, slots } : r)) });
-  const removeDate = (date) => patch({ dateRows: rows.filter((r) => r.date !== date) });
-
-  return (
-    <div>
-      <L>Availability &amp; scheduling</L>
-      <Hint>Pick dates, then add time slots. Each slot is {Math.floor(dur / 60)}h{dur % 60 ? ` ${dur % 60}m` : ''} long (from your duration).</Hint>
-      <div className="flex gap-2 items-center mb-4">
-        <input type="date" className="win max-w-[200px]" value={newDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setNewDate(e.target.value)} />
-        <button type="button" onClick={addDate} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold"><CalendarDays size={16} /> Add date</button>
-      </div>
-      {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">No dates yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {rows.map((r) => <DateSlots key={r.date} row={r} dur={dur} onChange={(slots) => setSlots(r.date, slots)} onRemove={() => removeDate(r.date)} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DateSlots({ row, dur, onChange, onRemove }) {
-  const [start, setStart] = useState('09:00');
-  const add = (s) => { if (row.slots.some((x) => x.start === s)) return; onChange([...row.slots, { start: s, end: toHHMM(toMin(s) + dur) }].sort((a, b) => toMin(a.start) - toMin(b.start))); };
-  return (
-    <div className="border rounded-xl p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-semibold text-sm text-ink flex items-center gap-2"><Clock size={14} className="text-brand" /> {new Date(row.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
-        <button type="button" onClick={onRemove} className="text-red-600"><Trash2 size={15} /></button>
-      </div>
-      <div className="flex flex-wrap items-end gap-2 mb-2">
-        <div className="text-xs text-ink-muted">
-          Add a slot:
-          <div className="flex items-center gap-2 mt-1">
-            <input type="time" className="win w-28" value={start} onChange={(e) => setStart(e.target.value)} />
-            <button type="button" onClick={() => add(start)} className="px-3 py-2 rounded-lg border font-semibold text-sm inline-flex items-center gap-1"><Plus size={13} /> Add slot</button>
-          </div>
-        </div>
-      </div>
-      {row.slots.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {row.slots.map((s, i) => (
-            <button key={i} type="button" onClick={() => onChange(row.slots.filter((_, idx) => idx !== i))} className="text-xs font-medium bg-white border rounded-full px-3 py-1.5 inline-flex items-center gap-1.5 hover:border-red-300">
-              {fmtTime(s.start)}–{fmtTime(s.end)} <X size={12} />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
