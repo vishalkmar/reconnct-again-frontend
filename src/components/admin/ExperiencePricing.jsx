@@ -137,7 +137,8 @@ function NumberBox({ value, onChange, min, max, suffix }) {
         type="number"
         min={min}
         max={max}
-        value={value ?? 0}
+        placeholder="0"
+        value={value || ''}
         onChange={(e) => {
           let v = e.target.value === '' ? 0 : Number(e.target.value);
           if (min != null && v < min) v = min;
@@ -159,7 +160,8 @@ function Money({ value, onChange, suffix }) {
         <input
           type="number"
           min={0}
-          value={value ?? 0}
+          placeholder="0"
+          value={value || ''}
           onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
           className="input pl-8 w-40"
         />

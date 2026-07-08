@@ -59,7 +59,7 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
               {disc.type === 'fixed'
                 ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                 : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
-              <input type="number" min={0} className="input pl-8" value={disc.value ?? 0}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={disc.value || ''}
                 onChange={(e) => onChange({ discount: { ...disc, value: e.target.value === '' ? 0 : Number(e.target.value) } })} />
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
               <div>
                 <span className="block text-[11px] text-ink-muted mb-1">Free for (months)</span>
                 <div className="relative">
-                  <input type="number" min={0} className="input pr-12" value={cf.months ?? 0}
+                  <input type="number" min={0} className="input pr-12" placeholder="0" value={cf.months || ''}
                     onChange={(e) => setCf({ months: e.target.value === '' ? 0 : Number(e.target.value) })} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">mo</span>
                 </div>
@@ -96,7 +96,7 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
                 <span className="block text-[11px] text-ink-muted mb-1">Cut-through amount</span>
                 <div className="relative">
                   <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                  <input type="number" min={0} className="input pl-8" value={cf.cutThrough ?? 0}
+                  <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.cutThrough || ''}
                     onChange={(e) => setCf({ cutThrough: e.target.value === '' ? 0 : Number(e.target.value) })} />
                 </div>
               </div>
@@ -106,7 +106,7 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
           {cf.type === 'fixed' && (
             <div className="relative mt-2">
               <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-              <input type="number" min={0} className="input pl-8" value={cf.value ?? 0}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.value || ''}
                 onChange={(e) => setCf({ value: e.target.value === '' ? 0 : Number(e.target.value) })} />
             </div>
           )}
@@ -114,7 +114,7 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
           {cf.type === 'percentage' && (
             <div className="relative mt-2">
               <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-              <input type="number" min={0} className="input pl-8" value={cf.value ?? 0}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.value || ''}
                 onChange={(e) => setCf({ value: e.target.value === '' ? 0 : Number(e.target.value) })} />
             </div>
           )}

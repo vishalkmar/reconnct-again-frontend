@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Search, Loader2, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight,
-  TrendingUp, Wallet, RefreshCcw, ChevronRight as ChevronRightIcon,
+  TrendingUp, Wallet, RefreshCcw, ChevronRight as ChevronRightIcon, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -77,8 +77,9 @@ export default function AdminTransactionsPage() {
       </div>
 
       {/* Stats — refundable totals are negative, so we render them as a "money out" stat. */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <StatCard icon={TrendingUp} label="Gross collected" value={fmtMoney(summary.totalRevenue)} accent="bg-emerald-50 text-emerald-600" loading={loading} />
+        <StatCard icon={Clock} label="Pending" value={fmtMoney(summary.pendingAmount)} accent="bg-orange-50 text-orange-600" loading={loading} />
         <StatCard icon={ArrowDownRight} label="Refunds" value={fmtMoney(summary.totalRefund)} accent="bg-rose-50 text-rose-600" loading={loading} />
         <StatCard icon={Wallet} label="Net" value={fmtMoney((summary.totalRevenue || 0) - (summary.totalRefund || 0))} accent="bg-brand/10 text-brand" loading={loading} />
       </div>

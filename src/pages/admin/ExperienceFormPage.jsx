@@ -403,14 +403,14 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
           <label className="label">Each session duration</label>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <input type="number" min={0} className="input w-24 pr-9"
-                value={value.pricing?.duration?.hours ?? 0}
+              <input type="number" min={0} className="input w-24 pr-9" placeholder="0"
+                value={value.pricing?.duration?.hours || ''}
                 onChange={(e) => patch({ pricing: { ...value.pricing, duration: { ...(value.pricing?.duration || {}), hours: Number(e.target.value) || 0 } } })} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">hrs</span>
             </div>
             <div className="relative">
-              <input type="number" min={0} max={59} className="input w-24 pr-9"
-                value={value.pricing?.duration?.minutes ?? 0}
+              <input type="number" min={0} max={59} className="input w-24 pr-9" placeholder="0"
+                value={value.pricing?.duration?.minutes || ''}
                 onChange={(e) => patch({ pricing: { ...value.pricing, duration: { ...(value.pricing?.duration || {}), minutes: Math.min(59, Number(e.target.value) || 0) } } })} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">min</span>
             </div>

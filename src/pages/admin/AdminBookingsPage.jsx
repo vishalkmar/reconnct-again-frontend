@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Search, Loader2, ChevronLeft, ChevronRight, Filter, Calendar as CalendarIcon,
-  TrendingUp, CheckCircle2, XCircle, Hash,
+  TrendingUp, CheckCircle2, XCircle, Hash, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -103,10 +103,11 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
         <StatCard icon={TrendingUp} label="Revenue" value={fmtMoney(summary.totalRevenue)} accent="bg-emerald-50 text-emerald-600" loading={loading} />
         <StatCard icon={Hash} label="Bookings" value={summary.bookingCount ?? 0} accent="bg-blue-50 text-blue-600" loading={loading} />
         <StatCard icon={CheckCircle2} label="Paid" value={summary.paidCount ?? 0} accent="bg-amber-50 text-amber-600" loading={loading} />
+        <StatCard icon={Clock} label="Pending" value={summary.pendingCount ?? 0} accent="bg-orange-50 text-orange-600" loading={loading} />
         <StatCard icon={XCircle} label="Cancelled" value={summary.cancelledCount ?? 0} accent="bg-rose-50 text-rose-600" loading={loading} />
       </div>
 
