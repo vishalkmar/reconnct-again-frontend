@@ -3,8 +3,9 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
-  IndianRupee, TrendingUp, Users, Percent, Loader2, ArrowUpRight, ArrowDownRight, RotateCcw,
+  IndianRupee, TrendingUp, Users, Percent, Loader2, ArrowUpRight, ArrowDownRight, RotateCcw, BarChart3,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -120,9 +121,17 @@ export default function RevenuePage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">Revenue management</h1>
-        <p className="text-sm text-ink-muted">Which experiences earn, when, and where — with abandoned-booking insight.</p>
+      <div className="mb-5 flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-bold mb-1">Revenue management</h1>
+          <p className="text-sm text-ink-muted">Which experiences earn, when, and where — with abandoned-booking insight.</p>
+        </div>
+        <Link
+          to="/admin/reviews/analytics"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90 transition"
+        >
+          <BarChart3 size={16} /> View analysis of Review and rating
+        </Link>
       </div>
 
       {/* Filters */}

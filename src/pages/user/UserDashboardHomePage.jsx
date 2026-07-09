@@ -13,6 +13,7 @@ import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import { useWishlist } from '../../context/WishlistContext.jsx';
 import { categorize, isPaid } from '../../components/user/bookingFormatters.js';
+import RatingModal from '../../components/user/RatingModal.jsx';
 
 export default function UserDashboardHomePage() {
   const { user } = useUserAuth();
@@ -32,6 +33,20 @@ export default function UserDashboardHomePage() {
           txns: list.filter(isPaid).length,
         });
       })
+      .catch(() => {});
+  }, []);
+
+  // Auto "rate and review" popup — mirrors the app's Home screen exactly
+  // (same /bookings/me/pending-review + dismiss endpoints), so the behaviour
+  // is identical across platforms. X closes for this browser session only;
+  // "Stop showing" calls the server so it never auto-shows again for that
+  // one booking (manual Rate button on the booking still works).
+  const [pendingReview, setPendingReview] = useState(null);
+  const [reviewPopupClosed, setReviewPopupClosed] = useState(false);
+
+  useEffect(() => {
+    api.get('/bookings/me/pending-review')
+      .then((res) => setPendingReview(res.data?.data?.booking || null))
       .catch(() => {});
   }, []);
 
@@ -133,6 +148,15 @@ export default function UserDashboardHomePage() {
           </div>
         </div>
       </div>
+
+      <RatingModal
+        open={!!pendingReview && !reviewPopupClosed}
+        variant="auto"
+        booking={pendingReview}
+        onClose={() => setReviewPopupClosed(true)}
+        onDismissForever={() => { setReviewPopupClosed(true); setPendingReview(null); }}
+        onSubmitted={() => setPendingReview(null)}
+      />
     </div>
   );
 }

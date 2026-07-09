@@ -12,6 +12,7 @@ import {
   Truck,
   Smartphone,
   MessageCircle,
+  Star,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -22,6 +23,7 @@ const mainItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarIcon },
   { to: '/admin/revenue', label: 'Revenue', icon: LineChart },
+  { to: '/admin/reviews', label: 'Review Management', icon: Star },
   { to: '/admin/experiences', label: 'Experiences', icon: Sparkles },
   { to: '/admin/suppliers', label: 'Suppliers & Contract', icon: Truck },
   { to: '/admin/users', label: 'Customer', icon: UsersIcon },

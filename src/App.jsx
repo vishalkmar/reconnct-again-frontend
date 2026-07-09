@@ -55,6 +55,8 @@ import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
 import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
 import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
+import AdminReviewsPage from './pages/admin/AdminReviewsPage.jsx';
+import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx';
 
 export default function App() {
   return (
@@ -147,6 +149,8 @@ export default function App() {
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="transactions" element={<AdminTransactionsPage />} />
           <Route path="revenue" element={<RevenuePage />} />
+          <Route path="reviews" element={<AdminReviewsPage />} />
+          <Route path="reviews/analytics" element={<AdminReviewAnalyticsPage />} />
           <Route path="experiences" element={<ExperiencesPage />} />
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />

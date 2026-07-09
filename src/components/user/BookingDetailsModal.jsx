@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import {
   X, MapPin, Calendar, Users, Clock, CreditCard, FileText, Printer, Download,
   ArrowRight, AlertCircle, Loader2, XCircle, ExternalLink, Hotel as HotelIcon,
-  CheckCircle2, RefreshCcw, ChevronRight, ChevronLeft, ShieldCheck, Info, Wallet,
+  CheckCircle2, RefreshCcw, ChevronRight, ChevronLeft, ShieldCheck, Info, Wallet, Star,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { TYPE_LABEL, STATUS_BADGE, fmtMoney, fmtDate, fmtDateTime, categorize } from './bookingFormatters';
+import RatingModal from './RatingModal';
 
 // Refund-status badges used both in the cancel flow's success step AND in
 // the persistent "Booking cancelled" banner at the bottom of the modal.
@@ -43,6 +44,7 @@ export default function BookingDetailsModal({ booking, open, onClose, onChanged 
   const [quote, setQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [cancelResult, setCancelResult] = useState(null);
+  const [showRate, setShowRate] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -71,6 +73,7 @@ export default function BookingDetailsModal({ booking, open, onClose, onChanged 
   const cat = categorize(booking);
   const canCancel = (status === 'pending_payment' || status === 'confirmed') && cat !== 'completed';
   const canPay = status === 'pending_payment';
+  const canRate = item?.type === 'experience' && cat === 'completed' && !booking.review;
 
   // Step 1 → 2: fetch the refund quote so the user sees exactly what they'll
   // get back before they commit. Quote is server-computed so the tier resolution
@@ -367,6 +370,20 @@ export default function BookingDetailsModal({ booking, open, onClose, onChanged 
                 <XCircle size={14} /> Cancel booking
               </button>
             )}
+            {canRate && (
+              <button
+                type="button"
+                onClick={() => setShowRate(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:brightness-110"
+              >
+                <Star size={14} /> Rate Experience
+              </button>
+            )}
+            {item?.type === 'experience' && cat === 'completed' && booking.review && (
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand/10 text-brand text-sm font-semibold">
+                <Star size={14} className="fill-current" /> You rated {booking.review.rating}/5
+              </span>
+            )}
           </div>
         </div>
 
@@ -455,6 +472,14 @@ export default function BookingDetailsModal({ booking, open, onClose, onChanged 
           </div>
         )}
       </div>
+
+      <RatingModal
+        open={showRate}
+        variant="manual"
+        booking={{ bookingCode: booking.bookingCode, itemName: item?.name, itemImage: item?.image }}
+        onClose={() => setShowRate(false)}
+        onSubmitted={() => { setShowRate(false); onChanged?.(); }}
+      />
 
       {/* Print-only stylesheet — hides the dimmer/scroll container chrome and
           shows only the voucher when the user prints. */}
