@@ -24,7 +24,7 @@ const mainItems = [
   { to: '/admin/revenue', label: 'Revenue', icon: LineChart },
   { to: '/admin/experiences', label: 'Experiences', icon: Sparkles },
   { to: '/admin/suppliers', label: 'Suppliers & Contract', icon: Truck },
-  { to: '/admin/users', label: 'Users', icon: UsersIcon },
+  { to: '/admin/users', label: 'Customer', icon: UsersIcon },
   { to: '/admin/transactions', label: 'Transactions', icon: Wallet },
   { to: '/admin/experience-setup', label: 'Experience Setup', icon: SlidersHorizontal },
   { to: '/admin/app-screens', label: 'App Screens Control', icon: Smartphone },
