@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Star, MessageSquare, TrendingUp, Award, Loader2, GitCompareArrows, RotateCcw,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+} from 'recharts';
+import {
+  ArrowLeft, Star, MessageSquare, Award, Loader2, GitCompareArrows, RotateCcw, BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -18,6 +21,21 @@ const DATE_OPTIONS = [
 ];
 
 const EMPTY_FILTERS = { categoryId: '', audienceId: '', experienceId: '', dateRange: '', from: '', to: '' };
+
+// Brand gold (single hue, magnitude encoding) + a fixed categorical order for
+// "which experience" identity — same eight-hue set RevenuePage.jsx already
+// uses, kept identical so the two admin analytics screens read as one system.
+const BRAND = '#E0A92E';
+const RANK_PALETTE = [
+  '#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#06b6d4', '#ec4899', '#84cc16',
+];
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const formatBucket = (bucket) => {
+  if (/^\d{4}-\d{2}$/.test(bucket)) { const [y, m] = bucket.split('-'); return `${MONTHS[Number(m) - 1]} '${y.slice(2)}`; }
+  const [y, m, d] = bucket.split('-');
+  return `${d} ${MONTHS[Number(m) - 1]}`;
+};
 
 // This entire page sits behind the admin-authenticated route group
 // (ProtectedRoute + /admin JWT check on every backend call) — no route here
@@ -57,8 +75,8 @@ export default function AdminReviewAnalyticsPage() {
 
       {compareMode ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <AnalyticsPanel title="Segment A" filters={filtersA} setFilters={setFiltersA} options={options} />
-          <AnalyticsPanel title="Segment B" filters={filtersB} setFilters={setFiltersB} options={options} />
+          <AnalyticsPanel title="Segment A" filters={filtersA} setFilters={setFiltersA} options={options} compact />
+          <AnalyticsPanel title="Segment B" filters={filtersB} setFilters={setFiltersB} options={options} compact />
         </div>
       ) : (
         <AnalyticsPanel filters={filtersA} setFilters={setFiltersA} options={options} />
@@ -67,7 +85,7 @@ export default function AdminReviewAnalyticsPage() {
   );
 }
 
-function AnalyticsPanel({ title, filters, setFilters, options }) {
+function AnalyticsPanel({ title, filters, setFilters, options, compact = false }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -90,8 +108,11 @@ function AnalyticsPanel({ title, filters, setFilters, options }) {
   const update = (key, value) => setFilters((p) => ({ ...p, [key]: value }));
   const reset = () => setFilters(EMPTY_FILTERS);
   const hasFilters = Object.values(filters).some(Boolean);
-  const dist = data?.distribution || {};
-  const maxDist = Math.max(1, ...Object.values(dist));
+
+  const distData = [5, 4, 3, 2, 1].map((n) => ({ star: `${n} ★`, count: data?.distribution?.[n] || 0 }));
+  const trendData = (data?.trend || []).map((t) => ({ ...t, label: formatBucket(t.bucket) }));
+  const topExperiences = data?.topExperiences || [];
+  const chartH = compact ? 160 : 220;
 
   return (
     <div className="bg-white rounded-2xl shadow-soft p-5">
@@ -131,29 +152,108 @@ function AnalyticsPanel({ title, filters, setFilters, options }) {
         <div className="py-16 text-center"><Loader2 className="animate-spin inline-block text-brand" /></div>
       ) : (
         <>
+          {/* Stat tiles */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <StatCard icon={MessageSquare} label="Total reviews" value={data?.totalReviews ?? 0} accent="bg-blue-50 text-blue-600" />
             <StatCard icon={Star} label="Average rating" value={(data?.averageRating ?? 0).toFixed(2)} accent="bg-amber-50 text-amber-600" />
-            <StatCard icon={TrendingUp} label="Total ratings" value={data?.totalRatings ?? 0} accent="bg-emerald-50 text-emerald-600" />
-            <StatCard icon={Award} label="Most-reviewed" value={data?.topExperience?.name || '—'} sub={data?.topExperience ? `${data.topExperience.reviewCount} reviews` : ''} accent="bg-rose-50 text-rose-600" small />
+            <StatCard icon={BarChart3} label="5-star reviews" value={data?.distribution?.[5] ?? 0} sub={data?.totalReviews ? `${Math.round(((data.distribution?.[5] || 0) / data.totalReviews) * 100)}% of total` : ''} accent="bg-emerald-50 text-emerald-600" />
+            <StatCard icon={Award} label="Most-reviewed" value={data?.topExperience?.name || '—'} sub={data?.topExperience ? `${data.topExperience.reviewCount} reviews · ${data.topExperience.averageRating}★` : ''} accent="bg-rose-50 text-rose-600" small />
           </div>
 
-          <div>
-            <div className="text-xs font-semibold text-ink-muted mb-2">Rating distribution</div>
-            <div className="space-y-1.5">
-              {[5, 4, 3, 2, 1].map((n) => (
-                <div key={n} className="flex items-center gap-2 text-xs">
-                  <span className="w-8 text-ink-muted font-semibold">{n}★</span>
-                  <div className="flex-1 h-2 rounded-full bg-surface-alt overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full" style={{ width: `${((dist[n] || 0) / maxDist) * 100}%` }} />
-                  </div>
-                  <span className="w-6 text-right text-ink-muted">{dist[n] || 0}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Rating distribution — single-series magnitude, one hue */}
+          <ChartBlock title="Rating distribution">
+            {data?.totalReviews ? (
+              <ResponsiveContainer width="100%" height={chartH}>
+                <BarChart data={distData} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="star" tick={{ fontSize: 12, fontWeight: 600 }} width={36} />
+                  <Tooltip content={<SimpleTooltip suffix=" reviews" />} cursor={{ fill: 'rgba(224,169,46,0.08)' }} />
+                  <Bar dataKey="count" fill={BRAND} radius={[0, 4, 4, 0]} maxBarSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </ChartBlock>
+
+          {/* Reviews over time — single-series trend */}
+          <ChartBlock title="Reviews over time">
+            {trendData.length ? (
+              <ResponsiveContainer width="100%" height={chartH}>
+                <LineChart data={trendData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={28} />
+                  <Tooltip content={<TrendTooltip />} />
+                  <Line type="monotone" dataKey="count" stroke={BRAND} strokeWidth={2} dot={{ r: 3, fill: BRAND }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </ChartBlock>
+
+          {/* Top experiences — ranked, categorical identity by rank */}
+          <ChartBlock title="Top-reviewed experiences" last>
+            {topExperiences.length ? (
+              <ResponsiveContainer width="100%" height={Math.max(120, topExperiences.length * (compact ? 30 : 34))}>
+                <BarChart data={topExperiences} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={compact ? 90 : 130} tickFormatter={(v) => (v.length > (compact ? 14 : 18) ? `${v.slice(0, compact ? 13 : 17)}…` : v)} />
+                  <Tooltip content={<TopExpTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                  <Bar dataKey="reviewCount" radius={[0, 4, 4, 0]} maxBarSize={16}>
+                    {topExperiences.map((_, i) => <Cell key={i} fill={RANK_PALETTE[i % RANK_PALETTE.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </ChartBlock>
         </>
       )}
+    </div>
+  );
+}
+
+function ChartBlock({ title, children, last }) {
+  return (
+    <div className={last ? '' : 'mb-5'}>
+      <div className="text-xs font-semibold text-ink-muted mb-2 uppercase tracking-wide">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function EmptyChart() {
+  return <div className="h-24 flex items-center justify-center text-xs text-ink-muted">No reviews match these filters yet.</div>;
+}
+
+function SimpleTooltip({ active, payload, suffix = '' }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-white rounded-lg shadow-card border border-gray-100 px-3 py-2 text-xs">
+      <span className="font-bold text-ink">{d.star}</span> — {payload[0].value}{suffix}
+    </div>
+  );
+}
+
+function TrendTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-white rounded-lg shadow-card border border-gray-100 px-3 py-2 text-xs">
+      <div className="font-bold text-ink mb-0.5">{d.label}</div>
+      <div>{d.count} review{d.count === 1 ? '' : 's'}</div>
+      {d.averageRating > 0 && <div className="text-ink-muted">Avg {d.averageRating}★</div>}
+    </div>
+  );
+}
+
+function TopExpTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-white rounded-lg shadow-card border border-gray-100 px-3 py-2 text-xs max-w-[200px]">
+      <div className="font-bold text-ink mb-0.5 truncate">{d.name}</div>
+      <div>{d.reviewCount} review{d.reviewCount === 1 ? '' : 's'} · {d.averageRating}★ avg</div>
     </div>
   );
 }

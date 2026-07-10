@@ -42,18 +42,21 @@ export const fmtDateTime = (iso) => {
 };
 
 // Frontend-side categorisation. Backend status never auto-flips to "completed",
-// so we treat any past-dated confirmed booking as completed for display.
+// so we treat any booking whose scheduled time has already passed as completed
+// — same rule the backend's isCompletedNow (experienceReview.controller.js)
+// uses for the rate/review prompts, so "completed" never disagrees between the
+// booking list, the review popup, and My Bookings. Prefer scheduledEndAt (full
+// duration), then the exact scheduledAt timestamp, falling back to the
+// date-only scheduledFor for older bookings that predate that column.
 export const categorize = (booking) => {
   if (!booking) return 'other';
   if (booking.status === 'cancelled' || booking.status === 'refunded') return 'cancelled';
   if (booking.status === 'pending_payment') return 'pending';
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const endIso = booking.scheduledEndAt || booking.scheduledFor;
-  const end = endIso ? new Date(endIso) : null;
   if (booking.status === 'completed') return 'completed';
-  if (booking.status === 'confirmed' && end && end < today) return 'completed';
+
+  const endIso = booking.scheduledEndAt || booking.scheduledAt || booking.scheduledFor;
+  const end = endIso ? new Date(endIso) : null;
+  if (booking.status === 'confirmed' && end && end.getTime() <= Date.now()) return 'completed';
   return 'upcoming';
 };
 
