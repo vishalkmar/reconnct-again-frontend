@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Paperclip, FileText, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { Send, Paperclip, FileText, Check, CheckCheck, Loader2, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api.js';
 import { connectSupport, disconnectSupport } from '../../services/supportSocket.js';
@@ -147,15 +147,16 @@ export default function UserSupportPage({ queue = 'user' }) {
   return (
     <div className="h-[calc(100vh-1.25rem)]">
       <div className="flex flex-col h-full bg-white rounded-xl shadow-soft overflow-hidden border border-slate-200">
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-slate-200 bg-slate-50">
-          <div className="w-9 h-9 rounded-full bg-amber-100 text-brand-dark font-bold flex items-center justify-center">R</div>
-          <div>
-            <div className="font-semibold text-ink text-sm">reconnct Support</div>
-            <div className="text-xs text-slate-400">{typingPeer ? 'typing…' : 'We usually reply within a day'}</div>
+        <div className="flex flex-col items-center px-4 pt-5 pb-4 border-b border-slate-200 bg-white">
+          <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center mb-2">
+            <Globe size={24} />
           </div>
+          <div className="font-bold text-ink text-base">reconnct Support</div>
+          <div className="text-xs text-slate-400 mt-0.5">{typingPeer ? 'typing…' : (queue === 'supplier' ? 'Host support team' : 'Chat with our team')}</div>
+          <span className="mt-2.5 text-[11px] font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">Official reconnct support channel</span>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#f5f3ee] space-y-1">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#F7F7F5] space-y-1">
           {loading ? (
             <div className="flex justify-center py-10 text-slate-400"><Loader2 className="animate-spin" size={20} /></div>
           ) : messages.length === 0 ? (
@@ -173,12 +174,12 @@ export default function UserSupportPage({ queue = 'user' }) {
                     </div>
                   )}
                   <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 shadow-sm ${mine ? 'bg-brand text-ink rounded-br-sm' : 'bg-white text-ink rounded-bl-sm'} ${m._failed ? 'opacity-60 ring-1 ring-red-300' : ''}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-brand text-white rounded-br-md' : 'bg-white text-ink rounded-bl-md'} ${m._failed ? 'opacity-60 ring-1 ring-red-300' : ''}`}>
                       {(m.attachments || []).map((a, idx) => <Attachment key={idx} att={a} />)}
-                      {m.body ? <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p> : null}
-                      <div className={`flex items-center gap-1 justify-end mt-0.5 text-[10px] ${mine ? 'text-ink/60' : 'text-slate-400'}`}>
+                      {m.body ? <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{m.body}</p> : null}
+                      <div className={`flex items-center gap-1 justify-end mt-1 text-[10px] ${mine ? 'text-white/80' : 'text-slate-400'}`}>
                         <span>{fmtTime(m.createdAt)}</span>
-                        {mine && !m._pending && !m._failed && (m.readByAdmin ? <CheckCheck size={13} className="text-blue-600" /> : <Check size={13} />)}
+                        {mine && !m._pending && !m._failed && (m.readByAdmin ? <CheckCheck size={13} className="text-blue-200" /> : <Check size={13} />)}
                         {m._pending && <Loader2 size={11} className="animate-spin" />}
                         {m._failed && <span className="text-red-500">failed</span>}
                       </div>
@@ -208,9 +209,9 @@ export default function UserSupportPage({ queue = 'user' }) {
           </div>
         )}
 
-        <div className="flex items-end gap-2 p-3 border-t border-slate-200 bg-white">
+        <div className="flex items-center gap-2 p-3 border-t border-slate-200/70 bg-white">
           <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onPickFile} />
-          <button onClick={() => fileRef.current?.click()} disabled={uploading} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 shrink-0" title="Attach">
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 shrink-0" title="Attach">
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
           </button>
           <textarea
@@ -219,9 +220,9 @@ export default function UserSupportPage({ queue = 'user' }) {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             rows={1}
             placeholder="Type a message…"
-            className="flex-1 resize-none max-h-28 bg-slate-100 rounded-2xl px-4 py-2.5 text-sm outline-none"
+            className="flex-1 resize-none max-h-28 bg-slate-500/10 rounded-full px-4 py-2.5 text-sm outline-none"
           />
-          <button onClick={send} disabled={!text.trim() && pending.length === 0} className="w-10 h-10 rounded-full bg-brand text-ink flex items-center justify-center shrink-0 disabled:opacity-40" title="Send">
+          <button onClick={send} disabled={!text.trim() && pending.length === 0} className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 disabled:opacity-40" title="Send">
             <Send size={18} />
           </button>
         </div>

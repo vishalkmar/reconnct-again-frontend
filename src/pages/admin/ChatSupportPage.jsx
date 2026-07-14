@@ -365,7 +365,7 @@ export default function ChatSupportPage() {
               </div>
 
               {/* messages */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#f5f3ee] space-y-1">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#F7F7F5] space-y-1">
                 {loadingMsgs ? (
                   <div className="flex justify-center py-10 text-slate-400"><Loader2 className="animate-spin" size={20} /></div>
                 ) : (
@@ -381,17 +381,17 @@ export default function ChatSupportPage() {
                           </div>
                         )}
                         <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] rounded-2xl px-3 py-2 shadow-sm ${
-                            mine ? 'bg-brand text-ink rounded-br-sm' : 'bg-white text-ink rounded-bl-sm'
+                          <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 shadow-sm ${
+                            mine ? 'bg-brand text-white rounded-br-md' : 'bg-white text-ink rounded-bl-md'
                           } ${m._failed ? 'opacity-60 ring-1 ring-red-300' : ''}`}>
                             {(m.attachments || []).map((a, idx) => (
                               <Attachment key={idx} att={a} />
                             ))}
-                            {m.body ? <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p> : null}
-                            <div className={`flex items-center gap-1 justify-end mt-0.5 text-[10px] ${mine ? 'text-ink/60' : 'text-slate-400'}`}>
+                            {m.body ? <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{m.body}</p> : null}
+                            <div className={`flex items-center gap-1 justify-end mt-1 text-[10px] ${mine ? 'text-white/80' : 'text-slate-400'}`}>
                               <span>{fmtTime(m.createdAt)}</span>
                               {mine && !m._pending && !m._failed && (
-                                m.readByParty ? <CheckCheck size={13} className="text-blue-600" /> : <Check size={13} />
+                                m.readByParty ? <CheckCheck size={13} className="text-blue-200" /> : <Check size={13} />
                               )}
                               {m._pending && <Loader2 size={11} className="animate-spin" />}
                               {m._failed && <span className="text-red-500">failed</span>}
@@ -429,12 +429,12 @@ export default function ChatSupportPage() {
               )}
 
               {/* composer */}
-              <div className="flex items-end gap-2 p-3 border-t border-slate-200 bg-white">
+              <div className="flex items-center gap-2 p-3 border-t border-slate-200/70 bg-white">
                 <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onPickFile} />
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 shrink-0"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 shrink-0"
                   title="Attach photo or PDF"
                 >
                   {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
@@ -445,12 +445,12 @@ export default function ChatSupportPage() {
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   rows={1}
                   placeholder="Type a reply…"
-                  className="flex-1 resize-none max-h-28 bg-slate-100 rounded-2xl px-4 py-2.5 text-sm outline-none"
+                  className="flex-1 resize-none max-h-28 bg-slate-500/10 rounded-full px-4 py-2.5 text-sm outline-none"
                 />
                 <button
                   onClick={send}
                   disabled={!text.trim() && pendingAttach.length === 0}
-                  className="w-10 h-10 rounded-full bg-brand text-ink flex items-center justify-center shrink-0 disabled:opacity-40"
+                  className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 disabled:opacity-40"
                   title="Send"
                 ><Send size={18} /></button>
               </div>
