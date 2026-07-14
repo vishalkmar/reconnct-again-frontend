@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   CheckCircle2, AlertCircle, Loader2, MapPin, Calendar, Users, Clock, CreditCard,
-  Printer, Download, ArrowRight, FileText,
+  Printer, Download, ArrowRight, FileText, XCircle,
 } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
 
@@ -35,6 +35,8 @@ export default function BookingSuccessPage() {
   const [booking, setBooking] = useState(null);
   const [verifying, setVerifying] = useState(true);
   const [paid, setPaid] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [pollExhausted, setPollExhausted] = useState(false);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
 
@@ -44,28 +46,34 @@ export default function BookingSuccessPage() {
       const data = res.data?.data || {};
       setBooking(data.booking || null);
       setPaid(!!data.paid);
-      return !!data.paid;
+      setFailed(!!data.failed);
+      return { paid: !!data.paid, failed: !!data.failed };
     } catch (err) {
       setError(err.response?.data?.message || 'Could not verify payment status');
-      return false;
+      return { paid: false, failed: false };
     }
   }, [code]);
 
   // Poll for up to ~30s in case Cashfree's webhook is still in flight when the
   // browser lands here. Each attempt re-fetches from /pg/orders so we'll catch
-  // a fresh status the moment the payment is recorded. We stop the moment
-  // we see paid=true (or after 10 tries).
+  // a fresh status the moment the payment is recorded. We stop the moment we
+  // see paid=true, or the gateway tells us the attempt is definitively dead
+  // (failed=true), or after 10 tries.
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
     const tick = async () => {
       if (cancelled) return;
       attempts += 1;
-      const isPaid = await verify();
+      const { paid: isPaid, failed: isFailed } = await verify();
       if (cancelled) return;
       setVerifying(false);
-      if (!isPaid && attempts < 10) {
+      if (!isPaid && !isFailed && attempts < 10) {
         pollRef.current = setTimeout(tick, 3000);
+      } else if (!isPaid && !isFailed) {
+        // Gave up after 10 tries with no terminal answer either way — stop
+        // spinning forever and tell the user plainly instead.
+        setPollExhausted(true);
       }
     };
     tick();
@@ -102,7 +110,8 @@ export default function BookingSuccessPage() {
   return (
     <div className="min-h-screen bg-surface-alt pb-12 print:bg-white">
       <div className="container-app pt-6 max-w-4xl">
-        {/* Status banner */}
+        {/* Status banner — success / failed / still-pending are three distinct
+            states so a dead payment attempt never looks like an endless spinner. */}
         {paid ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-start gap-3 mb-5 print:hidden">
             <CheckCircle2 className="text-emerald-600 shrink-0 mt-0.5" size={24} />
@@ -110,6 +119,35 @@ export default function BookingSuccessPage() {
               <h2 className="font-semibold text-emerald-900">Payment received — your booking is confirmed!</h2>
               <p className="text-sm text-emerald-800 mt-1">
                 A confirmation email with this voucher has been sent to <strong>{booking.guest.email}</strong>.
+              </p>
+            </div>
+          </div>
+        ) : failed ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-3 mb-5 print:hidden">
+            <XCircle className="text-red-600 shrink-0 mt-0.5" size={24} />
+            <div className="flex-1">
+              <h2 className="font-semibold text-red-900">Payment failed</h2>
+              <p className="text-sm text-red-800 mt-1">
+                Cashfree couldn't complete this payment. If money was deducted it'll be refunded
+                automatically within a few days — nothing else was charged. You can try again on the
+                same booking.
+              </p>
+              <Link
+                to={`/checkout/${booking.bookingCode}`}
+                className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:brightness-110"
+              >
+                Try again
+              </Link>
+            </div>
+          </div>
+        ) : pollExhausted ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3 mb-5 print:hidden">
+            <Clock className="text-amber-600 shrink-0 mt-0.5" size={24} />
+            <div className="flex-1">
+              <h2 className="font-semibold text-amber-900">Still pending</h2>
+              <p className="text-sm text-amber-800 mt-1">
+                Cashfree hasn't confirmed this payment yet. It'll update automatically once it does —
+                check the Transactions tab in a few minutes, or refresh this page.
               </p>
             </div>
           </div>

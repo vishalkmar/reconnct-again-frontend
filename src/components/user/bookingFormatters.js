@@ -16,6 +16,7 @@ export const STATUS_BADGE = {
   completed: { label: 'Completed', cls: 'bg-blue-100 text-blue-700' },
   cancelled: { label: 'Cancelled', cls: 'bg-rose-100 text-rose-700' },
   refunded: { label: 'Refunded', cls: 'bg-slate-200 text-slate-700' },
+  failed: { label: 'Failed', cls: 'bg-red-100 text-red-700' },
 };
 
 export const fmtMoney = (n, currency = 'INR') =>
@@ -62,3 +63,23 @@ export const categorize = (booking) => {
 
 export const isPaid = (booking) =>
   !!booking?.payment?.paidAt || ['confirmed', 'completed', 'refunded'].includes(booking?.status);
+
+// A "transaction" is any booking money actually moved on, OR one that's still
+// mid-payment (Pending) or gave up (Failed) — everything the Transactions tab
+// (web + app) needs, in one shared place so both platforms bucket identically.
+// A cancelled booking that was never paid isn't a transaction at all.
+export const isTransactionRow = (booking) =>
+  !!booking?.payment?.paidAt || booking?.status === 'pending_payment' || booking?.status === 'refunded';
+
+// 'pending' | 'failed' | 'completed' | 'refunded' | 'other'. "Failed" is a
+// pending_payment booking whose last attempt is authoritatively dead
+// (payment.failedAt set by the backend on webhook FAIL/USER_DROPPED or an
+// EXPIRED/TERMINATED/CANCELLED Cashfree order/link) — `status` itself never
+// becomes "failed" so the same booking can still be retried.
+export const transactionStatus = (booking) => {
+  if (!booking) return 'other';
+  if (booking.status === 'refunded') return 'refunded';
+  if (booking.status === 'confirmed' || booking.status === 'completed') return 'completed';
+  if (booking.status === 'pending_payment') return booking.payment?.failedAt ? 'failed' : 'pending';
+  return 'other';
+};

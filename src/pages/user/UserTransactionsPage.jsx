@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Wallet, Search, Loader2, ChevronRight, CreditCard, ArrowDownRight, ArrowUpRight,
+  Wallet, Search, Loader2, ChevronRight, CreditCard, ArrowDownRight, ArrowUpRight, Clock, XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import BookingDetailsModal from '../../components/user/BookingDetailsModal.jsx';
 import {
-  TYPE_LABEL, fmtMoney, fmtDateTime, isPaid,
+  TYPE_LABEL, fmtMoney, fmtDateTime, isTransactionRow, transactionStatus,
 } from '../../components/user/bookingFormatters.js';
 
 // Payment status, not the experience's — a transaction is "Completed" the
@@ -15,9 +15,10 @@ import {
 // has happened yet (My Bookings' Upcoming/Completed tabs are for that).
 const TABS = [
   { key: 'all', label: 'All', match: () => true },
-  { key: 'pending', label: 'Pending', match: (b) => b.status === 'pending_payment' },
-  { key: 'completed', label: 'Completed', match: (b) => b.status === 'confirmed' || b.status === 'completed' },
-  { key: 'refunded', label: 'Refunds', match: (b) => b.status === 'refunded' },
+  { key: 'pending', label: 'Pending', match: (b) => transactionStatus(b) === 'pending' },
+  { key: 'completed', label: 'Completed', match: (b) => transactionStatus(b) === 'completed' },
+  { key: 'refunded', label: 'Refunds', match: (b) => transactionStatus(b) === 'refunded' },
+  { key: 'failed', label: 'Failed', match: (b) => transactionStatus(b) === 'failed' },
 ];
 
 export default function UserTransactionsPage() {
@@ -31,10 +32,11 @@ export default function UserTransactionsPage() {
     setLoading(true);
     try {
       const res = await api.get('/bookings/me');
-      // A "transaction" only exists once money actually moved (or was refunded).
-      // pending_payment rows aren't transactions yet.
-      const onlyPaid = (res.data?.data?.bookings || []).filter(isPaid);
-      setBookings(onlyPaid);
+      // A transaction is money that moved OR a payment that's still in
+      // progress/failed — pending_payment rows must survive this filter so
+      // the Pending/Failed tabs actually have rows to show.
+      const rows = (res.data?.data?.bookings || []).filter(isTransactionRow);
+      setBookings(rows);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not load transactions');
     } finally {
@@ -190,8 +192,22 @@ function StatCard({ icon: Icon, label, value, accent }) {
   );
 }
 
+// Icon + colour per bucket — matches the Figma reference: green for money in,
+// red (with a struck-through amount) for failed, amber for still pending.
+const ROW_STYLE = {
+  completed: { icon: ArrowUpRight, iconCls: 'bg-emerald-100 text-emerald-600', amountCls: 'text-emerald-700', label: 'Payment' },
+  refunded: { icon: ArrowDownRight, iconCls: 'bg-rose-100 text-rose-600', amountCls: 'text-rose-600', label: 'Refund' },
+  pending: { icon: Clock, iconCls: 'bg-amber-100 text-amber-600', amountCls: 'text-amber-600', label: 'Pending' },
+  failed: { icon: XCircle, iconCls: 'bg-red-100 text-red-600', amountCls: 'text-red-600', label: 'Failed' },
+  other: { icon: ArrowUpRight, iconCls: 'bg-slate-100 text-slate-500', amountCls: 'text-ink', label: 'Booking' },
+};
+
 function TransactionRow({ booking, onOpen }) {
-  const refunded = booking.status === 'refunded';
+  const st = transactionStatus(booking);
+  const style = ROW_STYLE[st] || ROW_STYLE.other;
+  const Icon = style.icon;
+  const refunded = st === 'refunded';
+  const failed = st === 'failed';
   return (
     <li>
       <button
@@ -201,15 +217,13 @@ function TransactionRow({ booking, onOpen }) {
       >
         {/* Mobile: a single stacked card. Desktop: 12-col grid. */}
         <div className="col-span-12 md:col-span-3 flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-            refunded ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
-          }`}>
-            {refunded ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${style.iconCls}`}>
+            <Icon size={16} />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium text-ink truncate">{fmtDateTime(booking.payment?.paidAt || booking.updatedAt || booking.createdAt)}</div>
             <div className="text-[10px] text-ink-muted uppercase tracking-wide">
-              {refunded ? 'Refund' : 'Payment'}
+              {style.label}
             </div>
           </div>
         </div>
@@ -233,9 +247,10 @@ function TransactionRow({ booking, onOpen }) {
         </div>
 
         <div className="col-span-4 md:col-span-2 text-right">
-          <div className={`text-base font-bold ${refunded ? 'text-rose-600' : 'text-emerald-700'}`}>
+          <div className={`text-base font-bold ${style.amountCls} ${failed ? 'line-through opacity-70' : ''}`}>
             {refunded ? '− ' : ''}{fmtMoney(booking.pricing?.total, booking.currency)}
           </div>
+          {failed && <div className="text-[10px] font-semibold text-red-600 mt-0.5">Failed</div>}
           <span className="hidden md:inline-flex items-center text-xs font-semibold text-brand mt-1 group-hover:gap-2 transition-all">
             Details <ChevronRight size={12} />
           </span>
