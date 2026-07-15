@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  MessageCircle, Search, Send, Paperclip, FileText, Check, CheckCheck, ArrowLeft, X, Loader2,
+  MessageCircle, Search, Send, Paperclip, FileText, Check, CheckCheck, ArrowLeft, X, Loader2, Mic,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api.js';
 import { connectSupport, disconnectSupport } from '../../services/supportSocket.js';
+import { useVoiceRecorder } from '../../utils/voiceRecorder.js';
 
 const QUEUES = [
   { key: 'user', label: 'User Support' },
@@ -214,9 +215,9 @@ export default function ChatSupportPage() {
     typingTimerRef.current = setTimeout(() => { typingSentRef.current = false; emitTyping(false); }, 1200);
   };
 
-  const send = () => {
+  const send = (overrideAttachments) => {
     const body = text.trim();
-    const attachments = pendingAttach;
+    const attachments = overrideAttachments || pendingAttach;
     if ((!body && attachments.length === 0) || !activeId) return;
     const s = socketRef.current;
     const tempId = `tmp-${Date.now()}`;
@@ -261,6 +262,27 @@ export default function ChatSupportPage() {
       setUploading(false);
     }
   };
+
+  // Voice note — hold the mic button, release to upload + send immediately.
+  const sendVoice = async (blob) => {
+    if (!activeId) return;
+    setUploading(true);
+    const form = new FormData();
+    form.append('file', blob, `voice-${Date.now()}.webm`);
+    try {
+      const { data } = await api.post('/support/attachments', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const att = data.data || data;
+      if (att?.url) send([att]);
+    } catch {
+      toast.error('Voice message failed to upload');
+    } finally {
+      setUploading(false);
+    }
+  };
+  const { recording, start: startRecording, stop: stopRecording } = useVoiceRecorder({
+    onRecorded: sendVoice,
+    onError: () => toast.error('Microphone access is needed to record a voice message.'),
+  });
 
   /* ── render ── */
   return (
@@ -448,7 +470,17 @@ export default function ChatSupportPage() {
                   className="flex-1 resize-none max-h-28 bg-slate-500/10 rounded-full px-4 py-2.5 text-sm outline-none"
                 />
                 <button
-                  onClick={send}
+                  onMouseDown={startRecording}
+                  onMouseUp={stopRecording}
+                  onMouseLeave={() => recording && stopRecording()}
+                  onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
+                  onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                  disabled={uploading}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 select-none disabled:opacity-40 ${recording ? 'bg-red-500 text-white animate-pulse' : 'text-slate-400 hover:bg-slate-100'}`}
+                  title="Hold to record a voice message"
+                ><Mic size={18} /></button>
+                <button
+                  onClick={() => send()}
                   disabled={!text.trim() && pendingAttach.length === 0}
                   className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 disabled:opacity-40"
                   title="Send"
@@ -468,6 +500,9 @@ function Attachment({ att }) {
         <img src={fileUrl(att.url)} alt={att.name || ''} className="max-w-[220px] max-h-56 rounded-lg object-cover" />
       </a>
     );
+  }
+  if (att.type === 'audio') {
+    return <audio controls preload="metadata" src={fileUrl(att.url)} className="mb-1 max-w-[240px] h-10" />;
   }
   return (
     <a
