@@ -242,6 +242,16 @@ export default function UserLoginModal() {
             >
               {submitting ? <Loader2 size={18} className="animate-spin" /> : <>Continue <ArrowRight size={16} /></>}
             </button>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => { closeLogin(); navigate('/supplier/login'); }}
+                disabled={submitting}
+                className="text-sm text-gray-500 hover:text-brand underline underline-offset-2 disabled:opacity-40"
+              >
+                Login as Supplier
+              </button>
+            </div>
           </form>
         )}
 
