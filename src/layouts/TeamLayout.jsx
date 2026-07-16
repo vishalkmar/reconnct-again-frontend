@@ -32,7 +32,7 @@ export default function TeamLayout() {
   const doLogout = () => { logout(); navigate('/team/login'); };
 
   const Sidebar = (
-    <div className="h-full flex flex-col bg-slate-900 text-white w-64">
+    <div className="h-full flex flex-col bg-[#0f1830] text-white w-64">
       <div className="px-5 py-6 flex items-center gap-2.5">
         <div className="w-9 h-9 rounded-xl bg-brand/20 text-brand flex items-center justify-center"><ShieldCheck size={20} /></div>
         <div>

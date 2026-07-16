@@ -34,17 +34,17 @@ export default function TeamLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light/20 via-white to-wellness-light/20 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand/15 text-brand mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand/15 text-brand-dark mb-4">
             <ShieldCheck size={28} />
           </div>
-          <h1 className="text-2xl font-display font-bold text-white">Team Portal</h1>
-          <p className="text-sm text-white/60 mt-1">Sign in with your staff account</p>
+          <h1 className="text-2xl font-display font-bold">Team Portal</h1>
+          <p className="text-sm text-ink-muted mt-1">Sign in with your staff account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card p-8 space-y-5">
           <div>
             <label className="label">Email</label>
             <div className="relative">
