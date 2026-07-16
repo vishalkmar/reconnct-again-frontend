@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, ScrollText, FileText, FileType2, Pencil, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollText, FileText, FileType2, Pencil, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Dropzone from '../../components/admin/Dropzone.jsx';
@@ -21,6 +21,7 @@ const blank = {
   supplierName: '',
   phone: '',
   email: '',
+  password: '',
   image: '',
   notes: '',
   isActive: true,
@@ -88,6 +89,12 @@ export default function SupplierFormPage() {
 
   const save = async () => {
     if (!value.companyName.trim()) return toast.error('Company name is required');
+    if (!editing) {
+      if (!value.email.trim()) return toast.error('Email is required — the supplier logs in with it');
+      if (!value.password || value.password.length < 6) return toast.error('Password (min 6 characters) is required');
+    } else if (value.password && value.password.length < 6) {
+      return toast.error('New password must be at least 6 characters');
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -128,10 +135,20 @@ export default function SupplierFormPage() {
           <Field label="Phone" icon={Phone}>
             <input className="input" value={value.phone} onChange={(e) => patch({ phone: e.target.value })} placeholder="+91…" />
           </Field>
-          <Field label="Email" icon={Mail}>
+          <Field label="Email" required={!editing} icon={Mail}>
             <input type="email" className="input" value={value.email} onChange={(e) => patch({ email: e.target.value })} placeholder="name@company.com" />
           </Field>
         </div>
+
+        <Field label={editing ? 'New password' : 'Password'} required={!editing} icon={Lock}>
+          <input
+            type="password" className="input" value={value.password}
+            onChange={(e) => patch({ password: e.target.value })}
+            placeholder={editing ? 'Leave blank to keep the current password' : 'Min 6 characters'}
+            autoComplete="new-password"
+          />
+          <p className="text-xs text-ink-muted mt-1">The supplier signs in to the Supplier Portal (web &amp; app) with this email + password.</p>
+        </Field>
 
         <div>
           <label className="label">Image <span className="text-ink-muted font-normal">(optional)</span></label>
