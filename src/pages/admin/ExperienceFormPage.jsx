@@ -174,7 +174,7 @@ export default function ExperienceFormPage() {
         toast.success(acts.length > 1 ? `${acts.length} experiences saved` : 'Experience saved');
       }
       clearDraft();
-      navigate('/admin/experiences');
+      navigate('..', { relative: 'path' });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Save failed');
     } finally {
@@ -191,7 +191,7 @@ export default function ExperienceFormPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
-        <button onClick={() => navigate('/admin/experiences')} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
+        <button onClick={() => navigate('..', { relative: 'path' })} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
           <ArrowLeft size={16} /> Back to experiences
         </button>
         <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit experience' : 'New experience'}</h1>
@@ -272,7 +272,7 @@ export default function ExperienceFormPage() {
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {editing ? 'Update experience' : (activities.length > 1 ? `Save ${activities.length} activities` : 'Save experience')}
             </button>
-            <button onClick={() => navigate('/admin/experiences')} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
+            <button onClick={() => navigate('..', { relative: 'path' })} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
             {hasDraft && (
               <button onClick={discardDraft} className="w-full mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:underline">
                 <Trash2 size={13} /> Discard draft

@@ -33,7 +33,11 @@ const blank = {
   schedule: { dates: [] }, photos: [], videos: [],
 };
 
-export default function HostListingFormPage() {
+// basePath lets the Supplier Portal (Phase 4) reuse this exact wizard
+// against /supplier/listings instead of /host/listings — same controller
+// functions on the backend (host.controller.js resolves ownership from
+// req.user vs req.supplier), same form, same everything else.
+export default function HostListingFormPage({ basePath = '/host' }) {
   const { id } = useParams();
   const editing = !!id;
   const navigate = useNavigate();
@@ -48,7 +52,7 @@ export default function HostListingFormPage() {
   useEffect(() => {
     if (!editing) return;
     let alive = true;
-    api.get(`/host/listings/${id}`)
+    api.get(`${basePath}/listings/${id}`)
       .then(({ data }) => { if (alive) setForm({ ...blank, ...((data.data || data).form || {}) }); })
       .catch(() => toast.error('Could not load listing'))
       .finally(() => { if (alive) setLoading(false); });
@@ -70,10 +74,10 @@ export default function HostListingFormPage() {
     setSubmitting(true);
     try {
       const payload = form.photos.length ? form : { ...form, photos: ['https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80'] };
-      if (editing) await api.put(`/host/listings/${id}`, { form: payload, submit: isReview });
-      else await api.post('/host/listings', { form: payload, submit: isReview });
+      if (editing) await api.put(`${basePath}/listings/${id}`, { form: payload, submit: isReview });
+      else await api.post(`${basePath}/listings`, { form: payload, submit: isReview });
       toast.success(isReview ? 'Submitted for review' : 'Saved as draft');
-      navigate('/host/listings');
+      navigate(`${basePath}/listings`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not save listing');
     } finally {

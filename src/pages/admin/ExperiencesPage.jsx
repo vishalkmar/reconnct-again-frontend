@@ -8,9 +8,11 @@ import api from '../../services/api';
 
 const STATUS_STYLE = {
   draft: 'bg-amber-50 text-amber-700',
+  pending_review: 'bg-blue-50 text-blue-700',
   published: 'bg-emerald-50 text-emerald-700',
   archived: 'bg-slate-100 text-slate-500',
 };
+const STATUS_LABEL = { pending_review: 'Pending Review' };
 
 export default function ExperiencesPage() {
   const [items, setItems] = useState([]);
@@ -143,7 +145,7 @@ export default function ExperiencesPage() {
                   {(e.typeItems || []).length ? ` · ${e.typeItems.map((t) => t.name).join(', ')}` : ''}
                 </div>
                 <div className="col-span-3 md:col-span-1">
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{e.status}</span>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{STATUS_LABEL[e.status] || e.status}</span>
                 </div>
                 <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-1">
                   <IconBtn title="View" onClick={() => navigate(`/admin/experiences/${e.id}/view`)}><ScanEye size={15} /></IconBtn>

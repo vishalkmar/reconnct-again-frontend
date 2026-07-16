@@ -23,8 +23,9 @@ const fmtDateTime = (iso) => {
 };
 
 // Full itinerary + guest + payment detail for ONE booking on one of the
-// host's own listings — mirrors the app's HostBookingDetailScreen.
-export default function HostBookingDetailPage() {
+// host's own listings — mirrors the app's HostBookingDetailScreen. basePath
+// lets the Supplier Portal (Phase 4) reuse this exact page.
+export default function HostBookingDetailPage({ basePath = '/host' }) {
   const { id } = useParams();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export default function HostBookingDetailPage() {
 
   useEffect(() => {
     let alive = true;
-    api.get(`/host/bookings/${id}`)
+    api.get(`${basePath}/bookings/${id}`)
       .then(({ data }) => { if (alive) setBooking((data.data || data).booking); })
       .catch((e) => { if (alive) setError(e.response?.data?.message || 'Could not load booking'); })
       .finally(() => { if (alive) setLoading(false); });
@@ -44,7 +45,7 @@ export default function HostBookingDetailPage() {
     return (
       <div className="max-w-3xl">
         <p className="text-ink-muted">{error || 'Booking not found.'}</p>
-        <Link to="/host/listings" className="text-brand font-semibold">Back to My Listings</Link>
+        <Link to={`${basePath}/listings`} className="text-brand font-semibold">Back to My Listings</Link>
       </div>
     );
   }
@@ -54,7 +55,7 @@ export default function HostBookingDetailPage() {
 
   return (
     <div className="max-w-3xl">
-      <Link to="/host/listings" className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink mb-4"><ChevronLeft size={16} /> Back to My Listings</Link>
+      <Link to={`${basePath}/listings`} className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink mb-4"><ChevronLeft size={16} /> Back to My Listings</Link>
 
       {/* Ribbon */}
       <div className="bg-brand rounded-2xl p-5 flex items-center justify-between mb-4">

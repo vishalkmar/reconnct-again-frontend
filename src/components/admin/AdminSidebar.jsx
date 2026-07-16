@@ -13,6 +13,7 @@ import {
   Smartphone,
   MessageCircle,
   Star,
+  ShieldCheck,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -31,6 +32,7 @@ const mainItems = [
   { to: '/admin/experience-setup', label: 'Experience Setup', icon: SlidersHorizontal },
   { to: '/admin/app-screens', label: 'App Screens Control', icon: Smartphone },
   { to: '/admin/chat-support', label: 'Chat Support', icon: MessageCircle, badgeKey: 'support' },
+  { to: '/admin/team', label: 'Team Management', icon: ShieldCheck },
 ];
 
 export default function AdminSidebar({ open, onClose }) {

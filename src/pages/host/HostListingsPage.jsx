@@ -9,7 +9,9 @@ const STATUS_BADGE = {
   pending: { label: 'Pending review', cls: 'bg-amber-100 text-amber-700' },
 };
 
-export default function HostListingsPage() {
+// basePath lets the Supplier Portal (Phase 4) reuse this exact page against
+// /supplier/listings instead of /host/listings.
+export default function HostListingsPage({ basePath = '/host' }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(null);
@@ -17,7 +19,7 @@ export default function HostListingsPage() {
 
   const load = () => {
     setLoading(true);
-    api.get('/host/listings')
+    api.get(`${basePath}/listings`)
       .then(({ data }) => setListings((data.data || data).listings || []))
       .catch(() => toast.error('Could not load your listings'))
       .finally(() => setLoading(false));
@@ -40,7 +42,7 @@ export default function HostListingsPage() {
     if (!window.confirm('Delete this listing? This cannot be undone.')) return;
     setRemoving(id);
     try {
-      await api.delete(`/host/listings/${id}`);
+      await api.delete(`${basePath}/listings/${id}`);
       setListings((prev) => prev.filter((l) => l.id !== id));
       toast.success('Listing deleted');
     } catch {
@@ -57,7 +59,7 @@ export default function HostListingsPage() {
           <h1 className="text-2xl font-display font-bold">My Listings</h1>
           <p className="text-sm text-ink-muted mt-1">Your experiences — drafts, pending review and published.</p>
         </div>
-        <Link to="/host/listings/new" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
+        <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
           <PlusCircle size={18} /> Create Listing
         </Link>
       </div>
@@ -89,7 +91,7 @@ export default function HostListingsPage() {
           </div>
           <h3 className="font-semibold text-ink">No listings yet</h3>
           <p className="text-sm text-ink-muted mt-1 mb-4">Create your first experience to start hosting.</p>
-          <Link to="/host/listings/new" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
+          <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
             <PlusCircle size={18} /> Create Listing
           </Link>
         </div>
@@ -121,10 +123,10 @@ export default function HostListingsPage() {
                     {l.price ? `₹${Number(l.price).toLocaleString('en-IN')}` : '—'}<span className="text-xs font-normal text-ink-muted"> / {l.priceUnit}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                    <Link to={`/host/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                    <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                       <Pencil size={14} /> Edit
                     </Link>
-                    <Link to={`/host/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
+                    <Link to={`${basePath}/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
                       <CalendarCheck size={15} /> See Booking
                     </Link>
                     <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">

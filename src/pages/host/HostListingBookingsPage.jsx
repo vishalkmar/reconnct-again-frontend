@@ -21,8 +21,9 @@ const TABS = [
   { key: 'completed', label: 'Completed' },
 ];
 
-// A host listing's bookings feed — same upcoming/completed buckets as the app.
-export default function HostListingBookingsPage() {
+// A host listing's bookings feed — same upcoming/completed buckets as the
+// app. basePath lets the Supplier Portal (Phase 4) reuse this exact page.
+export default function HostListingBookingsPage({ basePath = '/host' }) {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function HostListingBookingsPage() {
 
   useEffect(() => {
     let alive = true;
-    api.get(`/host/listings/${id}`)
+    api.get(`${basePath}/listings/${id}`)
       .then(({ data }) => { if (alive) setListing((data.data || data).listing); })
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false); });
@@ -49,13 +50,13 @@ export default function HostListingBookingsPage() {
   const revenue = useMemo(() => bookings.filter((b) => b.status === 'completed').reduce((n, b) => n + Number(b.amount || 0), 0), [bookings]);
 
   if (loading) return <div className="flex justify-center py-20 text-slate-400"><Loader2 className="animate-spin" size={24} /></div>;
-  if (!listing) return <div className="max-w-3xl"><p className="text-ink-muted">Listing not found.</p><Link to="/host/listings" className="text-brand font-semibold">Back to listings</Link></div>;
+  if (!listing) return <div className="max-w-3xl"><p className="text-ink-muted">Listing not found.</p><Link to={`${basePath}/listings`} className="text-brand font-semibold">Back to listings</Link></div>;
 
   const badge = listing.isPublished ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' } : (STATUS_BADGE[listing.status] || STATUS_BADGE.draft);
 
   return (
     <div className="max-w-4xl">
-      <Link to="/host/listings" className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink mb-4"><ChevronLeft size={16} /> Back to My Listings</Link>
+      <Link to={`${basePath}/listings`} className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink mb-4"><ChevronLeft size={16} /> Back to My Listings</Link>
 
       <div className="bg-white rounded-2xl shadow-soft overflow-hidden mb-6 flex flex-col sm:flex-row">
         <div className="sm:w-56 h-40 bg-surface-alt shrink-0">
@@ -110,7 +111,7 @@ export default function HostListingBookingsPage() {
           {shown.map((b) => {
             const pill = BOOKING_PILL[b.status] || BOOKING_PILL.upcoming;
             return (
-              <Link key={b.id} to={`/host/bookings/${b.id}`} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3 hover:shadow-md transition">
+              <Link key={b.id} to={`${basePath}/bookings/${b.id}`} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3 hover:shadow-md transition">
                 <div className="min-w-0">
                   <div className="font-semibold text-ink truncate">{b.guest || 'Guest'}</div>
                   <div className="text-xs text-ink-muted">{b.date} · {b.guests} guest(s)</div>

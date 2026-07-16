@@ -55,8 +55,29 @@ import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
 import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
 import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
+import TeamManagementPage from './pages/admin/TeamManagementPage.jsx';
 import AdminReviewsPage from './pages/admin/AdminReviewsPage.jsx';
 import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx';
+
+// Team Portal — internal staff (BD/COPS/Account Manager/CSM/QCOPS/Marketing).
+// Reuses the exact admin Supplier/Experience form components (permission-
+// gated on the backend), wrapped in its own layout + auth.
+import TeamLayout from './layouts/TeamLayout.jsx';
+import TeamProtectedRoute from './components/team/TeamProtectedRoute.jsx';
+import TeamLoginPage from './pages/team/TeamLoginPage.jsx';
+import TeamDashboardPage from './pages/team/TeamDashboardPage.jsx';
+import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
+import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
+import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
+import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
+import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
+
+// Supplier Portal — a supplier's own login (Phase 4). Reuses the EXACT same
+// Host*Page components (host.controller.js resolves ownership from
+// req.supplier here vs req.user on /host/*) via a `basePath` prop.
+import SupplierLayout from './layouts/SupplierLayout.jsx';
+import SupplierProtectedRoute from './components/supplier/SupplierProtectedRoute.jsx';
+import SupplierLoginPage from './pages/supplier/SupplierLoginPage.jsx';
 
 export default function App() {
   return (
@@ -164,6 +185,49 @@ export default function App() {
           <Route path="experience-setup" element={<ExperienceSetupPage />} />
           <Route path="app-screens" element={<AppScreensControlPage />} />
           <Route path="chat-support" element={<ChatSupportPage />} />
+          <Route path="team" element={<TeamManagementPage />} />
+        </Route>
+
+        {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}
+        <Route path="/team/login" element={<TeamLoginPage />} />
+        <Route
+          path="/team"
+          element={
+            <TeamProtectedRoute>
+              <TeamLayout />
+            </TeamProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<TeamDashboardPage />} />
+          <Route path="suppliers" element={<TeamSuppliersPage />} />
+          <Route path="suppliers/new" element={<SupplierFormPage />} />
+          <Route path="experiences" element={<TeamExperiencesPage />} />
+          <Route path="experiences/new" element={<ExperienceFormPage />} />
+          <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
+          <Route path="review-queue" element={<TeamReviewQueuePage />} />
+          <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
+          <Route path="my-customers" element={<TeamCsmPage />} />
+        </Route>
+
+        {/* Supplier Portal — a supplier's own login, dashboard cloned from Host */}
+        <Route path="/supplier/login" element={<SupplierLoginPage />} />
+        <Route
+          path="/supplier"
+          element={
+            <SupplierProtectedRoute>
+              <SupplierLayout />
+            </SupplierProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<HostDashboardPage basePath="/supplier" title="Supplier Dashboard" />} />
+          <Route path="listings" element={<HostListingsPage basePath="/supplier" />} />
+          <Route path="listings/new" element={<HostListingFormPage basePath="/supplier" />} />
+          <Route path="listings/:id/edit" element={<HostListingFormPage basePath="/supplier" />} />
+          <Route path="listings/:id/bookings" element={<HostListingBookingsPage basePath="/supplier" />} />
+          <Route path="bookings/:id" element={<HostBookingDetailPage basePath="/supplier" />} />
+          <Route path="transactions" element={<HostTransactionsPage basePath="/supplier" />} />
         </Route>
 
         {/* Anything else → landing */}

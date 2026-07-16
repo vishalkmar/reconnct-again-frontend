@@ -7,13 +7,14 @@ import api from '../../services/api';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-export default function HostDashboardPage() {
+// basePath lets the Supplier Portal (Phase 4) reuse this exact page.
+export default function HostDashboardPage({ basePath = '/host', title = 'Host Dashboard' }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    api.get('/host/summary')
+    api.get(`${basePath}/summary`)
       .then(({ data }) => { if (alive) setStats((data.data || data).stats); })
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false); });
@@ -29,10 +30,10 @@ export default function HostDashboardPage() {
     <div className="max-w-6xl">
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-display font-bold">Host Dashboard</h1>
+          <h1 className="text-2xl font-display font-bold">{title}</h1>
           <p className="text-sm text-ink-muted mt-1">Manage your experiences, track bookings and earnings.</p>
         </div>
-        <Link to="/host/listings/new" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
+        <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
           <PlusCircle size={18} /> Create Listing
         </Link>
       </div>
@@ -54,10 +55,10 @@ export default function HostDashboardPage() {
       <div className="bg-white rounded-2xl shadow-soft p-6">
         <h2 className="font-semibold text-ink mb-4">Quick actions</h2>
         <div className="flex flex-wrap gap-3">
-          <Link to="/host/listings/new" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
+          <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
             <PlusCircle size={18} /> New experience
           </Link>
-          <Link to="/host/listings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border font-medium hover:bg-surface-alt transition">
+          <Link to={`${basePath}/listings`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border font-medium hover:bg-surface-alt transition">
             <ListChecks size={18} /> Manage listings
           </Link>
         </div>

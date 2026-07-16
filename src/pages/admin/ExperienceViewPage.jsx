@@ -90,7 +90,7 @@ export default function ExperienceViewPage() {
   return (
     <div className="max-w-4xl">
       <div className="flex items-center justify-between gap-3 mb-6">
-        <button onClick={() => navigate('/admin/experiences')} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand">
+        <button onClick={() => navigate('..', { relative: 'path' })} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand">
           <ArrowLeft size={16} /> Back
         </button>
         <Link to={`/admin/experiences/${e.id}/edit`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-ink font-semibold">

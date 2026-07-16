@@ -11,7 +11,7 @@ const pretty = (s) => { const [y, m, d] = String(s).split('-').map(Number); retu
 // booking live listings there are genuinely none (honest zeros, never faked).
 // Every amount shown here is the BASE amount (no GST/convenience fee) — same
 // figure the voucher email and the dashboard stats use.
-export default function HostTransactionsPage() {
+export default function HostTransactionsPage({ basePath = '/host' }) {
   const [stats, setStats] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,8 @@ export default function HostTransactionsPage() {
   useEffect(() => {
     let alive = true;
     Promise.all([
-      api.get('/host/summary'),
-      api.get('/host/transactions'),
+      api.get(`${basePath}/summary`),
+      api.get(`${basePath}/transactions`),
     ])
       .then(([summaryRes, txnRes]) => {
         if (!alive) return;
@@ -69,7 +69,7 @@ export default function HostTransactionsPage() {
       ) : (
         <div className="space-y-3">
           {transactions.map((t) => (
-            <Link key={t.id} to={`/host/bookings/${t.id}`} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3 hover:shadow-md transition">
+            <Link key={t.id} to={`${basePath}/bookings/${t.id}`} className="bg-white rounded-xl shadow-soft p-4 flex items-center justify-between gap-3 hover:shadow-md transition">
               <div className="min-w-0">
                 <div className="font-semibold text-ink truncate">{t.guest}</div>
                 <div className="text-xs text-ink-muted truncate">{t.listingTitle} · {pretty(t.date)}</div>

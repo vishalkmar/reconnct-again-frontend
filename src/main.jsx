@@ -6,6 +6,8 @@ import { Toaster } from 'react-hot-toast';
 import App from './App.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { TeamAuthProvider } from './context/TeamAuthContext.jsx';
+import { SupplierAuthProvider } from './context/SupplierAuthContext.jsx';
 import { UserAuthProvider } from './context/UserAuthContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
 import './styles/index.css';
@@ -27,12 +29,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <UserAuthProvider>
-            <WishlistProvider>
-              <App />
-              <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-            </WishlistProvider>
-          </UserAuthProvider>
+          <TeamAuthProvider>
+            <SupplierAuthProvider>
+              <UserAuthProvider>
+                <WishlistProvider>
+                  <App />
+                  <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+                </WishlistProvider>
+              </UserAuthProvider>
+            </SupplierAuthProvider>
+          </TeamAuthProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

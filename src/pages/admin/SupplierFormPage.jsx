@@ -97,7 +97,7 @@ export default function SupplierFormPage() {
         await api.post('/suppliers', value);
         toast.success('Supplier created');
       }
-      navigate('/admin/suppliers');
+      navigate('..', { relative: 'path' });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Save failed');
     } finally {
@@ -111,7 +111,7 @@ export default function SupplierFormPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <button onClick={() => navigate('/admin/suppliers')} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
+      <button onClick={() => navigate('..', { relative: 'path' })} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
         <ArrowLeft size={16} /> Back to suppliers
       </button>
       <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit supplier' : 'New supplier'}</h1>
@@ -159,7 +159,7 @@ export default function SupplierFormPage() {
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             {editing ? 'Update supplier' : 'Save supplier'}
           </button>
-          <button onClick={() => navigate('/admin/suppliers')} className="px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
+          <button onClick={() => navigate('..', { relative: 'path' })} className="px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
         </div>
       </div>
 
