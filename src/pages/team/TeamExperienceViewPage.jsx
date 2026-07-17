@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, XCircle, CheckCircle2, Clock, ShieldCheck, CalendarClock, Pencil,
+  ArrowLeft, Loader2, XCircle, CheckCircle2, Clock, ShieldCheck, CalendarClock, Pencil, ClipboardList, Star,
 } from 'lucide-react';
 import api from '../../services/api';
 import { RENDERERS } from '../../components/team/sectionRenderers.jsx';
@@ -56,16 +56,63 @@ function Banner({ tone, Icon, title }) {
   );
 }
 
+function FieldValue({ field, value }) {
+  if (value == null || value === '') return <span className="text-ink-muted italic">—</span>;
+  if (field.type === 'rating') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-amber-500">
+        {Array.from({ length: 5 }, (_, i) => <Star key={i} size={13} className={i < value ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />)}
+      </span>
+    );
+  }
+  if (field.type === 'boolean') return <span className={value ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>{value ? 'Yes' : 'No'}</span>;
+  if (field.type === 'select') return <span className="font-semibold capitalize">{String(value).replace('_', ' ')}</span>;
+  return <span className="text-ink">{value}</span>;
+}
+
+function QcFeedbackCard({ qcReview, fields }) {
+  const fb = qcReview?.feedback;
+  if (!fb) return null;
+  const rec = fb.recommendation;
+  return (
+    <div className="bg-white rounded-2xl shadow-soft p-5 sm:p-6">
+      <h2 className="font-semibold text-lg mb-3 inline-flex items-center gap-2"><ClipboardList size={18} className="text-indigo-600" /> QCOPS on-site feedback</h2>
+      {qcReview.visitDate && <div className="text-xs text-ink-muted mb-3">Visited on {qcReview.visitDate}{qcReview.visitTime ? ` at ${qcReview.visitTime}` : ''}</div>}
+      {rec && (
+        <div className={`rounded-xl px-4 py-2.5 mb-3 text-sm font-semibold ${rec === 'approve' ? 'bg-emerald-50 text-emerald-700' : rec === 'reject' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>
+          QCOPS recommended: {String(rec).replace('_', ' ')}
+        </div>
+      )}
+      <div className="divide-y divide-slate-100">
+        {fields.map((f) => (
+          <div key={f.key} className="py-2.5 flex items-start justify-between gap-4">
+            <span className="text-sm text-ink-muted flex-1">{f.label}</span>
+            <span className="text-sm text-right"><FieldValue field={f} value={fb[f.key]} /></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TeamExperienceViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [e, setE] = useState(null);
+  const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let off = false;
-    api.get(`/experiences/${id}`)
-      .then((res) => { if (!off) setE(res.data?.data?.item || null); })
+    Promise.all([
+      api.get(`/experiences/${id}`),
+      api.get('/team/qc/feedback-schema').catch(() => ({ data: { data: { fields: [] } } })),
+    ])
+      .then(([expRes, schemaRes]) => {
+        if (off) return;
+        setE(expRes.data?.data?.item || null);
+        setFields(schemaRes.data?.data?.fields || []);
+      })
       .catch(() => {})
       .finally(() => { if (!off) setLoading(false); });
     return () => { off = true; };
@@ -97,6 +144,7 @@ export default function TeamExperienceViewPage() {
             </div>
           );
         })}
+        <QcFeedbackCard qcReview={e.qcReview} fields={fields} />
       </div>
     </div>
   );

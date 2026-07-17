@@ -28,6 +28,7 @@ export default function TeamLayout() {
     { to: '/team/experiences', label: 'My Experiences', icon: Sparkles, show: !!perms.canAddExperience },
     { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
     { to: '/team/qc-visits', label: 'My QC Visits', icon: MapPinned, show: member?.roleType === 'qcops' },
+    { to: '/team/qc-listings', label: 'Listing Management', icon: BadgeCheck, show: member?.roleType === 'qcops' },
     { to: '/team/qc-management', label: 'QCOPS Management', icon: BadgeCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
     { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts },
     { to: '/team/my-customers', label: 'My Customers', icon: HeartHandshake, show: !!perms.canManageCustomers },

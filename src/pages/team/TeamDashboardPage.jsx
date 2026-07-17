@@ -35,6 +35,10 @@ export default function TeamDashboardPage() {
       title: 'My QC Visits', desc: 'On-site quality checks assigned to you — acknowledge, confirm, give feedback.',
     },
     {
+      to: '/team/qc-listings', show: member?.roleType === 'qcops', icon: BadgeCheck,
+      title: 'Listing Management', desc: 'Final outcomes of your checks — approved & rejected, with reasons.',
+    },
+    {
       to: '/team/qc-management', show: !!perms.canReviewListings && member?.roleType !== 'qcops', icon: BadgeCheck,
       title: 'QCOPS Management', desc: 'Every QCOPS member and their on-site verification analytics.',
     },

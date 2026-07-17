@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Loader2, Users, Truck, Mail, Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Loader2, Users, Truck, Mail, Phone, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
@@ -39,7 +40,7 @@ export default function TeamAccountManagerPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {items.map((s) => (
-            <div key={s.id} className="bg-white rounded-2xl shadow-soft p-5">
+            <Link key={s.id} to={`/team/my-suppliers/${s.id}`} className="block bg-white rounded-2xl shadow-soft p-5 hover:shadow-lg transition">
               <div className="flex items-center gap-3 mb-3">
                 {s.image ? (
                   <img src={fileUrl(s.image)} alt="" className="w-11 h-11 rounded-xl object-cover border" />
@@ -50,6 +51,7 @@ export default function TeamAccountManagerPage() {
                   <div className="font-semibold text-ink truncate">{s.companyName}</div>
                   {s.supplierName && <div className="text-[11px] text-ink-muted truncate">{s.supplierName}</div>}
                 </div>
+                <ChevronRight size={18} className="text-ink-muted ml-auto" />
               </div>
 
               <div className="text-sm text-ink-muted space-y-1 mb-4">
@@ -63,7 +65,8 @@ export default function TeamAccountManagerPage() {
                 <Stat value={s.stats.pendingReview} label="Pending" tint="text-blue-600" />
                 <Stat value={s.stats.published} label="Live" tint="text-emerald-600" />
               </div>
-            </div>
+              <div className="mt-3 text-center text-xs font-semibold text-brand-dark">View their experiences →</div>
+            </Link>
           ))}
         </div>
       )}

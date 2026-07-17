@@ -90,7 +90,7 @@ export default function TeamQcManagementPage() {
             ) : (
               <div className="bg-white rounded-2xl shadow-soft overflow-hidden divide-y divide-slate-100">
                 {detail.listings.map((l) => (
-                  <Link key={l.id} to={`/team/review-queue/${l.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-alt">
+                  <Link key={l.id} to={`/team/experiences/${l.id}/view`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-alt">
                     {l.mainImage ? <img src={fileUrl(l.mainImage)} alt="" className="w-11 h-11 rounded-lg object-cover border shrink-0" />
                       : <div className="w-11 h-11 rounded-lg bg-surface-alt flex items-center justify-center text-ink-muted shrink-0"><ClipboardList size={16} /></div>}
                     <div className="min-w-0 flex-1">

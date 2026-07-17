@@ -75,6 +75,8 @@ import TeamResolveObjectionsPage from './pages/team/TeamResolveObjectionsPage.js
 import TeamQcVisitsPage from './pages/team/TeamQcVisitsPage.jsx';
 import TeamExperienceViewPage from './pages/team/TeamExperienceViewPage.jsx';
 import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
+import TeamQcListingsPage from './pages/team/TeamQcListingsPage.jsx';
+import TeamSupplierExperiencesPage from './pages/team/TeamSupplierExperiencesPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 
@@ -217,7 +219,9 @@ export default function App() {
           <Route path="review-queue" element={<TeamReviewQueuePage />} />
           <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
           <Route path="qc-visits" element={<TeamQcVisitsPage />} />
+          <Route path="qc-listings" element={<TeamQcListingsPage />} />
           <Route path="qc-management" element={<TeamQcManagementPage />} />
+          <Route path="my-suppliers/:supplierId" element={<TeamSupplierExperiencesPage />} />
           <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
           <Route path="my-customers" element={<TeamCsmPage />} />
         </Route>
