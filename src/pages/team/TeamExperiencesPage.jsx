@@ -14,7 +14,7 @@ const STATUS_STYLE = {
   published: 'bg-emerald-50 text-emerald-700',
   archived: 'bg-slate-100 text-slate-500',
 };
-const STATUS_LABEL = { pending_review: 'Pending Review' };
+const STATUS_LABEL = { pending_review: 'Pending Review', archived: 'Rejected', published: 'Live' };
 
 export default function TeamExperiencesPage() {
   const { member } = useTeamAuth();
@@ -94,7 +94,7 @@ export default function TeamExperiencesPage() {
                       <div className="w-11 h-11 rounded-lg bg-surface-alt flex items-center justify-center text-ink-muted shrink-0"><Sparkles size={18} /></div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-ink truncate">{e.name}</div>
+                      <Link to={`${e.id}/view`} className="font-semibold text-ink truncate hover:text-brand block">{e.name}</Link>
                       <div className="text-[11px] text-ink-muted truncate">
                         {e.supplier?.companyName || '—'}{e.location ? ` · ${e.location}` : ''}
                         {e.review?.round > 0 && <span className="ml-1 text-amber-600">· follow-up round {e.review.round}</span>}
@@ -147,6 +147,20 @@ export default function TeamExperiencesPage() {
                           <Send size={13} /> Resolve &amp; review again
                         </Link>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Final rejection (after Center Ops / QCOPS) — reason + details */}
+                  {!flagged && e.status === 'archived' && (
+                    <div className="mt-3 sm:ml-14 bg-rose-50 rounded-xl p-3.5">
+                      <div className="text-xs font-bold uppercase tracking-wide text-rose-600 mb-1.5 flex items-center gap-1.5">
+                        <CircleAlert size={14} /> Rejected
+                      </div>
+                      {e.reviewNote && <p className="text-sm text-rose-800">{e.reviewNote}</p>}
+                      <Link to={`${e.id}/view`}
+                        className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100">
+                        View full details
+                      </Link>
                     </div>
                   )}
                 </li>

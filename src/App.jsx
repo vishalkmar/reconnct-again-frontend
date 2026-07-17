@@ -73,6 +73,7 @@ import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
 import TeamReviewDetailPage from './pages/team/TeamReviewDetailPage.jsx';
 import TeamResolveObjectionsPage from './pages/team/TeamResolveObjectionsPage.jsx';
 import TeamQcVisitsPage from './pages/team/TeamQcVisitsPage.jsx';
+import TeamExperienceViewPage from './pages/team/TeamExperienceViewPage.jsx';
 import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
@@ -212,6 +213,7 @@ export default function App() {
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/resolve" element={<TeamResolveObjectionsPage />} />
+          <Route path="experiences/:id/view" element={<TeamExperienceViewPage />} />
           <Route path="review-queue" element={<TeamReviewQueuePage />} />
           <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
           <Route path="qc-visits" element={<TeamQcVisitsPage />} />

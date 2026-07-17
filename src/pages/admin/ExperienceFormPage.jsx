@@ -103,6 +103,10 @@ export default function ExperienceFormPage() {
   const location = useLocation();
   // BD/team submissions always go for review; admin publishing also needs it.
   const isTeamPath = location.pathname.startsWith('/team');
+  // Where to go after save/cancel — the correct LIST for whichever portal we're
+  // in. Using a relative '..' broke on the edit route (…/:id/edit → …/:id has no
+  // route → fell through to home, forcing a re-login).
+  const listPath = isTeamPath ? '/team/experiences' : '/admin/experiences';
 
   const { value, setValue, hydrateFromServer, clearDraft, discardDraft, hasDraft } =
     usePersistedForm(`experience-form:${id || 'new'}`, blank, { editing });
@@ -184,7 +188,7 @@ export default function ExperienceFormPage() {
         toast.success(acts.length > 1 ? `${acts.length} experiences saved` : 'Experience saved');
       }
       clearDraft();
-      navigate('..', { relative: 'path' });
+      navigate(listPath);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Save failed');
     } finally {
@@ -201,7 +205,7 @@ export default function ExperienceFormPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
-        <button onClick={() => navigate('..', { relative: 'path' })} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
+        <button onClick={() => navigate(listPath)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
           <ArrowLeft size={16} /> Back to experiences
         </button>
         <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit experience' : 'New experience'}</h1>
@@ -268,13 +272,19 @@ export default function ExperienceFormPage() {
         {/* Publish / actions — sticky sidebar */}
         <aside className="lg:col-span-1 lg:sticky lg:top-6 space-y-4">
           <div className="bg-white rounded-2xl shadow-soft p-5">
-            <h3 className="font-semibold mb-3">Publish</h3>
-            <label className="label">Status</label>
-            <select className="input mb-4" value={value.status} onChange={(e) => patch({ status: e.target.value })}>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
+            <h3 className="font-semibold mb-3">{isTeamPath ? 'Save' : 'Publish'}</h3>
+            {isTeamPath ? (
+              <p className="text-xs text-ink-muted mb-4">This goes to Center Ops for review — it can’t be published directly from here.</p>
+            ) : (
+              <>
+                <label className="label">Status</label>
+                <select className="input mb-4" value={value.status} onChange={(e) => patch({ status: e.target.value })}>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </>
+            )}
             {!editing && activities.length > 1 && (
               <p className="text-[11px] text-ink-muted mb-3">{activities.length} activities will be saved as separate experiences{value.supplierId ? ' under the chosen supplier' : ''}.</p>
             )}
@@ -282,7 +292,7 @@ export default function ExperienceFormPage() {
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {editing ? 'Update experience' : (activities.length > 1 ? `Save ${activities.length} activities` : 'Save experience')}
             </button>
-            <button onClick={() => navigate('..', { relative: 'path' })} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
+            <button onClick={() => navigate(listPath)} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
             {hasDraft && (
               <button onClick={discardDraft} className="w-full mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:underline">
                 <Trash2 size={13} /> Discard draft
