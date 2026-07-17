@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Plus, Loader2, Sparkles, Clock, MessageSquareWarning, Send, Pencil,
+  Plus, Loader2, Sparkles, Clock, MessageSquareWarning, Send, Pencil, CircleAlert, Lightbulb, CircleCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { useTeamAuth } from '../../context/TeamAuthContext.jsx';
+import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
 
 const STATUS_STYLE = {
   draft: 'bg-amber-50 text-amber-700',
@@ -17,12 +18,12 @@ const STATUS_LABEL = { pending_review: 'Pending Review' };
 
 export default function TeamExperiencesPage() {
   const { member } = useTeamAuth();
+  const { items: notifs } = useReviewNotify();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await api.get('/experiences');
       const mine = (res.data?.data?.items || []).filter((e) => e.createdByTeamMemberId === member.id);
@@ -35,12 +36,14 @@ export default function TeamExperiencesPage() {
   }, [member.id]);
 
   useEffect(() => { load(); }, [load]);
+  // Real-time: reload when a review notification arrives.
+  useEffect(() => { if (notifs.length) load(); }, [notifs.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const resubmit = async (id) => {
+  const reviewAgain = async (id) => {
     setBusyId(id);
     try {
       await api.post(`/experiences/${id}/resubmit`);
-      toast.success('Resubmitted for review');
+      toast.success('Sent back to Center Ops for review');
       load();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed');
@@ -50,7 +53,9 @@ export default function TeamExperiencesPage() {
   };
 
   const pendingCount = items.filter((e) => e.status === 'pending_review').length;
-  const needsChangesCount = items.filter((e) => e.status === 'draft' && e.reviewNote).length;
+  // "Needs changes" now = a follow-up came back (draft with objections or a legacy note).
+  const needsChanges = (e) => e.status === 'draft' && (e.review?.summary?.objection > 0 || e.reviewNote);
+  const needsChangesCount = items.filter(needsChanges).length;
 
   return (
     <div className="max-w-5xl">
@@ -67,7 +72,7 @@ export default function TeamExperiencesPage() {
       {needsChangesCount > 0 && (
         <div className="flex items-center gap-2.5 bg-rose-50 text-rose-700 rounded-xl px-4 py-3 mb-3 text-sm font-medium">
           <MessageSquareWarning size={16} />
-          {needsChangesCount} experience{needsChangesCount > 1 ? 's need' : ' needs'} changes before it can go live — see below.
+          {needsChangesCount} experience{needsChangesCount > 1 ? 's need' : ' needs'} changes before going live — see the objections below.
         </div>
       )}
       {pendingCount > 0 && (
@@ -90,7 +95,10 @@ export default function TeamExperiencesPage() {
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
           <ul className="divide-y divide-slate-100">
             {items.map((e) => {
-              const needsChanges = e.status === 'draft' && e.reviewNote;
+              const flagged = needsChanges(e);
+              const summary = e.review?.summary;
+              const objections = summary?.objections || [];
+              const suggestion = e.review?.suggestion || e.reviewSuggestion;
               return (
                 <li key={e.id} className="px-4 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
@@ -103,24 +111,54 @@ export default function TeamExperiencesPage() {
                       <div className="font-semibold text-ink truncate">{e.name}</div>
                       <div className="text-[11px] text-ink-muted truncate">
                         {e.supplier?.companyName || '—'}{e.location ? ` · ${e.location}` : ''}
+                        {e.review?.round > 0 && <span className="ml-1 text-amber-600">· follow-up round {e.review.round}</span>}
                       </div>
                     </div>
+                    {flagged && summary?.approved > 0 && (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                        <CircleCheck size={13} /> {summary.approved}/{summary.total} approved
+                      </span>
+                    )}
                     <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize shrink-0 ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>
-                      {needsChanges ? 'Changes requested' : (STATUS_LABEL[e.status] || e.status)}
+                      {flagged ? 'Objections' : (STATUS_LABEL[e.status] || e.status)}
                     </span>
                   </div>
 
-                  {needsChanges && (
-                    <div className="mt-3 ml-14 bg-rose-50 rounded-xl p-3.5">
-                      <p className="text-sm text-rose-800">{e.reviewNote}</p>
-                      <div className="flex gap-2 mt-2.5">
+                  {flagged && (
+                    <div className="mt-3 sm:ml-14 bg-rose-50 rounded-xl p-3.5">
+                      {objections.length > 0 ? (
+                        <>
+                          <div className="text-xs font-bold uppercase tracking-wide text-rose-600 mb-2 flex items-center gap-1.5">
+                            <CircleAlert size={14} /> {objections.length} objection{objections.length > 1 ? 's' : ''} to fix
+                          </div>
+                          <ul className="space-y-2">
+                            {objections.map((o) => (
+                              <li key={o.key} className="text-sm">
+                                <span className="font-semibold text-rose-800">{o.label}:</span>{' '}
+                                <span className="text-rose-700">{o.objection}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-sm text-rose-800">{e.reviewNote}</p>
+                      )}
+
+                      {suggestion && (
+                        <div className="mt-3 flex items-start gap-2 text-sm text-amber-800 bg-amber-50 rounded-lg px-3 py-2">
+                          <Lightbulb size={15} className="mt-0.5 shrink-0" />
+                          <span><span className="font-semibold">Suggestion:</span> {suggestion}</span>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 mt-3">
                         <Link to={`${e.id}/edit`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100">
-                          <Pencil size={13} /> Edit
+                          <Pencil size={13} /> Fix objections
                         </Link>
-                        <button onClick={() => resubmit(e.id)} disabled={busyId === e.id}
+                        <button onClick={() => reviewAgain(e.id)} disabled={busyId === e.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 disabled:opacity-60">
-                          <Send size={13} /> Resubmit for review
+                          <Send size={13} /> Review again
                         </button>
                       </div>
                     </div>

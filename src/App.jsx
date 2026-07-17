@@ -69,6 +69,7 @@ import TeamDashboardPage from './pages/team/TeamDashboardPage.jsx';
 import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
 import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
 import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
+import TeamReviewDetailPage from './pages/team/TeamReviewDetailPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 
@@ -206,6 +207,7 @@ export default function App() {
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
           <Route path="review-queue" element={<TeamReviewQueuePage />} />
+          <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
           <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
           <Route path="my-customers" element={<TeamCsmPage />} />
         </Route>

@@ -4,6 +4,8 @@ import {
   LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake,
 } from 'lucide-react';
 import { useTeamAuth } from '../context/TeamAuthContext.jsx';
+import { ReviewNotifyProvider } from '../context/ReviewNotifyContext.jsx';
+import ReviewBell from '../components/team/ReviewBell.jsx';
 
 const ROLE_LABEL = {
   bd: 'Business Developer',
@@ -68,27 +70,31 @@ export default function TeamLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-surface-alt flex">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block fixed inset-y-0 left-0 z-30">{Sidebar}</div>
+    <ReviewNotifyProvider>
+      <div className="min-h-screen bg-surface-alt flex">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:block fixed inset-y-0 left-0 z-30">{Sidebar}</div>
 
-      {/* Mobile sidebar overlay */}
-      {open && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0">{Sidebar}</div>
-        </div>
-      )}
+        {/* Mobile sidebar overlay */}
+        {open && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+            <div className="absolute inset-y-0 left-0">{Sidebar}</div>
+          </div>
+        )}
 
-      <div className="flex-1 flex flex-col lg:ml-64">
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
-          <button onClick={() => setOpen(true)} className="text-ink-muted"><Menu size={22} /></button>
-          <span className="font-display font-bold">Team Portal</span>
+        <div className="flex-1 flex flex-col lg:ml-64">
+          {/* Top bar with the review bell */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-20">
+            <button onClick={() => setOpen(true)} className="lg:hidden text-ink-muted"><Menu size={22} /></button>
+            <span className="font-display font-bold lg:hidden">Team Portal</span>
+            <div className="ml-auto"><ReviewBell /></div>
+          </div>
+          <main className="flex-1 p-4 md:p-8">
+            <Outlet />
+          </main>
         </div>
-        <main className="flex-1 p-4 md:p-8">
-          <Outlet />
-        </main>
       </div>
-    </div>
+    </ReviewNotifyProvider>
   );
 }
