@@ -71,6 +71,10 @@ export default function HostListingFormPage({ basePath = '/host' }) {
 
   const submit = async (isReview) => {
     if (submitting) return;
+    // At least 6 photos are mandatory before submitting for review.
+    if (isReview && form.photos.filter(Boolean).length < 6) {
+      return toast.error(`Add at least 6 photos before submitting — you have ${form.photos.filter(Boolean).length}.`);
+    }
     setSubmitting(true);
     try {
       const payload = form.photos.length ? form : { ...form, photos: ['https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80'] };
@@ -385,7 +389,7 @@ function Step4({ form, patch }) {
     <>
       <Card>
         <h2 className="text-xl font-display font-bold mb-1">Add photos &amp; videos</h2>
-        <Hint>The first photo is your cover. Great photos increase bookings by up to 3×. Add at least a few — 6 works best. Each image must be under 5MB.</Hint>
+        <Hint>The first photo is your cover. <strong>At least 6 photos are required</strong> before you can submit for review. Each image must be under 5MB.</Hint>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {/* At least 6 slots shown by default; a trailing "add more" tile once
               all 6 are filled — mirrors the app's photo grid. */}

@@ -83,6 +83,7 @@ export const ReviewNotifyProvider = ({ children }) => {
 
 export const NOTIF_ICON = {
   objection: '⚠️', follow_up: '⚠️', approved: '✅', rejected: '⛔', qcops: '🔎', submitted: '📩', resubmitted: '🔁',
+  section_approved: '✅', qc_ack: '📩', qc_onsite: '📍', qc_feedback: '📝', qc_reminder: '⏰',
 };
 
 export const useReviewNotify = () => {

@@ -24,6 +24,7 @@ import HostLayout from './layouts/HostLayout.jsx';
 import HostDashboardPage from './pages/host/HostDashboardPage.jsx';
 import HostListingsPage from './pages/host/HostListingsPage.jsx';
 import HostListingFormPage from './pages/host/HostListingFormPage.jsx';
+import HostResolveObjectionsPage from './pages/host/HostResolveObjectionsPage.jsx';
 import HostProfilePage from './pages/host/HostProfilePage.jsx';
 import HostTransactionsPage from './pages/host/HostTransactionsPage.jsx';
 import HostSupportPage from './pages/host/HostSupportPage.jsx';
@@ -70,6 +71,9 @@ import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
 import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
 import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
 import TeamReviewDetailPage from './pages/team/TeamReviewDetailPage.jsx';
+import TeamResolveObjectionsPage from './pages/team/TeamResolveObjectionsPage.jsx';
+import TeamQcVisitsPage from './pages/team/TeamQcVisitsPage.jsx';
+import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 
@@ -146,6 +150,7 @@ export default function App() {
           <Route path="listings" element={<HostListingsPage />} />
           <Route path="listings/new" element={<HostListingFormPage />} />
           <Route path="listings/:id/edit" element={<HostListingFormPage />} />
+          <Route path="listings/:id/resolve" element={<HostResolveObjectionsPage />} />
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage />} />
           <Route path="notifications" element={<HostNotificationsPage />} />
@@ -206,8 +211,11 @@ export default function App() {
           <Route path="experiences" element={<TeamExperiencesPage />} />
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
+          <Route path="experiences/:id/resolve" element={<TeamResolveObjectionsPage />} />
           <Route path="review-queue" element={<TeamReviewQueuePage />} />
           <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
+          <Route path="qc-visits" element={<TeamQcVisitsPage />} />
+          <Route path="qc-management" element={<TeamQcManagementPage />} />
           <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
           <Route path="my-customers" element={<TeamCsmPage />} />
         </Route>
@@ -227,6 +235,7 @@ export default function App() {
           <Route path="listings" element={<HostListingsPage basePath="/supplier" />} />
           <Route path="listings/new" element={<HostListingFormPage basePath="/supplier" />} />
           <Route path="listings/:id/edit" element={<HostListingFormPage basePath="/supplier" />} />
+          <Route path="listings/:id/resolve" element={<HostResolveObjectionsPage basePath="/supplier" />} />
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage basePath="/supplier" />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage basePath="/supplier" />} />
           <Route path="transactions" element={<HostTransactionsPage basePath="/supplier" />} />

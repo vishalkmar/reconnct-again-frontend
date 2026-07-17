@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X, MessageSquareWarning, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
 const STATUS_BADGE = {
   draft: { label: 'Draft', cls: 'bg-slate-100 text-slate-600' },
   pending: { label: 'Pending review', cls: 'bg-amber-100 text-amber-700' },
+  changes: { label: 'Objections', cls: 'bg-rose-100 text-rose-700' },
 };
 
 // basePath lets the Supplier Portal (Phase 4) reuse this exact page against
@@ -102,7 +103,11 @@ export default function HostListingsPage({ basePath = '/host' }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((l) => {
-            const badge = l.isPublished ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' } : (STATUS_BADGE[l.status] || STATUS_BADGE.draft);
+            const objectionCount = l.review?.objection || 0;
+            const hasObjections = l.status === 'changes' || objectionCount > 0;
+            const badge = l.isPublished
+              ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' }
+              : hasObjections ? STATUS_BADGE.changes : (STATUS_BADGE[l.status] || STATUS_BADGE.draft);
             return (
               <div key={l.id} className="bg-white rounded-2xl shadow-soft overflow-hidden flex flex-col">
                 <div className="relative h-40 bg-surface-alt">
@@ -122,6 +127,18 @@ export default function HostListingsPage({ basePath = '/host' }) {
                   <div className="mt-2 text-brand-dark font-bold">
                     {l.price ? `₹${Number(l.price).toLocaleString('en-IN')}` : '—'}<span className="text-xs font-normal text-ink-muted"> / {l.priceUnit}</span>
                   </div>
+
+                  {hasObjections && (
+                    <Link to={`${basePath}/listings/${l.id}/resolve`}
+                      className="mt-3 flex items-center gap-2 bg-rose-50 hover:bg-rose-100 transition rounded-xl px-3 py-2.5 text-sm">
+                      <MessageSquareWarning size={16} className="text-rose-600 shrink-0" />
+                      <span className="flex-1 min-w-0 text-rose-800 font-semibold truncate">
+                        {objectionCount > 0 ? `${objectionCount} objection${objectionCount > 1 ? 's' : ''} to fix` : 'Center Ops requested changes'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-rose-700 font-semibold shrink-0"><Send size={13} /> Resolve</span>
+                    </Link>
+                  )}
+
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
                     <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                       <Pencil size={14} /> Edit

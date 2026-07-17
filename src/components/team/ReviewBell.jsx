@@ -25,11 +25,11 @@ export default function ReviewBell() {
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  const isReviewer = member?.roleType === 'cops' || member?.roleType === 'qcops';
-
   const targetFor = (n) => {
-    if (isReviewer && ['submitted', 'resubmitted', 'qcops'].includes(n.kind)) {
-      return n.experienceId ? `/team/review-queue/${n.experienceId}` : '/team/review-queue';
+    if (member?.roleType === 'qcops') return '/team/qc-visits';
+    if (member?.roleType === 'cops') {
+      if (['qc_ack', 'qc_onsite', 'qc_feedback'].includes(n.kind)) return '/team/review-queue';
+      if (['submitted', 'resubmitted'].includes(n.kind)) return n.experienceId ? `/team/review-queue/${n.experienceId}` : '/team/review-queue';
     }
     return '/team/experiences';
   };

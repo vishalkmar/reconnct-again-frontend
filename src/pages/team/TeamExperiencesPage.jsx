@@ -21,7 +21,6 @@ export default function TeamExperiencesPage() {
   const { items: notifs } = useReviewNotify();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -38,19 +37,6 @@ export default function TeamExperiencesPage() {
   useEffect(() => { load(); }, [load]);
   // Real-time: reload when a review notification arrives.
   useEffect(() => { if (notifs.length) load(); }, [notifs.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const reviewAgain = async (id) => {
-    setBusyId(id);
-    try {
-      await api.post(`/experiences/${id}/resubmit`);
-      toast.success('Sent back to Center Ops for review');
-      load();
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed');
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const pendingCount = items.filter((e) => e.status === 'pending_review').length;
   // "Needs changes" now = a follow-up came back (draft with objections or a legacy note).
@@ -154,12 +140,12 @@ export default function TeamExperiencesPage() {
                       <div className="flex gap-2 mt-3">
                         <Link to={`${e.id}/edit`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100">
-                          <Pencil size={13} /> Fix objections
+                          <Pencil size={13} /> Edit in form
                         </Link>
-                        <button onClick={() => reviewAgain(e.id)} disabled={busyId === e.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 disabled:opacity-60">
-                          <Send size={13} /> Review again
-                        </button>
+                        <Link to={`${e.id}/resolve`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700">
+                          <Send size={13} /> Resolve &amp; review again
+                        </Link>
                       </div>
                     </div>
                   )}

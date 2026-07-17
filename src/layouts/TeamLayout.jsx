@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake,
+  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck,
 } from 'lucide-react';
 import { useTeamAuth } from '../context/TeamAuthContext.jsx';
 import { ReviewNotifyProvider } from '../context/ReviewNotifyContext.jsx';
@@ -26,7 +26,9 @@ export default function TeamLayout() {
     { to: '/team/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: true },
     { to: '/team/suppliers', label: 'My Suppliers', icon: Truck, show: !!perms.canCreateSupplier },
     { to: '/team/experiences', label: 'My Experiences', icon: Sparkles, show: !!perms.canAddExperience },
-    { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings },
+    { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
+    { to: '/team/qc-visits', label: 'My QC Visits', icon: MapPinned, show: member?.roleType === 'qcops' },
+    { to: '/team/qc-management', label: 'QCOPS Management', icon: BadgeCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
     { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts },
     { to: '/team/my-customers', label: 'My Customers', icon: HeartHandshake, show: !!perms.canManageCustomers },
   ].filter((i) => i.show);

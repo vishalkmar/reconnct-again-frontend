@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, Trash2, Plus, MapPin, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -100,6 +100,9 @@ export default function ExperienceFormPage() {
   const { id } = useParams();
   const editing = !!id;
   const navigate = useNavigate();
+  const location = useLocation();
+  // BD/team submissions always go for review; admin publishing also needs it.
+  const isTeamPath = location.pathname.startsWith('/team');
 
   const { value, setValue, hydrateFromServer, clearDraft, discardDraft, hasDraft } =
     usePersistedForm(`experience-form:${id || 'new'}`, blank, { editing });
@@ -157,6 +160,13 @@ export default function ExperienceFormPage() {
       if (!a.name.trim()) return toast.error(`Name is required${tag}`);
       if (!a.categoryIds?.length) return toast.error(`Pick at least one broad category${tag}`);
       if (!a.typeIds?.length) return toast.error(`Pick at least one type${tag}`);
+      // At least 6 images (main + gallery) before it can go for review/publish.
+      const needsImages = isTeamPath || value.status === 'published';
+      if (needsImages) {
+        const imgCount = (a.mainImage ? 1 : 0) + (Array.isArray(a.gallery) ? a.gallery.filter(Boolean).length : 0);
+        if (!a.mainImage) return toast.error(`Add a main image${tag}`);
+        if (imgCount < 6) return toast.error(`At least 6 images are required — you have ${imgCount}${tag}`);
+      }
     }
     setSaving(true);
     try {
