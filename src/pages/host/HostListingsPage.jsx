@@ -17,6 +17,9 @@ export default function HostListingsPage({ basePath = '/host' }) {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(null);
   const [query, setQuery] = useState('');
+  const isSupplier = basePath === '/supplier';
+  // Suppliers can self-add listings only once they already have a live one.
+  const [canAdd, setCanAdd] = useState(!isSupplier);
 
   const load = () => {
     setLoading(true);
@@ -24,6 +27,11 @@ export default function HostListingsPage({ basePath = '/host' }) {
       .then(({ data }) => setListings((data.data || data).listings || []))
       .catch(() => toast.error('Could not load your listings'))
       .finally(() => setLoading(false));
+    if (isSupplier) {
+      api.get(`${basePath}/summary`)
+        .then(({ data }) => setCanAdd(!!(data.data || data).canAddListing))
+        .catch(() => {});
+    }
   };
   useEffect(load, []);
 
@@ -60,10 +68,23 @@ export default function HostListingsPage({ basePath = '/host' }) {
           <h1 className="text-2xl font-display font-bold">My Listings</h1>
           <p className="text-sm text-ink-muted mt-1">Your experiences — drafts, pending review and published.</p>
         </div>
-        <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
-          <PlusCircle size={18} /> Create Listing
-        </Link>
+        {canAdd ? (
+          <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
+            <PlusCircle size={18} /> Create Listing
+          </Link>
+        ) : (
+          <button disabled title="Available once your first experience is live" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-200 text-slate-400 font-semibold cursor-not-allowed">
+            <PlusCircle size={18} /> Create Listing
+          </button>
+        )}
       </div>
+
+      {isSupplier && !canAdd && (
+        <div className="mb-5 flex items-start gap-2.5 bg-amber-50 text-amber-800 rounded-xl px-4 py-3 text-sm">
+          <PlusCircle size={16} className="mt-0.5 shrink-0" />
+          You can add your own listings once your first experience is <strong>live</strong> on the platform. Your account manager onboards the first one — after that, this unlocks.
+        </div>
+      )}
 
       {listings.length > 0 && (
         <div className="relative mb-5 max-w-md">
@@ -91,10 +112,12 @@ export default function HostListingsPage({ basePath = '/host' }) {
             <PlusCircle size={26} className="text-brand" />
           </div>
           <h3 className="font-semibold text-ink">No listings yet</h3>
-          <p className="text-sm text-ink-muted mt-1 mb-4">Create your first experience to start hosting.</p>
+          <p className="text-sm text-ink-muted mt-1 mb-4">{isSupplier && !canAdd ? 'Your account manager will onboard your first experience. Once it’s live, you can add more here.' : 'Create your first experience to start hosting.'}</p>
+          {(!isSupplier || canAdd) && (
           <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
             <PlusCircle size={18} /> Create Listing
           </Link>
+          )}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-soft p-10 text-center text-ink-muted">
@@ -109,7 +132,7 @@ export default function HostListingsPage({ basePath = '/host' }) {
               ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' }
               : hasObjections ? STATUS_BADGE.changes : (STATUS_BADGE[l.status] || STATUS_BADGE.draft);
             return (
-              <div key={l.id} className="bg-white rounded-2xl shadow-soft overflow-hidden flex flex-col">
+              <div key={l.id} className="bg-white rounded-2xl shadow-soft overflow-hidden flex flex-col border border-transparent hover:border-brand/15 hover:shadow-lg transition-all">
                 <div className="relative h-40 bg-surface-alt">
                   {l.image ? (
                     <img src={fileUrl(l.image)} alt="" className="w-full h-full object-cover" />

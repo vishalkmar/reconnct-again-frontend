@@ -9,7 +9,8 @@ import api, { fileUrl } from '../../services/api';
 
 const STAGE_LABEL = {
   qc_assigned: 'Assigned', qc_acknowledged: 'Received', qc_onsite: 'On-site',
-  qc_feedback: 'Feedback given', published: 'Approved · live', qc_rejected: 'Rejected',
+  qc_feedback: 'Feedback given', qc_passed: 'Awaiting go-live', under_progress: 'Under process',
+  published: 'Approved · live', qc_rejected: 'Rejected', rejected: 'Rejected', delisted: 'Delisted',
 };
 
 function StatTile({ icon: Icon, label, value, tone }) {
@@ -102,7 +103,7 @@ export default function TeamQcManagementPage() {
                     {l.overallRating && (
                       <span className="inline-flex items-center gap-0.5 text-amber-500 text-xs shrink-0"><Star size={12} className="fill-amber-400 text-amber-400" /> {l.overallRating}</span>
                     )}
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${l.isLive ? 'bg-emerald-50 text-emerald-700' : l.reviewStage === 'qc_rejected' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${l.isLive ? 'bg-emerald-50 text-emerald-700' : ['qc_rejected', 'rejected'].includes(l.reviewStage) ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
                       {STAGE_LABEL[l.reviewStage] || l.reviewStage}
                     </span>
                     <ChevronRight size={15} className="text-ink-muted shrink-0" />
@@ -134,7 +135,7 @@ export default function TeamQcManagementPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           {list.map((q) => (
             <button key={q.id} onClick={() => openDetail(q.id)}
-              className="text-left bg-white rounded-2xl shadow-soft p-5 hover:shadow-lg transition">
+              className="text-left bg-white rounded-2xl shadow-soft p-5 border border-transparent hover:border-brand/15 hover:shadow-lg hover:-translate-y-0.5 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><ShieldCheck size={22} /></div>
                 <div className="min-w-0">

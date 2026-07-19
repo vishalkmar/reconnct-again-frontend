@@ -35,8 +35,10 @@ export default {
         serif: ['Fraunces', 'Georgia', 'serif'],
       },
       boxShadow: {
-        soft: '0 4px 24px -8px rgba(0,0,0,0.1)',
-        card: '0 8px 32px -12px rgba(0,0,0,0.15)',
+        // Crisper, layered card shadow — a tight edge shadow for definition
+        // plus a soft ambient one for depth.
+        soft: '0 1px 2px rgba(16,24,40,0.05), 0 6px 24px -10px rgba(16,24,40,0.12)',
+        card: '0 2px 6px rgba(16,24,40,0.06), 0 14px 40px -14px rgba(16,24,40,0.18)',
       },
     },
   },

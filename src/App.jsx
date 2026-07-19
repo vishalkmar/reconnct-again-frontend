@@ -77,6 +77,7 @@ import TeamExperienceViewPage from './pages/team/TeamExperienceViewPage.jsx';
 import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
 import TeamQcListingsPage from './pages/team/TeamQcListingsPage.jsx';
 import TeamSupplierExperiencesPage from './pages/team/TeamSupplierExperiencesPage.jsx';
+import TeamSupplierListingsPage from './pages/team/TeamSupplierListingsPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 
@@ -211,6 +212,7 @@ export default function App() {
           <Route path="dashboard" element={<TeamDashboardPage />} />
           <Route path="suppliers" element={<TeamSuppliersPage />} />
           <Route path="suppliers/new" element={<SupplierFormPage />} />
+          <Route path="suppliers/:id/listings" element={<TeamSupplierListingsPage />} />
           <Route path="experiences" element={<TeamExperiencesPage />} />
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { RENDERERS } from '../../components/team/sectionRenderers.jsx';
+import { RENDERERS, applyBefore } from '../../components/team/sectionRenderers.jsx';
 import ObjectionThread from '../../components/team/ObjectionThread.jsx';
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -81,6 +81,28 @@ function SectionCard({ section, exp, busy, onDecide }) {
         <div className="mx-5 sm:mx-6 mt-4 bg-slate-50 rounded-xl px-4 py-3">
           <div className="text-[11px] font-bold uppercase tracking-wide text-ink-muted mb-2">Objection history</div>
           <ObjectionThread thread={section.thread} />
+        </div>
+      )}
+
+      {/* Before → after diff of the last requested change vs what the submitter changed */}
+      {section.resolution && section.before && Render && (
+        <div className="mx-5 sm:mx-6 mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">What changed</span>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${section.resolution.changed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              {section.resolution.changed ? 'Content changed' : 'Not changed — verify'}
+            </span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="border border-dashed border-slate-200 rounded-xl p-3 opacity-70">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">Before (requested)</div>
+              {Render(applyBefore(exp, section.before))}
+            </div>
+            <div className="border border-emerald-200 rounded-xl p-3">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1.5">After (now)</div>
+              {Render(exp)}
+            </div>
+          </div>
         </div>
       )}
 
@@ -210,6 +232,43 @@ export default function TeamReviewDetailPage() {
           {src?.label && <span className="text-ink-muted">Submitted by <span className="font-semibold text-ink">{src.label}</span></span>}
         </div>
       </div>
+
+      {/* Supplier-onboarding context — helps decide List directly vs QCOPS */}
+      {(review.supplierOnboarded || review.fromSupplierPortal) && (() => {
+        const info = review.supplierInfo || {};
+        const viaLabel = { bd: 'a BD', supplier: 'the supplier’s own dashboard', admin: 'Admin', host: 'a host' }[review.thisVia] || review.thisVia;
+        if (!review.supplierOnboarded) {
+          return (
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 mb-5 text-sm text-amber-800">
+              <span className="font-semibold">First submission for this supplier</span> (not onboarded yet — no live listing). Send it through QCOPS.
+            </div>
+          );
+        }
+        return (
+          <div className="bg-teal-50 border border-teal-100 rounded-2xl px-5 py-4 mb-5">
+            <div className="font-semibold text-teal-800 mb-1">
+              Known supplier{info.companyName ? ` — ${info.companyName}` : ''} · already onboarded
+            </div>
+            <div className="text-xs text-teal-800 mb-2 flex flex-wrap gap-x-4 gap-y-0.5">
+              <span><span className="font-semibold">{info.live}</span> live listing{info.live > 1 ? 's' : ''}</span>
+              {info.fromPortal > 0 && <span><span className="font-semibold">{info.fromPortal}</span> from the supplier portal</span>}
+              {info.byBd > 0 && <span><span className="font-semibold">{info.byBd}</span> added by BD</span>}
+              {info.byAdmin > 0 && <span><span className="font-semibold">{info.byAdmin}</span> by Admin</span>}
+              <span>· this one via <span className="font-semibold">{viaLabel}</span></span>
+            </div>
+            <p className="text-xs text-teal-700 mb-2">Compare address / category with their live listings. If the location or category is different, send it to QCOPS; otherwise you can <span className="font-semibold">List directly</span> once every section is approved.</p>
+            <div className="text-xs text-teal-900">
+              <div className="mb-1"><span className="font-semibold">This one:</span> {[review.current.location, review.current.city, review.current.nearbyLocation].filter(Boolean).join(', ') || '—'}{review.current.category ? ` · ${review.current.category}` : ''}</div>
+              <div className="font-semibold mb-0.5">Their live listings:</div>
+              <ul className="space-y-0.5">
+                {review.existingLive.map((l) => (
+                  <li key={l.id}>• {l.name} — {[l.location, l.city, l.nearbyLocation].filter(Boolean).join(', ') || '—'}{l.category ? ` · ${l.category}` : ''} <span className="text-teal-500">({l.via})</span></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Progress rollup */}
       {summary && (

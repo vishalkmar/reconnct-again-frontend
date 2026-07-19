@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, CircleAlert, Lightbulb, Pencil, Send, GitCompareArrows, CheckCircle2,
+  ArrowLeft, Loader2, CircleAlert, Lightbulb, Send, GitCompareArrows, CheckCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { RENDERERS, applyBefore } from '../../components/team/sectionRenderers.jsx';
 import ObjectionThread from '../../components/team/ObjectionThread.jsx';
+import SectionEditor from '../../components/team/SectionEditor.jsx';
 
 /* Submitter's "resolve objections" workspace. For each objected section it
    shows the objection, a before/after diff, an edit shortcut, and a REQUIRED
@@ -77,9 +78,6 @@ export default function TeamResolveObjectionsPage() {
     <div className="max-w-3xl pb-24">
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <button onClick={() => navigate('/team/experiences')} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand"><ArrowLeft size={16} /> Back</button>
-        <Link to={`/team/experiences/${id}/edit`} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105">
-          <Pencil size={15} /> Open the form to edit
-        </Link>
       </div>
 
       <h1 className="text-2xl font-display font-bold mb-1">Resolve objections</h1>
@@ -118,13 +116,13 @@ export default function TeamResolveObjectionsPage() {
                   </div>
                 )}
 
-                {/* Current (after) */}
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 mb-1.5">Now</div>
-                  {Render ? Render(exp) : <span className="text-sm text-ink-muted">—</span>}
+                {/* Edit the objected section right here */}
+                <div className="border border-slate-200 rounded-xl p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-brand-dark mb-3">Fix it here</div>
+                  <SectionEditor sectionKey={o.key} exp={exp} onSaved={load} />
                 </div>
 
-                {/* Before (diff) */}
+                {/* Before (diff) — what Center Ops last saw */}
                 {before && Render && (
                   <div>
                     <button onClick={() => setShowBefore((s) => ({ ...s, [o.key]: !s[o.key] }))}

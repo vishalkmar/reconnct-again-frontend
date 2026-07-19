@@ -10,13 +10,13 @@ import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
 
 const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
 
-function StatTile({ icon: Icon, label, value, tone }) {
+function StatTile({ icon: Icon, label, value, tone, active, onClick }) {
   const tones = { slate: 'bg-slate-50 text-slate-600', blue: 'bg-blue-50 text-blue-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600', emerald: 'bg-emerald-50 text-emerald-600', indigo: 'bg-indigo-50 text-indigo-600' };
   return (
-    <div className="bg-white rounded-2xl shadow-soft p-4 flex items-center gap-3">
+    <button onClick={onClick} className={`bg-white rounded-2xl shadow-soft p-4 flex items-center gap-3 text-left transition-all ${active ? 'ring-2 ring-brand' : 'hover:shadow-lg hover:-translate-y-0.5'}`}>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tones[tone] || tones.slate}`}><Icon size={20} /></div>
       <div className="min-w-0"><div className="text-2xl font-display font-bold leading-none">{value}</div><div className="text-[11px] text-ink-muted mt-1 truncate">{label}</div></div>
-    </div>
+    </button>
   );
 }
 
@@ -28,6 +28,7 @@ export default function TeamQcVisitsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [feedbackFor, setFeedbackFor] = useState(null);
+  const [view, setView] = useState('all'); // all | pending | awaiting | approved | live | rejected
 
   const load = useCallback(async () => {
     try {
@@ -69,9 +70,13 @@ export default function TeamQcVisitsPage() {
   };
 
   const active = items.filter((i) => ['qc_assigned', 'qc_acknowledged', 'qc_onsite'].includes(i.reviewStage));
-  const awaiting = items.filter((i) => i.reviewStage === 'qc_feedback');
+  // After feedback is submitted the item sits here until Center Ops publishes
+  // it (→ live) or rejects it (→ rejected) — it must NOT disappear.
+  const underProcess = items.filter((i) => ['qc_feedback', 'qc_passed', 'under_progress'].includes(i.reviewStage));
   const approved = items.filter((i) => i.reviewStage === 'published');
-  const rejected = items.filter((i) => i.reviewStage === 'qc_rejected');
+  const live = items.filter((i) => i.reviewStage === 'published' && i.isActive);
+  // Both the old qc_rejected AND the new under-progress reject.
+  const rejected = items.filter((i) => ['qc_rejected', 'rejected'].includes(i.reviewStage));
 
   if (loading) return <div className="p-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
@@ -84,12 +89,12 @@ export default function TeamQcVisitsPage() {
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <StatTile icon={ClipboardList} label="Total assigned" value={stats.assigned} tone="blue" />
-          <StatTile icon={Clock} label="Pending visit" value={stats.pending} tone="amber" />
-          <StatTile icon={Hourglass} label="Awaiting decision" value={stats.awaitingDecision} tone="indigo" />
-          <StatTile icon={CheckCircle2} label="Approved" value={stats.approved} tone="emerald" />
-          <StatTile icon={Globe} label="Live" value={stats.live} tone="emerald" />
-          <StatTile icon={XCircle} label="Rejected" value={stats.rejected} tone="rose" />
+          <StatTile icon={ClipboardList} label="Total assigned" value={stats.assigned} tone="blue" active={view === 'all'} onClick={() => setView('all')} />
+          <StatTile icon={Clock} label="Pending visit" value={stats.pending} tone="amber" active={view === 'pending'} onClick={() => setView('pending')} />
+          <StatTile icon={Hourglass} label="Under process" value={stats.awaitingDecision} tone="indigo" active={view === 'awaiting'} onClick={() => setView('awaiting')} />
+          <StatTile icon={CheckCircle2} label="Approved" value={stats.approved} tone="emerald" active={view === 'approved'} onClick={() => setView('approved')} />
+          <StatTile icon={Globe} label="Live" value={stats.live} tone="emerald" active={view === 'live'} onClick={() => setView('live')} />
+          <StatTile icon={XCircle} label="Rejected" value={stats.rejected} tone="rose" active={view === 'rejected'} onClick={() => setView('rejected')} />
         </div>
       )}
 
@@ -99,18 +104,37 @@ export default function TeamQcVisitsPage() {
           <h2 className="font-semibold text-lg">No visits assigned</h2>
           <p className="text-sm text-ink-muted mt-1">You’ll be notified when Center Ops assigns you a site check.</p>
         </div>
-      ) : (
-        <div className="space-y-6">
-          <Group title="Active visits" color="text-indigo-600" list={active}
-            render={(item) => <ActiveCard item={item} busyId={busyId} onAct={act} onFeedback={setFeedbackFor} />} />
-          <Group title="Awaiting Center Ops decision" color="text-amber-600" list={awaiting}
-            render={(item) => <OutcomeCard item={item} tone="amber" label="Feedback submitted — awaiting decision" />} />
-          <Group title="Approved & live" color="text-emerald-600" list={approved}
-            render={(item) => <OutcomeCard item={item} tone="emerald" label="Approved — live on web & app" />} />
-          <Group title="Rejected" color="text-rose-600" list={rejected}
-            render={(item) => <OutcomeCard item={item} tone="rose" label="Rejected by Center Ops" reason={item.reviewNote || item.qcReview?.decisionReason} />} />
-        </div>
-      )}
+      ) : (() => {
+        const renderActive = (item) => <ActiveCard item={item} busyId={busyId} onAct={act} onFeedback={setFeedbackFor} />;
+        const renderAwaiting = (item) => (
+          <OutcomeCard item={item} tone="amber"
+            label={item.reviewStage === 'qc_passed'
+              ? 'You approved — awaiting Center Ops to make it live'
+              : item.reviewStage === 'under_progress'
+                ? `Recommended ${item.qcReview?.changeType || ''} changes — in progress`
+                : 'Feedback submitted — awaiting decision'} />
+        );
+        const renderApproved = (item) => <OutcomeCard item={item} tone="emerald" label="Approved — live on web & app" />;
+        const renderRejected = (item) => <OutcomeCard item={item} tone="rose" label="Rejected by Center Ops" reason={item.reviewNote || item.qcReview?.decisionReason} />;
+        const groups = [
+          { key: 'pending', title: 'Active visits', color: 'text-indigo-600', list: active, render: renderActive },
+          { key: 'awaiting', title: 'Under process — awaiting Center Ops', color: 'text-amber-600', list: underProcess, render: renderAwaiting },
+          { key: 'approved', title: 'Approved & live', color: 'text-emerald-600', list: approved, render: renderApproved },
+          { key: 'live', title: 'Live on web & app', color: 'text-emerald-600', list: live, render: renderApproved },
+          { key: 'rejected', title: 'Rejected', color: 'text-rose-600', list: rejected, render: renderRejected },
+        ];
+        // In 'all' the Live subset already lives inside "Approved & live", so skip it.
+        const visible = groups.filter((g) => (view === 'all' ? g.key !== 'live' : g.key === view));
+        const total = visible.reduce((n, g) => n + g.list.length, 0);
+        if (total === 0) {
+          return <div className="bg-white rounded-2xl shadow-soft p-12 text-center text-ink-muted">Nothing in this view.</div>;
+        }
+        return (
+          <div className="space-y-6">
+            {visible.map((g) => <Group key={g.key} title={g.title} color={g.color} list={g.list} render={g.render} />)}
+          </div>
+        );
+      })()}
 
       {feedbackFor && (
         <FeedbackFormModal item={feedbackFor} fields={fields} busy={busyId === feedbackFor.id}
@@ -151,6 +175,10 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
   const qc = item.qcReview || {};
   const stage = item.reviewStage;
   const today = isToday(qc.visitDate);
+  // The "I'm at the location" confirm unlocks only when the scheduled visit
+  // date+time has actually arrived.
+  const visitAt = qc.visitDate && qc.visitTime ? new Date(`${qc.visitDate}T${qc.visitTime}`) : null;
+  const reached = visitAt ? Date.now() >= visitAt.getTime() : true;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
       <div className="p-5">
@@ -167,10 +195,14 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
             <button onClick={() => onAct(item.id, 'ack')} disabled={busyId === item.id}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-60"><ThumbsUp size={15} /> Got it</button>
           )}
-          {stage === 'qc_acknowledged' && (
+          {stage === 'qc_acknowledged' && (reached ? (
             <button onClick={() => onAct(item.id, 'onsite')} disabled={busyId === item.id}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"><Navigation size={15} /> I’m at the location</button>
-          )}
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-400 text-sm font-semibold cursor-not-allowed" title={`Unlocks at ${qc.visitDate} ${qc.visitTime}`}>
+              <Clock size={15} /> Unlocks at visit time
+            </span>
+          ))}
           {stage === 'qc_onsite' && (
             <button onClick={() => onFeedback(item)} disabled={busyId === item.id}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"><ClipboardList size={15} /> Give Feedback</button>
@@ -216,12 +248,17 @@ function StageTracker({ stage }) {
   );
 }
 
+const REC_LABEL = { approved: 'Approved', approved_minor: 'Approved · minor changes', approved_major: 'Approved · major changes' };
+
 function FeedbackFormModal({ item, fields, busy, onSubmit, onClose }) {
   const [values, setValues] = useState({});
   const set = (k, v) => setValues((s) => ({ ...s, [k]: v }));
+  const shown = (f) => !f.showWhen || Object.entries(f.showWhen).every(([k, vals]) => vals.includes(values[k]));
   const submit = () => {
     for (const f of fields) {
-      if (f.required && (values[f.key] === undefined || values[f.key] === '' || values[f.key] === null)) {
+      if (!shown(f)) continue;
+      const required = f.required || !!f.showWhen; // conditionally-shown fields are required when visible
+      if (required && (values[f.key] === undefined || values[f.key] === '' || values[f.key] === null)) {
         return toast.error(`“${f.label}” is required`);
       }
     }
@@ -235,9 +272,9 @@ function FeedbackFormModal({ item, fields, busy, onSubmit, onClose }) {
           <p className="text-xs text-ink-muted mt-0.5 truncate">{item.name}</p>
         </div>
         <div className="px-6 py-4 overflow-y-auto space-y-4">
-          {fields.map((f) => (
+          {fields.filter(shown).map((f) => (
             <div key={f.key}>
-              <label className="text-sm font-medium text-ink block mb-1.5">{f.label} {f.required && <span className="text-rose-500">*</span>}</label>
+              <label className="text-sm font-medium text-ink block mb-1.5">{f.label} {(f.required || f.showWhen) && <span className="text-rose-500">*</span>}</label>
               {f.type === 'rating' && (
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -259,7 +296,7 @@ function FeedbackFormModal({ item, fields, busy, onSubmit, onClose }) {
                 <div className="flex flex-wrap gap-2">
                   {f.options.map((opt) => (
                     <button key={opt} type="button" onClick={() => set(f.key, opt)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold border capitalize ${values[f.key] === opt ? 'bg-brand text-ink border-brand' : 'border-gray-200 text-ink-muted hover:bg-surface-alt'}`}>{opt.replace('_', ' ')}</button>
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold border ${values[f.key] === opt ? 'bg-brand text-ink border-brand' : 'border-gray-200 text-ink-muted hover:bg-surface-alt'}`}>{f.key === 'recommendation' ? (REC_LABEL[opt] || opt) : opt.replace('_', ' ')}</button>
                   ))}
                 </div>
               )}

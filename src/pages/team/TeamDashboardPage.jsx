@@ -54,11 +54,16 @@ export default function TeamDashboardPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">Welcome back, {firstName} 👋</h1>
-        <p className="text-sm text-ink-muted">
-          {ROLE_LABEL[member?.roleType] || member?.roleType} · <span className="font-mono">{member?.employeeCode}</span>
-        </p>
+      <div className="mb-6 rounded-2xl bg-gradient-to-br from-[#0f1830] via-[#16213e] to-[#1c2a4a] text-white p-6 flex items-center gap-4 shadow-soft">
+        <div className="w-14 h-14 rounded-2xl bg-brand/20 text-brand flex items-center justify-center text-2xl font-display font-bold shrink-0">
+          {(firstName || '?').charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-display font-bold truncate">Welcome back, {firstName} 👋</h1>
+          <p className="text-sm text-white/60">
+            {ROLE_LABEL[member?.roleType] || member?.roleType} · <span className="font-mono text-brand">{member?.employeeCode}</span>
+          </p>
+        </div>
       </div>
 
       {/* Review statistics boards — role-aware */}
@@ -77,8 +82,8 @@ export default function TeamDashboardPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             {cards.map((c) => (
               <Link key={c.to} to={c.to}
-                className="group bg-white rounded-2xl shadow-soft p-6 hover:shadow-lg transition flex flex-col">
-                <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand flex items-center justify-center mb-4">
+                className="group bg-white rounded-2xl shadow-soft p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col border border-transparent hover:border-brand/20">
+                <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <c.icon size={22} />
                 </div>
                 <h2 className="font-display font-bold text-lg mb-1">{c.title}</h2>

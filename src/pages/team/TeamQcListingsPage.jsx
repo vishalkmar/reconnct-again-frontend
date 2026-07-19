@@ -24,7 +24,7 @@ function OutcomeCard({ item, kind }) {
   const rating = item.qcReview?.feedback?.overallRating;
   const reason = item.reviewNote || item.qcReview?.decisionReason;
   return (
-    <Link to={`/team/experiences/${item.id}/view`} className="block bg-white rounded-2xl shadow-soft p-5 hover:shadow-lg transition">
+    <Link to={`/team/experiences/${item.id}/view`} className="block bg-white rounded-2xl shadow-soft p-5 border border-transparent hover:border-brand/15 hover:shadow-lg hover:-translate-y-0.5 transition-all">
       <div className="flex items-start gap-4">
         {item.mainImage
           ? <img src={fileUrl(item.mainImage)} alt="" className="w-14 h-14 rounded-xl object-cover border shrink-0" />
@@ -71,7 +71,7 @@ export default function TeamQcListingsPage() {
   useEffect(() => { if (notifs.length) load(); }, [notifs.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const approved = items.filter((i) => i.reviewStage === 'published');
-  const rejected = items.filter((i) => i.reviewStage === 'qc_rejected');
+  const rejected = items.filter((i) => ['qc_rejected', 'rejected'].includes(i.reviewStage));
   const live = approved.filter((i) => i.status === 'published' && i.isActive).length;
 
   if (loading) return <div className="p-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;

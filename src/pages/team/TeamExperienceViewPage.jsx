@@ -70,18 +70,21 @@ function FieldValue({ field, value }) {
   return <span className="text-ink">{value}</span>;
 }
 
+const REC = {
+  approved: ['Approved', 'bg-emerald-50 text-emerald-700'],
+  approved_minor: ['Approved · minor changes', 'bg-amber-50 text-amber-700'],
+  approved_major: ['Approved · major changes', 'bg-rose-50 text-rose-700'],
+};
 function QcFeedbackCard({ qcReview, fields }) {
   const fb = qcReview?.feedback;
   if (!fb) return null;
-  const rec = fb.recommendation;
+  const [recLabel, recCls] = REC[fb.recommendation] || [fb.recommendation, 'bg-slate-50 text-slate-700'];
   return (
     <div className="bg-white rounded-2xl shadow-soft p-5 sm:p-6">
       <h2 className="font-semibold text-lg mb-3 inline-flex items-center gap-2"><ClipboardList size={18} className="text-indigo-600" /> QCOPS on-site feedback</h2>
       {qcReview.visitDate && <div className="text-xs text-ink-muted mb-3">Visited on {qcReview.visitDate}{qcReview.visitTime ? ` at ${qcReview.visitTime}` : ''}</div>}
-      {rec && (
-        <div className={`rounded-xl px-4 py-2.5 mb-3 text-sm font-semibold ${rec === 'approve' ? 'bg-emerald-50 text-emerald-700' : rec === 'reject' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>
-          QCOPS recommended: {String(rec).replace('_', ' ')}
-        </div>
+      {fb.recommendation && (
+        <div className={`rounded-xl px-4 py-2.5 mb-3 text-sm font-semibold ${recCls}`}>QCOPS recommended: {recLabel}</div>
       )}
       <div className="divide-y divide-slate-100">
         {fields.map((f) => (

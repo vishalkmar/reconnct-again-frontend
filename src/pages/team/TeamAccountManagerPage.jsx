@@ -40,7 +40,7 @@ export default function TeamAccountManagerPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {items.map((s) => (
-            <Link key={s.id} to={`/team/my-suppliers/${s.id}`} className="block bg-white rounded-2xl shadow-soft p-5 hover:shadow-lg transition">
+            <Link key={s.id} to={`/team/my-suppliers/${s.id}`} className="block bg-white rounded-2xl shadow-soft p-5 border border-transparent hover:border-brand/15 hover:shadow-lg hover:-translate-y-0.5 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 {s.image ? (
                   <img src={fileUrl(s.image)} alt="" className="w-11 h-11 rounded-xl object-cover border" />
