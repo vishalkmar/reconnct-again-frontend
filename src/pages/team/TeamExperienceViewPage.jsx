@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, XCircle, CheckCircle2, Clock, ShieldCheck, CalendarClock, Pencil, ClipboardList, Star,
+  MessagesSquare, ChevronDown, ChevronRight, Lightbulb,
 } from 'lucide-react';
 import api from '../../services/api';
 import { RENDERERS } from '../../components/team/sectionRenderers.jsx';
+import ObjectionThread from '../../components/team/ObjectionThread.jsx';
 
 // Ordered sections + a presence check, mirroring the backend registry.
 const SECTIONS = [
@@ -98,6 +100,50 @@ function QcFeedbackCard({ qcReview, fields }) {
   );
 }
 
+const LABEL_BY_KEY = Object.fromEntries(SECTIONS.map((s) => [s.key, s.label]));
+
+/* The full Center Ops ⇄ submitter objection history, kept visible for the
+   whole life of the listing. Once everything is approved the sections render
+   only their FINAL content, so without this the reviewer at Level 2 (and
+   after) has no record of what was objected to and how it got resolved. */
+function ReviewHistoryCard({ review }) {
+  const thread = review?.thread || {};
+  const keys = Object.keys(thread).filter((k) => (thread[k] || []).length > 0);
+  const [open, setOpen] = useState(true);
+  if (keys.length === 0) return null;
+  const rounds = Math.max(...keys.map((k) => Math.max(...thread[k].map((m) => (m.round || 0) + 1))));
+  const messages = keys.reduce((n, k) => n + thread[k].length, 0);
+  return (
+    <div className="bg-white rounded-2xl shadow-soft mb-4 overflow-hidden">
+      <button onClick={() => setOpen((v) => !v)} className="w-full px-5 sm:px-6 py-4 flex items-center gap-2.5 text-left hover:bg-surface-alt/50">
+        <MessagesSquare size={18} className="text-rose-600 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-lg">Review history</h2>
+          <p className="text-xs text-ink-muted mt-0.5">
+            {messages} message{messages > 1 ? 's' : ''} across {keys.length} section{keys.length > 1 ? 's' : ''} · {rounds} round{rounds > 1 ? 's' : ''} of objections
+          </p>
+        </div>
+        {open ? <ChevronDown size={18} className="text-ink-muted shrink-0" /> : <ChevronRight size={18} className="text-ink-muted shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-5 sm:px-6 pb-5 space-y-4">
+          {review?.suggestion && (
+            <div className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 rounded-lg px-3 py-2">
+              <Lightbulb size={15} className="mt-0.5 shrink-0" /><span><span className="font-semibold">Center Ops suggestion:</span> {review.suggestion}</span>
+            </div>
+          )}
+          {keys.map((k) => (
+            <div key={k}>
+              <div className="text-xs font-bold uppercase tracking-wide text-ink-muted mb-2">{LABEL_BY_KEY[k] || k}</div>
+              <ObjectionThread thread={thread[k]} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TeamExperienceViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -136,6 +182,7 @@ export default function TeamExperienceViewPage() {
       </div>
 
       <StatusBanner e={e} />
+      <ReviewHistoryCard review={e.review} />
 
       <div className="space-y-4">
         {SECTIONS.filter((s) => s.has(e)).map((s) => {
