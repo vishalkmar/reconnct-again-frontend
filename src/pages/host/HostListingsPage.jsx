@@ -22,7 +22,38 @@ const TABS = [
   { key: 'rejected', label: 'Rejected', icon: XCircle, tone: 'bg-rose-50 text-rose-600' },
   { key: 'delisted', label: 'Delisted', icon: Ban, tone: 'bg-slate-100 text-slate-500' },
 ];
-const tabOf = (l) => (l.tab === 'under_progress' ? 'in_queue' : (l.tab || 'in_queue'));
+/*
+  The backend sends `tab` (from submitterTab), but an older/not-yet-deployed
+  API won't — and defaulting a missing value to "Under Review" silently files
+  LIVE listings under review, which is worse than being wrong loudly. So this
+  falls back to deriving the same buckets from fields the API has always
+  returned: isPublished, reviewStatus (the status column) and review.stage.
+*/
+const deriveTab = (l) => {
+  const stage = l.review?.stage || null;
+  if (stage === 'delisted') return 'delisted';
+  if (l.isPublished || stage === 'live') return 'live';
+  if (['rejected', 'qc_rejected'].includes(stage) || (l.reviewStatus === 'archived' && stage !== 'delisted')) return 'rejected';
+  return 'in_queue'; // drafts, pending review, objections, QC visit, under progress
+};
+const tabOf = (l) => {
+  const t = l.tab || deriveTab(l);
+  return t === 'under_progress' ? 'in_queue' : t;
+};
+
+// Same story for the edit/delete gates — a missing flag must not silently
+// strip Edit off a plain draft the owner is still writing.
+const canEditOf = (l) => (
+  typeof l.canEdit === 'boolean'
+    ? l.canEdit
+    : (l.status === 'changes' || l.review?.stage === 'follow_up'
+      || (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage))
+);
+const canDeleteOf = (l) => (
+  typeof l.canDelete === 'boolean'
+    ? l.canDelete
+    : (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage)
+);
 
 // basePath lets the Supplier Portal (Phase 4) reuse this exact page against
 // /supplier/listings instead of /host/listings.
@@ -202,7 +233,7 @@ export default function HostListingsPage({ basePath = '/host' }) {
                       or delete it — same as the BD board. View details stands
                       in so they can still see exactly what was submitted. */}
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                    {l.canEdit ? (
+                    {canEditOf(l) ? (
                       <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                         <Pencil size={14} /> Edit
                       </Link>
@@ -214,7 +245,7 @@ export default function HostListingsPage({ basePath = '/host' }) {
                     <Link to={`${basePath}/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
                       <CalendarCheck size={15} /> See Booking
                     </Link>
-                    {l.canDelete && (
+                    {canDeleteOf(l) && (
                       <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
                         {removing === l.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                       </button>

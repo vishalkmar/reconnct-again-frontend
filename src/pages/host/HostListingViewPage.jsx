@@ -15,6 +15,16 @@ const METHOD_LABEL = {
 const MODE_LABEL = { offline: 'Offline', online: 'Online', hybrid: 'Hybrid' };
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+// Trust the backend's canEdit when it's there; otherwise derive it from the
+// fields the API has always returned, so a not-yet-deployed backend doesn't
+// strip Edit off a draft the owner is still writing.
+const canEditOf = (l) => (
+  typeof l.canEdit === 'boolean'
+    ? l.canEdit
+    : (l.status === 'changes' || l.review?.stage === 'follow_up'
+      || (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage))
+);
 const ytId = (url) => (String(url).match(/(?:youtu\.be\/|v=)([\w-]{11})/) || [])[1];
 
 const durationText = (f) => {
@@ -120,7 +130,7 @@ export default function HostListingViewPage({ basePath = '/host' }) {
               page is read-only — matching the BD board, where a submitted
               experience has no Edit action at all. */}
           <div className="flex gap-2 mt-4">
-            {listing.canEdit && (
+            {canEditOf(listing) && (
               <Link to={`${basePath}/listings/${id}/edit`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
                 <Pencil size={14} /> Edit
               </Link>
