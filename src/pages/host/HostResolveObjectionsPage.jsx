@@ -6,22 +6,12 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import ObjectionThread from '../../components/team/ObjectionThread.jsx';
-import { Step1, Step2, Step3, Step4 } from './HostListingFormPage.jsx';
+import HostSectionFields from '../../components/host/HostSectionFields.jsx';
 
 /* Host / Supplier "resolve objections" page — the ONLY way to change a listing
    once it's been submitted, mirroring the BD flow. Each objected section
-   carries the objection, the running conversation, the REAL editor for those
-   fields, and a REQUIRED resolution note.
-
-   The editors are the wizard's own steps, reused as-is: they already speak the
-   host `form` shape, so there's no second set of inputs to drift out of sync.
-   A section maps to whichever step owns its fields. */
-const STEP_FOR_SECTION = {
-  basic: Step1, taxonomy: Step1, duration: Step1,
-  about: Step2, inclusions: Step2, facilities: Step2, nearby: Step2, faqs: Step2, policies: Step2,
-  pricing: Step3, schedule: Step3,
-  media: Step4,
-};
+   carries the objection, the running conversation, ONLY the fields that
+   section owns, and a REQUIRED resolution note. */
 export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -143,17 +133,11 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
                 </div>
               )}
 
-              {/* The real fields for this section, edited right here */}
+              {/* Only the fields THIS objection is about */}
               <div className="border border-slate-200 rounded-xl p-4">
                 <div className="text-[11px] font-bold uppercase tracking-wide text-brand-dark mb-3">Fix it here</div>
-                {(() => {
-                  const StepEditor = STEP_FOR_SECTION[o.key];
-                  if (!StepEditor) {
-                    return <p className="text-sm text-ink-muted">This section can’t be changed from your portal — please reply to your account manager instead.</p>;
-                  }
-                  return <div className="-m-1"><StepEditor form={form} patch={patch} /></div>;
-                })()}
-                <div className="flex justify-end mt-3">
+                <HostSectionFields section={o.key} form={form} patch={patch} />
+                <div className="flex justify-end mt-4">
                   <button onClick={() => saveSection(o.key)} disabled={saving === o.key || !dirty}
                     title={dirty ? '' : 'Make a change first'}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed">

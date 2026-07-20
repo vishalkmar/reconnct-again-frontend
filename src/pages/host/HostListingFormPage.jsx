@@ -9,18 +9,18 @@ import ExperienceScheduling from '../../components/admin/ExperienceScheduling.js
 import ExperienceTaxonomyPicker from '../../components/admin/ExperienceTaxonomyPicker.jsx';
 
 // Global rule: every image upload must be under 5MB.
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const STEPS = ['Basic info', 'Description', 'Pricing', 'Photos'];
-const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
-const FACILITIES = ['Restrooms', 'Parking', 'Locker', 'Wifi', 'Cafe', 'First Aid', 'Changing Room', 'Guide', 'Equipment'];
-const PRICE_METHODS = [
+export const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
+export const FACILITIES = ['Restrooms', 'Parking', 'Locker', 'Wifi', 'Cafe', 'First Aid', 'Changing Room', 'Guide', 'Equipment'];
+export const PRICE_METHODS = [
   { value: 'per_person', label: 'Per person' },
   { value: 'per_day', label: 'Per day' },
   { value: 'days', label: 'Days (multi-day)' },
   { value: 'per_hours', label: 'By hours' },
 ];
-const MODES = ['offline', 'online', 'hybrid'];
+export const MODES = ['offline', 'online', 'hybrid'];
 
 const blank = {
   audiences: [], categoryIds: [], typeIds: [],
@@ -150,16 +150,16 @@ export default function HostListingFormPage({ basePath = '/host' }) {
 
 /* ---------- shared bits ---------- */
 function Card({ children }) { return <div className="bg-white rounded-2xl shadow-soft p-5 md:p-6 mb-4">{children}</div>; }
-function L({ children }) { return <label className="text-sm font-semibold text-ink mb-1.5 block">{children}</label>; }
-function Hint({ children }) { return <p className="text-xs text-ink-muted mb-2">{children}</p>; }
-function Chip({ active, onClick, children }) {
+export function L({ children }) { return <label className="text-sm font-semibold text-ink mb-1.5 block">{children}</label>; }
+export function Hint({ children }) { return <p className="text-xs text-ink-muted mb-2">{children}</p>; }
+export function Chip({ active, onClick, children }) {
   return (
     <button type="button" onClick={onClick} className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition ${active ? 'bg-brand text-ink border-brand' : 'bg-white text-ink border-slate-300 hover:border-slate-400'}`}>{children}</button>
   );
 }
 
 /* ---------- Step 1 ---------- */
-export function Step1({ form, patch }) {
+function Step1({ form, patch }) {
   return (
     <Card>
       <h2 className="text-xl font-display font-bold mb-4">Let’s start with the basics</h2>
@@ -196,7 +196,7 @@ export function Step1({ form, patch }) {
 }
 
 /* ---------- Step 2 ---------- */
-export function Step2({ form, patch }) {
+function Step2({ form, patch }) {
   const setInclusion = (i, v) => patch({ inclusions: form.inclusions.map((x, idx) => (idx === i ? v : x)) });
   return (
     <>
@@ -280,7 +280,7 @@ export function Step2({ form, patch }) {
 }
 
 /* ---------- Step 3 ---------- */
-export function Step3({ form, patch }) {
+function Step3({ form, patch }) {
   const perDay = form.priceMethod === 'per_day' || form.priceMethod === 'days';
   const addBand = () => {
     const last = form.childBands[form.childBands.length - 1];
@@ -354,7 +354,7 @@ export function Step3({ form, patch }) {
 }
 
 /* ---------- Step 4 ---------- */
-export function Step4({ form, patch }) {
+function Step4({ form, patch }) {
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
 
@@ -439,7 +439,7 @@ export function Step4({ form, patch }) {
 }
 
 /* ---------- tiny inputs ---------- */
-function AddCustom({ placeholder, onAdd }) {
+export function AddCustom({ placeholder, onAdd }) {
   const [t, setT] = useState('');
   return (
     <div className="flex gap-2 mt-3">
@@ -448,7 +448,7 @@ function AddCustom({ placeholder, onAdd }) {
     </div>
   );
 }
-function Stepper({ value, onChange }) {
+export function Stepper({ value, onChange }) {
   return (
     <div className="inline-flex items-center gap-4">
       <button type="button" onClick={() => onChange(Math.max(1, value - 1))} className="w-9 h-9 rounded-full border border-brand text-brand font-bold">−</button>
