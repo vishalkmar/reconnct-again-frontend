@@ -1,14 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  Loader2, Globe, XCircle, Ban, MapPin, RotateCcw, ClipboardList,
+  Loader2, Globe, XCircle, Ban, MapPin, RotateCcw, ClipboardList, RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import UnderProgressBlock from '../../components/team/UnderProgressBlock.jsx';
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 const TABS = [
+  // QCOPS asked for changes on a supplier's OWN submission — there's no BD in
+  // that loop, so answering is this account manager's job.
+  { key: 'under_progress', label: 'Action needed', icon: RefreshCw },
   { key: 'live', label: 'Live listings', icon: Globe },
   { key: 'rejected', label: 'Rejected', icon: XCircle },
   { key: 'delisted', label: 'Delisted', icon: Ban },
@@ -57,6 +61,29 @@ export default function TeamAmListingsPage() {
           <div className="inline-flex w-14 h-14 rounded-full bg-brand/10 text-brand items-center justify-center mb-4"><ClipboardList size={26} /></div>
           <h2 className="font-semibold text-lg">Nothing here</h2>
           <p className="text-sm text-ink-muted mt-1">No {TABS.find((t) => t.key === view)?.label.toLowerCase()} for your suppliers.</p>
+        </div>
+      ) : view === 'under_progress' ? (
+        /* Cards, not a table — each one carries the full respond UI, the same
+           block the BD gets on their own submissions. */
+        <div className="space-y-3">
+          {list.map((r) => (
+            <div key={r.id} className="bg-white rounded-2xl shadow-soft p-4 sm:p-5">
+              <div className="flex items-center gap-3">
+                {r.mainImage
+                  ? <img src={fileUrl(r.mainImage)} alt="" className="w-11 h-11 rounded-lg object-cover border shrink-0" />
+                  : <div className="w-11 h-11 rounded-lg bg-surface-alt flex items-center justify-center text-ink-muted shrink-0"><ClipboardList size={18} /></div>}
+                <div className="min-w-0 flex-1">
+                  <Link to={`/team/experiences/${r.id}/view`} className="font-semibold text-ink truncate hover:text-brand block">{r.name}</Link>
+                  <div className="text-[11px] text-ink-muted truncate flex items-center gap-2 flex-wrap">
+                    {r.supplier?.name && <span>{r.supplier.name}</span>}
+                    {r.location && <span className="inline-flex items-center gap-1"><MapPin size={11} /> {r.location}</span>}
+                  </div>
+                </div>
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">Under progress</span>
+              </div>
+              <UnderProgressBlock item={{ ...r, reviewNote: r.reason }} onChanged={load} />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
