@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   X,
@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Star,
   ShieldCheck,
+  ChevronDown,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -25,7 +26,15 @@ const mainItems = [
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarIcon },
   { to: '/admin/revenue', label: 'Revenue', icon: LineChart },
   { to: '/admin/reviews', label: 'Review Management', icon: Star },
-  { to: '/admin/experiences', label: 'Experiences', icon: Sparkles },
+  {
+    label: 'Experiences',
+    icon: Sparkles,
+    children: [
+      { to: '/admin/experiences', label: 'My Experiences', end: true },
+      { to: '/admin/experiences/listed', label: 'All Listed' },
+      { to: '/admin/experiences/delisted', label: 'Delisted' },
+    ],
+  },
   { to: '/admin/suppliers', label: 'Suppliers & Contract', icon: Truck },
   { to: '/admin/users', label: 'Customer', icon: UsersIcon },
   { to: '/admin/transactions', label: 'Transactions', icon: Wallet },
@@ -55,12 +64,18 @@ export default function AdminSidebar({ open, onClose }) {
     return () => { alive = false; clearInterval(id); window.removeEventListener('support-unread', onEvt); };
   }, []);
 
+  const location = useLocation();
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
       isActive
         ? 'bg-brand text-ink shadow-soft'
         : 'text-slate-300 hover:bg-white/10 hover:text-white'
     }`;
+
+  // Collapsible groups (e.g. Experiences) — auto-open when a child is active.
+  const [openGroups, setOpenGroups] = useState({});
+  const isGroupActive = (item) => item.children?.some((c) => location.pathname.startsWith(c.to.split('?')[0]));
+  const groupOpen = (item) => openGroups[item.label] ?? isGroupActive(item);
 
   return (
     <>
@@ -89,15 +104,36 @@ export default function AdminSidebar({ open, onClose }) {
 
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
           {mainItems.map((item) => (
-            <NavLink key={item.to} to={item.to} className={linkClass} end>
-              <item.icon size={18} />
-              <span className="flex-1">{item.label}</span>
-              {item.badgeKey === 'support' && supportUnread > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white flex items-center justify-center">
-                  {supportUnread > 99 ? '99+' : supportUnread}
-                </span>
-              )}
-            </NavLink>
+            item.children ? (
+              <div key={item.label}>
+                <button type="button" onClick={() => setOpenGroups((g) => ({ ...g, [item.label]: !groupOpen(item) }))}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${isGroupActive(item) ? 'text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+                  <item.icon size={18} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  <ChevronDown size={15} className={`transition-transform ${groupOpen(item) ? 'rotate-180' : ''}`} />
+                </button>
+                {groupOpen(item) && (
+                  <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-1">
+                    {item.children.map((c) => (
+                      <NavLink key={c.to} to={c.to} end={c.end}
+                        className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive ? 'bg-brand text-ink' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
+                        {c.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <NavLink key={item.to} to={item.to} className={linkClass} end>
+                <item.icon size={18} />
+                <span className="flex-1">{item.label}</span>
+                {item.badgeKey === 'support' && supportUnread > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white flex items-center justify-center">
+                    {supportUnread > 99 ? '99+' : supportUnread}
+                  </span>
+                )}
+              </NavLink>
+            )
           ))}
         </nav>
       </aside>

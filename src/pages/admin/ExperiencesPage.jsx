@@ -12,7 +12,8 @@ const STATUS_STYLE = {
   published: 'bg-emerald-50 text-emerald-700',
   archived: 'bg-slate-100 text-slate-500',
 };
-const STATUS_LABEL = { pending_review: 'Pending Review' };
+const STATUS_LABEL = { pending_review: 'Pending Review', archived: 'Archived' };
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 export default function ExperiencesPage() {
   const [items, setItems] = useState([]);
@@ -129,23 +130,28 @@ export default function ExperiencesPage() {
             {filtered.map((e) => (
               <li key={e.id} className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center">
                 <div className="col-span-12 md:col-span-4 min-w-0">
-                  <div className="font-semibold text-ink truncate flex items-center gap-2">
-                    {e.name}
-                    {!e.isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Hidden</span>}
+                  <div className="font-semibold text-ink flex items-start gap-2 flex-wrap">
+                    <span className="break-words">{e.name}</span>
+                    {!e.isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">Hidden</span>}
                   </div>
                   <div className="text-[11px] text-ink-muted">{e.location || '—'}</div>
                 </div>
                 <div className="col-span-6 md:col-span-2 text-sm text-ink-muted min-w-0">
-                  {e.supplier ? (
-                    <span className="truncate block" title={e.supplier.companyName}>{e.supplier.companyName}</span>
-                  ) : <span className="text-slate-300">—</span>}
+                  {e.supplier ? <span className="break-words">{e.supplier.companyName}</span> : <span className="text-slate-300">—</span>}
                 </div>
-                <div className="col-span-6 md:col-span-3 text-sm text-ink-muted truncate">
+                <div className="col-span-6 md:col-span-3 text-sm text-ink-muted break-words">
                   {(e.categoryItems || []).map((c) => c.name).join(', ') || '—'}
                   {(e.typeItems || []).length ? ` · ${e.typeItems.map((t) => t.name).join(', ')}` : ''}
                 </div>
                 <div className="col-span-3 md:col-span-1">
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{STATUS_LABEL[e.status] || e.status}</span>
+                  {e.status === 'published' && e.isActive ? (
+                    <div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Live</span>
+                      {(e.data?.listedAt) && <div className="text-[10px] text-ink-muted mt-0.5">{fmtDate(e.data.listedAt)}</div>}
+                    </div>
+                  ) : (
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{STATUS_LABEL[e.status] || e.status}</span>
+                  )}
                 </div>
                 <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-1">
                   <IconBtn title="View" onClick={() => navigate(`/admin/experiences/${e.id}/view`)}><ScanEye size={15} /></IconBtn>

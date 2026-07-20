@@ -48,6 +48,8 @@ import AdminUserDetailPage from './pages/admin/AdminUserDetailPage.jsx';
 import ExperiencesPage from './pages/admin/ExperiencesPage.jsx';
 import ExperienceFormPage from './pages/admin/ExperienceFormPage.jsx';
 import ExperienceViewPage from './pages/admin/ExperienceViewPage.jsx';
+import AdminAllListedPage from './pages/admin/AdminAllListedPage.jsx';
+import AdminDelistedPage from './pages/admin/AdminDelistedPage.jsx';
 import ExperienceSetupPage from './pages/admin/ExperienceSetupPage.jsx';
 import SuppliersPage from './pages/admin/SuppliersPage.jsx';
 import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
@@ -78,6 +80,7 @@ import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
 import TeamQcListingsPage from './pages/team/TeamQcListingsPage.jsx';
 import TeamSupplierExperiencesPage from './pages/team/TeamSupplierExperiencesPage.jsx';
 import TeamSupplierListingsPage from './pages/team/TeamSupplierListingsPage.jsx';
+import TeamAmListingsPage from './pages/team/TeamAmListingsPage.jsx';
 import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
 import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 
@@ -183,6 +186,8 @@ export default function App() {
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="reviews/analytics" element={<AdminReviewAnalyticsPage />} />
           <Route path="experiences" element={<ExperiencesPage />} />
+          <Route path="experiences/listed" element={<AdminAllListedPage />} />
+          <Route path="experiences/delisted" element={<AdminDelistedPage />} />
           <Route path="experiences/new" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
           <Route path="experiences/:id/view" element={<ExperienceViewPage />} />
@@ -224,6 +229,7 @@ export default function App() {
           <Route path="qc-listings" element={<TeamQcListingsPage />} />
           <Route path="qc-management" element={<TeamQcManagementPage />} />
           <Route path="my-suppliers/:supplierId" element={<TeamSupplierExperiencesPage />} />
+          <Route path="am-listings" element={<TeamAmListingsPage />} />
           <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
           <Route path="my-customers" element={<TeamCsmPage />} />
         </Route>

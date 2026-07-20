@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Loader2, Clock, MessageSquareWarning, CheckCircle2, XCircle, ClipboardList,
-  CircleAlert, ChevronRight, Inbox, RefreshCw, Globe, Ban,
+  CircleAlert, ChevronRight, Inbox, RefreshCw, Globe, Ban, Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -178,4 +178,35 @@ function QueueBoard() {
   );
 }
 
-export { MineBoard, QueueBoard };
+// Account Manager board — assigned suppliers at a glance, tiles deep-link to
+// the drill-down tables.
+function AmBoard() {
+  const { items: notifs } = useReviewNotify();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get('/team/my-suppliers/overview');
+      setData(res.data?.data || null);
+    } catch { /* non-blocking */ } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (notifs.length) load(); }, [notifs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) return <div className="bg-white rounded-2xl shadow-soft p-10 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
+  if (!data) return null;
+  const s = data.stats;
+  return (
+    <div className="space-y-4">
+      <h2 className="font-display font-bold text-lg">My suppliers at a glance</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatTile icon={Users} label="Assigned suppliers" value={s.totalSuppliers} tone="blue" to="/team/my-suppliers" />
+        <StatTile icon={Globe} label="Live listings" value={s.liveListings} tone="emerald" to="/team/am-listings?view=live" />
+        <StatTile icon={XCircle} label="Rejected" value={s.rejected} tone="rose" to="/team/am-listings?view=rejected" />
+        <StatTile icon={Ban} label="Delisted" value={s.delisted} tone="slate" to="/team/am-listings?view=delisted" />
+      </div>
+    </div>
+  );
+}
+
+export { MineBoard, QueueBoard, AmBoard };

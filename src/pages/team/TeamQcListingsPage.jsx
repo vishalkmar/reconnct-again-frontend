@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Loader2, MapPin, ClipboardCheck, CheckCircle2, XCircle, Globe, Star, ChevronRight, BadgeCheck,
+  Loader2, MapPin, ClipboardCheck, CheckCircle2, XCircle, Globe, Star, ChevronRight, BadgeCheck, Ban,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -72,6 +72,7 @@ export default function TeamQcListingsPage() {
 
   const approved = items.filter((i) => i.reviewStage === 'published');
   const rejected = items.filter((i) => ['qc_rejected', 'rejected'].includes(i.reviewStage));
+  const delisted = items.filter((i) => i.reviewStage === 'delisted');
   const live = approved.filter((i) => i.status === 'published' && i.isActive).length;
 
   if (loading) return <div className="p-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
@@ -83,13 +84,14 @@ export default function TeamQcListingsPage() {
         <p className="text-sm text-ink-muted">The final outcome of every listing you checked — approved and rejected. Click any for full details and your feedback.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <StatTile icon={CheckCircle2} label="Approved" value={approved.length} tone="emerald" />
         <StatTile icon={Globe} label="Live on web/app" value={live} tone="blue" />
         <StatTile icon={XCircle} label="Rejected" value={rejected.length} tone="rose" />
+        <StatTile icon={Ban} label="Delisted" value={delisted.length} tone="rose" />
       </div>
 
-      {approved.length === 0 && rejected.length === 0 ? (
+      {approved.length === 0 && rejected.length === 0 && delisted.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-soft p-12 text-center">
           <div className="inline-flex w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 items-center justify-center mb-4"><BadgeCheck size={26} /></div>
           <h2 className="font-semibold text-lg">No decided listings yet</h2>
@@ -107,6 +109,12 @@ export default function TeamQcListingsPage() {
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wide text-rose-600 mb-2 flex items-center gap-2">Rejected <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">{rejected.length}</span></h2>
               <div className="space-y-3">{rejected.map((i) => <OutcomeCard key={i.id} item={i} kind="rejected" />)}</div>
+            </div>
+          )}
+          {delisted.length > 0 && (
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-2">Delisted <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">{delisted.length}</span></h2>
+              <div className="space-y-3">{delisted.map((i) => <OutcomeCard key={i.id} item={i} kind="rejected" />)}</div>
             </div>
           )}
         </div>

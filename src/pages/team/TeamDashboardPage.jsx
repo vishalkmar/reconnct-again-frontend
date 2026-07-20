@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Truck, Sparkles, ClipboardCheck, Users, HeartHandshake, ArrowRight, MapPinned, BadgeCheck } from 'lucide-react';
 import { useTeamAuth } from '../../context/TeamAuthContext.jsx';
-import { MineBoard, QueueBoard } from '../../components/team/ReviewStatsBoard.jsx';
+import { MineBoard, QueueBoard, AmBoard } from '../../components/team/ReviewStatsBoard.jsx';
 
 const ROLE_LABEL = {
   bd: 'Business Developer',
@@ -70,6 +70,7 @@ export default function TeamDashboardPage() {
       <div className="space-y-8 mb-8">
         {perms.canReviewListings && member?.roleType !== 'qcops' && <QueueBoard />}
         {perms.canAddExperience && <MineBoard />}
+        {perms.canManageAccounts && <AmBoard />}
       </div>
 
       {cards.length === 0 ? (
