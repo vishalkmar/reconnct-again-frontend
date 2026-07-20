@@ -1,17 +1,27 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, CircleAlert, Lightbulb, Pencil, Send, GitCompareArrows, CheckCircle2,
+  ArrowLeft, Loader2, CircleAlert, Lightbulb, Send, GitCompareArrows, CheckCircle2, Save,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import ObjectionThread from '../../components/team/ObjectionThread.jsx';
+import { Step1, Step2, Step3, Step4 } from './HostListingFormPage.jsx';
 
-/* Host / Supplier "resolve objections" page. Mirrors the team resolve page but
-   uses the host/supplier listing endpoints. Objections are shown as text (the
-   host portal doesn't render the full experience sections), each with a change
-   badge, the running conversation, and a REQUIRED resolution note. "Review
-   again" re-submits the SAME form (so no fields are lost) plus the notes. */
+/* Host / Supplier "resolve objections" page — the ONLY way to change a listing
+   once it's been submitted, mirroring the BD flow. Each objected section
+   carries the objection, the running conversation, the REAL editor for those
+   fields, and a REQUIRED resolution note.
+
+   The editors are the wizard's own steps, reused as-is: they already speak the
+   host `form` shape, so there's no second set of inputs to drift out of sync.
+   A section maps to whichever step owns its fields. */
+const STEP_FOR_SECTION = {
+  basic: Step1, taxonomy: Step1, duration: Step1,
+  about: Step2, inclusions: Step2, facilities: Step2, nearby: Step2, faqs: Step2, policies: Step2,
+  pricing: Step3, schedule: Step3,
+  media: Step4,
+};
 export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -20,6 +30,10 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState({});
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(null);
+  const [dirty, setDirty] = useState(false);
+
+  const patch = (p) => { setForm((f) => ({ ...f, ...p })); setDirty(true); };
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +71,23 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   }
 
   const allNotesFilled = objections.every((o) => (notes[o.key] || '').trim());
+  const unchanged = objections.filter((o) => !o.changed);
+
+  // Save the edited fields WITHOUT submitting — the round only goes back to
+  // Center Ops via "Review again" below, once every objection has a note.
+  const saveSection = async (key) => {
+    setSaving(key);
+    try {
+      await api.put(`${basePath}/listings/${id}`, { form });
+      toast.success('Changes saved');
+      setDirty(false);
+      await load(); // refresh the Changed / Not changed yet badges
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not save');
+    } finally {
+      setSaving(null);
+    }
+  };
 
   const reviewAgain = async () => {
     if (!allNotesFilled) return toast.error('Add a note for every objection');
@@ -77,10 +108,9 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   return (
     <div className="max-w-3xl pb-24">
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        {/* No "Edit the listing" shortcut — once it's in review the objected
+            sections below are the only things the owner may change. */}
         <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand"><ArrowLeft size={16} /> Back</button>
-        <Link to={`${basePath}/listings/${id}/edit`} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105">
-          <Pencil size={15} /> Edit the listing
-        </Link>
       </div>
 
       <h1 className="text-2xl font-display font-bold mb-1">Resolve objections</h1>
@@ -112,6 +142,26 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
                   <ObjectionThread thread={thread[o.key]} />
                 </div>
               )}
+
+              {/* The real fields for this section, edited right here */}
+              <div className="border border-slate-200 rounded-xl p-4">
+                <div className="text-[11px] font-bold uppercase tracking-wide text-brand-dark mb-3">Fix it here</div>
+                {(() => {
+                  const StepEditor = STEP_FOR_SECTION[o.key];
+                  if (!StepEditor) {
+                    return <p className="text-sm text-ink-muted">This section can’t be changed from your portal — please reply to your account manager instead.</p>;
+                  }
+                  return <div className="-m-1"><StepEditor form={form} patch={patch} /></div>;
+                })()}
+                <div className="flex justify-end mt-3">
+                  <button onClick={() => saveSection(o.key)} disabled={saving === o.key || !dirty}
+                    title={dirty ? '' : 'Make a change first'}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed">
+                    {saving === o.key ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save changes
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-ink uppercase tracking-wide">How did you fix it? <span className="text-rose-500">*</span></label>
                 <textarea value={notes[o.key] || ''} onChange={(e) => setNotes((n) => ({ ...n, [o.key]: e.target.value }))} rows={2}
@@ -122,6 +172,12 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
           </div>
         ))}
       </div>
+
+      {unchanged.length > 0 && (
+        <div className="mt-4 text-sm text-amber-800 bg-amber-50 rounded-xl px-4 py-3">
+          {unchanged.length} section{unchanged.length > 1 ? 's haven’t' : ' hasn’t'} actually changed yet — edit and save above before sending back, or Center Ops will see it’s unchanged.
+        </div>
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur border-t border-slate-200 px-4 sm:px-8 py-3 z-30">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">

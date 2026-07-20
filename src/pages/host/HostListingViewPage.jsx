@@ -16,14 +16,12 @@ const MODE_LABEL = { offline: 'Offline', online: 'Online', hybrid: 'Hybrid' };
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-// Trust the backend's canEdit when it's there; otherwise derive it from the
-// fields the API has always returned, so a not-yet-deployed backend doesn't
-// strip Edit off a draft the owner is still writing.
+// Edit only while it's still a plain draft. Once submitted (objections
+// included) it's read-only here — fixes go through the resolve page.
 const canEditOf = (l) => (
   typeof l.canEdit === 'boolean'
     ? l.canEdit
-    : (l.status === 'changes' || l.review?.stage === 'follow_up'
-      || (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage))
+    : (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage)
 );
 const ytId = (url) => (String(url).match(/(?:youtu\.be\/|v=)([\w-]{11})/) || [])[1];
 

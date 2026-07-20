@@ -41,19 +41,14 @@ const tabOf = (l) => {
   return t === 'under_progress' ? 'in_queue' : t;
 };
 
-// Same story for the edit/delete gates — a missing flag must not silently
-// strip Edit off a plain draft the owner is still writing.
-const canEditOf = (l) => (
-  typeof l.canEdit === 'boolean'
-    ? l.canEdit
-    : (l.status === 'changes' || l.review?.stage === 'follow_up'
-      || (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage))
-);
-const canDeleteOf = (l) => (
-  typeof l.canDelete === 'boolean'
-    ? l.canDelete
-    : (l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage)
-);
+/*
+  The free-form Edit wizard is for a plain draft only. Once it's been submitted
+  — including while objections are open — the resolve page is the sole way in,
+  so fixes always carry a note per section. Same as the BD board.
+*/
+const isPlainDraft = (l) => l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage;
+const canEditOf = (l) => (typeof l.canEdit === 'boolean' ? l.canEdit : isPlainDraft(l));
+const canDeleteOf = (l) => (typeof l.canDelete === 'boolean' ? l.canDelete : isPlainDraft(l));
 
 // basePath lets the Supplier Portal (Phase 4) reuse this exact page against
 // /supplier/listings instead of /host/listings.

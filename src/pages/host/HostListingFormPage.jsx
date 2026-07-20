@@ -159,7 +159,7 @@ function Chip({ active, onClick, children }) {
 }
 
 /* ---------- Step 1 ---------- */
-function Step1({ form, patch }) {
+export function Step1({ form, patch }) {
   return (
     <Card>
       <h2 className="text-xl font-display font-bold mb-4">Let’s start with the basics</h2>
@@ -196,7 +196,7 @@ function Step1({ form, patch }) {
 }
 
 /* ---------- Step 2 ---------- */
-function Step2({ form, patch }) {
+export function Step2({ form, patch }) {
   const setInclusion = (i, v) => patch({ inclusions: form.inclusions.map((x, idx) => (idx === i ? v : x)) });
   return (
     <>
@@ -280,7 +280,7 @@ function Step2({ form, patch }) {
 }
 
 /* ---------- Step 3 ---------- */
-function Step3({ form, patch }) {
+export function Step3({ form, patch }) {
   const perDay = form.priceMethod === 'per_day' || form.priceMethod === 'days';
   const addBand = () => {
     const last = form.childBands[form.childBands.length - 1];
@@ -354,7 +354,7 @@ function Step3({ form, patch }) {
 }
 
 /* ---------- Step 4 ---------- */
-function Step4({ form, patch }) {
+export function Step4({ form, patch }) {
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
 
