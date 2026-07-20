@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Loader2, ChevronLeft, CalendarCheck, MapPin, Clock } from 'lucide-react';
+import { Loader2, ChevronLeft, CalendarCheck, MapPin, Clock, Eye } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
 
 const STATUS_BADGE = {
@@ -58,13 +58,18 @@ export default function HostListingBookingsPage({ basePath = '/host' }) {
     <div className="max-w-4xl">
       <Link to={`${basePath}/listings`} className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink mb-4"><ChevronLeft size={16} /> Back to My Listings</Link>
 
-      <div className="bg-white rounded-2xl shadow-soft overflow-hidden mb-6 flex flex-col sm:flex-row">
+      {/* The whole card opens the listing's full details — the button is there
+          so the affordance is obvious, since a card is not obviously a link. */}
+      <Link
+        to={`${basePath}/listings/${id}/view`}
+        className="group bg-white rounded-2xl shadow-soft overflow-hidden mb-6 flex flex-col sm:flex-row hover:shadow-lg transition-shadow"
+      >
         <div className="sm:w-56 h-40 bg-surface-alt shrink-0">
           {listing.image ? <img src={fileUrl(listing.image)} alt="" className="w-full h-full object-cover" /> : null}
         </div>
         <div className="p-5 flex-1">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
-          <h1 className="text-xl font-display font-bold mt-2">{listing.title}</h1>
+          <h1 className="text-xl font-display font-bold mt-2 group-hover:text-brand-dark transition-colors">{listing.title}</h1>
           <div className="flex items-center gap-3 text-sm text-ink-muted mt-1">
             {listing.city && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {listing.city}</span>}
             {listing.durationLabel && <span className="inline-flex items-center gap-1"><Clock size={13} /> {listing.durationLabel}</span>}
@@ -75,8 +80,11 @@ export default function HostListingBookingsPage({ basePath = '/host' }) {
               Earned ₹{revenue.toLocaleString('en-IN')}
             </div>
           )}
+          <span className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium text-ink group-hover:bg-brand group-hover:border-brand group-hover:text-ink transition">
+            <Eye size={14} /> View details
+          </span>
         </div>
-      </div>
+      </Link>
 
       <h2 className="font-semibold text-ink mb-3 flex items-center gap-2"><CalendarCheck size={18} className="text-brand" /> Bookings</h2>
 
