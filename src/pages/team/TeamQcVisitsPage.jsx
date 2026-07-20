@@ -10,6 +10,29 @@ import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
 
 const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
 
+// Visit slots are IST wall-clock times stored as bare strings — resolve them
+// the same way the backend does, so the button never unlocks on a device whose
+// clock/timezone disagrees with the server's check.
+const IST_OFFSET_MIN = 5 * 60 + 30;
+const istToInstant = (dateStr, timeStr) => {
+  const [y, mo, d] = String(dateStr || '').slice(0, 10).split('-').map(Number);
+  if (!y || !mo || !d) return null;
+  const [hh, mm] = String(timeStr || '00:00').slice(0, 5).split(':').map(Number);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return Date.UTC(y, mo - 1, d, hh, mm) - IST_OFFSET_MIN * 60000;
+};
+
+// Ticks every 15s so a time-gated button flips on its own — the unlock moment
+// is a clock event, not a server event, so no socket can push it.
+function useNow(intervalMs = 15000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}
+
 function StatTile({ icon: Icon, label, value, tone, active, onClick }) {
   const tones = { slate: 'bg-slate-50 text-slate-600', blue: 'bg-blue-50 text-blue-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600', emerald: 'bg-emerald-50 text-emerald-600', indigo: 'bg-indigo-50 text-indigo-600' };
   return (
@@ -175,10 +198,12 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
   const qc = item.qcReview || {};
   const stage = item.reviewStage;
   const today = isToday(qc.visitDate);
-  // The "I'm at the location" confirm unlocks only when the scheduled visit
-  // date+time has actually arrived.
-  const visitAt = qc.visitDate && qc.visitTime ? new Date(`${qc.visitDate}T${qc.visitTime}`) : null;
-  const reached = visitAt ? Date.now() >= visitAt.getTime() : true;
+  // "I'm at the location" unlocks the moment the slot arrives and stays
+  // unlocked after it — arriving late is normal. `now` ticks so it flips
+  // without a page refresh.
+  const now = useNow();
+  const visitAt = istToInstant(qc.visitDate, qc.visitTime);
+  const reached = visitAt === null ? true : now >= visitAt;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
       <div className="p-5">

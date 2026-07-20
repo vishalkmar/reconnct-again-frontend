@@ -136,6 +136,10 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
   const stage = item.review?.stage;
   const qc = item.qcReview || {};
   const canDirect = item.review?.canDirectList;
+  const isReviewTab = tab === 'level1' && ['submitted', 'in_review', 'resubmitted', 'follow_up'].includes(stage);
+  // Backend flag: false while the item sits with the submitter (follow_up).
+  const awaitingCops = item.review?.awaitingCops !== false;
+  const isResubmitted = isReviewTab && stage === 'resubmitted' && awaitingCops;
   return (
     <div className="bg-white rounded-2xl shadow-soft p-5 hover:shadow-lg transition-shadow">
       <div className="flex flex-wrap items-center gap-4">
@@ -148,6 +152,8 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${src.className}`}><SrcIcon size={11} /> {item.source?.label}</span>
             {tab === 'level1' && stage === 'approved' && <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700"><ShieldCheck size={11} /> Content approved</span>}
+            {isReviewTab && !awaitingCops && <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600"><MessageSquareWarning size={11} /> Follow-up sent · with submitter</span>}
+            {isResubmitted && <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700"><Send size={11} /> Resolved · back for review{item.review?.round ? ` · round ${item.review.round}` : ''}</span>}
             {item.review?.supplierOnboarded && <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700"><Building2 size={11} /> Known supplier{item.review?.fromSupplierPortal ? ' · portal' : ''}</span>}
             {tab === 'level1' && ['submitted', 'in_review', 'resubmitted', 'follow_up'].includes(stage) && s && s.total > 0 && (
               <span className="inline-flex items-center gap-2 text-[11px] text-ink-muted">
@@ -175,10 +181,21 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
           {tab === 'active' && (
             <button onClick={onDelist} disabled={busy} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60"><Ban size={15} /> Delist</button>
           )}
-          <Link to={tab === 'level1' && ['submitted', 'in_review', 'resubmitted', 'follow_up'].includes(stage) ? `/team/review-queue/${item.id}` : `/team/experiences/${item.id}/view`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105">
-            {tab === 'level1' && ['submitted', 'in_review', 'resubmitted', 'follow_up'].includes(stage) ? 'Review' : 'View'} <ChevronRight size={15} />
-          </Link>
+          {isReviewTab && !awaitingCops ? (
+            // With the submitter (follow-up sent) — reviewing is impossible
+            // until they resolve, so don't let the click reach a 400 toast.
+            <span title="Waiting for the submitter to resolve the objections — you'll be notified when it comes back"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-400 text-sm font-semibold cursor-not-allowed">
+              <Clock size={15} /> With submitter
+            </span>
+          ) : (
+            <Link to={isReviewTab ? `/team/review-queue/${item.id}` : `/team/experiences/${item.id}/view`}
+              title={isResubmitted ? `Objections resolved — round ${item.review?.round || 1} is back with you for review` : undefined}
+              className={`relative inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold hover:brightness-105 ${isResubmitted ? 'bg-emerald-600 text-white' : 'bg-brand text-ink'}`}>
+              {isResubmitted && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />}
+              {isReviewTab ? (isResubmitted ? 'Review again' : 'Review') : 'View'} <ChevronRight size={15} />
+            </Link>
+          )}
         </div>
       </div>
 

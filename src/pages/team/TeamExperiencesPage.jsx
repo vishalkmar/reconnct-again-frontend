@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus, Loader2, Sparkles, Clock, Globe, XCircle, Ban, RefreshCw, Search,
-  MessageSquareWarning, Pencil, Send, CircleAlert, Lightbulb, MapPin, CheckCircle2, Hourglass,
+  MessageSquareWarning, Send, CircleAlert, Lightbulb, MapPin, CheckCircle2, Hourglass,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -183,8 +183,9 @@ function Row({ e, tab, onChanged }) {
               <Lightbulb size={15} className="mt-0.5 shrink-0" /><span><span className="font-semibold">Suggestion:</span> {e.suggestion}</span>
             </div>
           )}
+          {/* Resolve page is the only entry point — it edits the objected
+              fields inline, so a separate full-form edit is redundant here. */}
           <div className="flex gap-2 mt-3">
-            <Link to={`${e.id}/edit`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100"><Pencil size={13} /> Edit in form</Link>
             <Link to={`${e.id}/resolve`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700"><Send size={13} /> Resolve &amp; review again</Link>
           </div>
         </div>
