@@ -251,7 +251,10 @@ export default function HostListingsPage({ basePath = '/host' }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((l) => {
             const objectionCount = l.review?.objection || 0;
-            const hasObjections = l.status === 'changes' || objectionCount > 0;
+            // Only while the round is actually open. Not `status === 'changes'`
+            // (a stale mirror that survives the round) and not a raw objection
+            // count (Center Ops marks those up before sending them).
+            const hasObjections = l.review?.stage === 'follow_up';
             const badge = l.isPublished
               ? { label: 'Published', cls: 'bg-emerald-100 text-emerald-700' }
               : hasObjections ? STATUS_BADGE.changes : (STATUS_BADGE[l.status] || STATUS_BADGE.draft);
