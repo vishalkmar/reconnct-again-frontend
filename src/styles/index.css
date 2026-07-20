@@ -74,6 +74,15 @@ h1, h2, h3, h4, h5 {
   .label {
     @apply block text-sm font-medium text-ink mb-1.5;
   }
+  /* Host/supplier listing inputs. Lives here, not in a <style> tag inside the
+     wizard page — the same fields are rendered by the resolve page too, and a
+     page-scoped rule left them as unstyled browser defaults there. */
+  .win {
+    @apply w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-sm outline-none transition;
+  }
+  .win:focus {
+    @apply border-brand ring-[3px] ring-brand/15;
+  }
   .card {
     @apply bg-white rounded-2xl shadow-card overflow-hidden;
   }

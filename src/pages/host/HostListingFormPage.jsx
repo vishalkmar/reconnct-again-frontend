@@ -140,10 +140,6 @@ export default function HostListingFormPage({ basePath = '/host' }) {
         </div>
       </div>
 
-      <style>{`
-        .win { width:100%; padding:0.625rem 0.875rem; border-radius:0.5rem; border:1px solid #d1d5db; outline:none; font-size:0.875rem; background:#fff; }
-        .win:focus { border-color: rgb(var(--brand)); box-shadow: 0 0 0 3px rgb(var(--brand) / 0.15); }
-      `}</style>
     </div>
   );
 }

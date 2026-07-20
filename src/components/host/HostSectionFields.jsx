@@ -22,12 +22,41 @@ import {
   restyled here, so the resolve page and the wizard always look the same.
 */
 
-// Sections the owner can fix from their portal. `supplier` is deliberately
-// absent — a supplier can't rewrite their own supplier record.
-export const EDITABLE_SECTIONS = [
-  'basic', 'taxonomy', 'about', 'media', 'pricing', 'duration',
-  'schedule', 'inclusions', 'facilities', 'nearby', 'faqs', 'policies',
-];
+/*
+  Which `form` keys each section owns — the host-form counterpart of the
+  backend's SECTION_FIELDS. Lets a caller tell whether THIS section was edited
+  and save only its fields, so two open objections stay independent.
+  `supplier` is deliberately absent — a supplier can't rewrite their own
+  supplier record.
+*/
+export const SECTION_FORM_FIELDS = {
+  basic: ['name', 'location', 'city', 'nearbyLocation', 'mode'],
+  taxonomy: ['audiences', 'categoryIds', 'typeIds'],
+  about: ['about'],
+  media: ['photos', 'videos'],
+  pricing: ['priceMethod', 'adultPrice', 'childrenEnabled', 'childBands', 'capacity'],
+  duration: ['durationLabel', 'durationHours', 'durationMinutes'],
+  schedule: ['schedule'],
+  inclusions: ['inclusions'],
+  facilities: ['facilities'],
+  nearby: ['nearbyPlaces'],
+  faqs: ['faqs'],
+  policies: ['termsConditions', 'privacyPolicy', 'refundCancellationPolicy'],
+};
+
+export const EDITABLE_SECTIONS = Object.keys(SECTION_FORM_FIELDS);
+
+const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+// Has this particular section been edited, comparing against the last saved copy?
+export const sectionDirty = (section, form, base) => (
+  (SECTION_FORM_FIELDS[section] || []).some((f) => !same(form?.[f], base?.[f]))
+);
+
+// This section's fields lifted off the working form, for a scoped save.
+export const pickSection = (section, form) => (
+  (SECTION_FORM_FIELDS[section] || []).reduce((a, f) => { a[f] = form?.[f]; return a; }, {})
+);
 
 export default function HostSectionFields({ section, form, patch }) {
   switch (section) {

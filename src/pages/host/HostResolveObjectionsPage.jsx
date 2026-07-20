@@ -6,7 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import ObjectionThread from '../../components/team/ObjectionThread.jsx';
-import HostSectionFields from '../../components/host/HostSectionFields.jsx';
+import HostSectionFields, { sectionDirty, pickSection } from '../../components/host/HostSectionFields.jsx';
 
 /* Host / Supplier "resolve objections" page — the ONLY way to change a listing
    once it's been submitted, mirroring the BD flow. Each objected section
@@ -21,9 +21,12 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   const [notes, setNotes] = useState({});
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(null);
-  const [dirty, setDirty] = useState(false);
+  // The last SAVED copy of the form. `form` is the working copy; comparing the
+  // two per section is what keeps two open objections independent — editing
+  // About must not light up (or get saved by) the Nearby places button.
+  const [baseForm, setBaseForm] = useState(null);
 
-  const patch = (p) => { setForm((f) => ({ ...f, ...p })); setDirty(true); };
+  const patch = (p) => setForm((f) => ({ ...f, ...p }));
 
   const load = useCallback(async () => {
     try {
@@ -31,11 +34,21 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
       const d = data.data || data;
       setListing(d.listing || null);
       setForm(d.form || null);
+      setBaseForm(d.form || null);
     } catch (e) {
       toast.error(e.response?.data?.message || 'Could not load');
     } finally {
       setLoading(false);
     }
+  }, [basePath, id]);
+
+  // Re-read only the listing (for the Changed / Not changed yet badges) —
+  // never the form, so edits the owner has in flight elsewhere survive a save.
+  const refreshListing = useCallback(async () => {
+    try {
+      const { data } = await api.get(`${basePath}/listings/${id}`);
+      setListing((data.data || data).listing || null);
+    } catch { /* badges just stay stale */ }
   }, [basePath, id]);
 
   useEffect(() => { load(); }, [load]);
@@ -63,15 +76,21 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
   const allNotesFilled = objections.every((o) => (notes[o.key] || '').trim());
   const unchanged = objections.filter((o) => !o.changed);
 
-  // Save the edited fields WITHOUT submitting — the round only goes back to
-  // Center Ops via "Review again" below, once every objection has a note.
+  /*
+    Save ONE section, without submitting — the round only goes back to Center
+    Ops via "Review again" below, once every objection has a note.
+
+    The payload is the last saved form with just THIS section's fields laid
+    over it, so a half-finished edit in another objection never rides along.
+  */
   const saveSection = async (key) => {
+    const payload = { ...baseForm, ...pickSection(key, form) };
     setSaving(key);
     try {
-      await api.put(`${basePath}/listings/${id}`, { form });
+      await api.put(`${basePath}/listings/${id}`, { form: payload });
+      setBaseForm(payload); // this section is now clean; others stay dirty
       toast.success('Changes saved');
-      setDirty(false);
-      await load(); // refresh the Changed / Not changed yet badges
+      await refreshListing();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Could not save');
     } finally {
@@ -137,13 +156,19 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
               <div className="border border-slate-200 rounded-xl p-4">
                 <div className="text-[11px] font-bold uppercase tracking-wide text-brand-dark mb-3">Fix it here</div>
                 <HostSectionFields section={o.key} form={form} patch={patch} />
-                <div className="flex justify-end mt-4">
-                  <button onClick={() => saveSection(o.key)} disabled={saving === o.key || !dirty}
-                    title={dirty ? '' : 'Make a change first'}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed">
-                    {saving === o.key ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save changes
-                  </button>
-                </div>
+                {(() => {
+                  const isDirty = sectionDirty(o.key, form, baseForm);
+                  return (
+                    <div className="flex justify-end items-center gap-3 mt-4">
+                      {isDirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
+                      <button onClick={() => saveSection(o.key)} disabled={saving === o.key || !isDirty}
+                        title={isDirty ? '' : 'Make a change in this section first'}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed">
+                        {saving === o.key ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save changes
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>
