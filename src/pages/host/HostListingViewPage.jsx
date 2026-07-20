@@ -115,10 +115,16 @@ export default function HostListingViewPage({ basePath = '/host' }) {
             {form.adultPrice ? rupee(form.adultPrice) : '—'}
             <span className="text-xs font-normal text-ink-muted"> / {listing.priceUnit}</span>
           </div>
+          {/* Edit only survives while the listing is still the owner's to
+              change (a plain draft). Once it's been submitted for review this
+              page is read-only — matching the BD board, where a submitted
+              experience has no Edit action at all. */}
           <div className="flex gap-2 mt-4">
-            <Link to={`${basePath}/listings/${id}/edit`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
-              <Pencil size={14} /> Edit
-            </Link>
+            {listing.canEdit && (
+              <Link to={`${basePath}/listings/${id}/edit`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                <Pencil size={14} /> Edit
+              </Link>
+            )}
             <Link to={`${basePath}/listings/${id}/bookings`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
               <CalendarCheck size={14} /> See Bookings
             </Link>

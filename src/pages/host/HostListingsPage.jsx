@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X, MessageSquareWarning, Send } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X, MessageSquareWarning, Send, Eye, Hourglass, Globe, XCircle, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 
@@ -10,6 +10,20 @@ const STATUS_BADGE = {
   changes: { label: 'Objections', cls: 'bg-rose-100 text-rose-700' },
 };
 
+/*
+  The owner-facing lifecycle, mirroring the BD's "My Experiences" board. The
+  backend hands each listing a `tab` from the same submitterTab() derivation;
+  under_progress (QCOPS asked for changes) folds into Under Review, since from
+  the owner's side it's still simply "not decided yet".
+*/
+const TABS = [
+  { key: 'in_queue', label: 'Under Review', icon: Hourglass, tone: 'bg-blue-50 text-blue-600' },
+  { key: 'live', label: 'Published', icon: Globe, tone: 'bg-emerald-50 text-emerald-600' },
+  { key: 'rejected', label: 'Rejected', icon: XCircle, tone: 'bg-rose-50 text-rose-600' },
+  { key: 'delisted', label: 'Delisted', icon: Ban, tone: 'bg-slate-100 text-slate-500' },
+];
+const tabOf = (l) => (l.tab === 'under_progress' ? 'in_queue' : (l.tab || 'in_queue'));
+
 // basePath lets the Supplier Portal (Phase 4) reuse this exact page against
 // /supplier/listings instead of /host/listings.
 export default function HostListingsPage({ basePath = '/host' }) {
@@ -17,6 +31,7 @@ export default function HostListingsPage({ basePath = '/host' }) {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(null);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState('in_queue');
   const isSupplier = basePath === '/supplier';
   // Suppliers can self-add listings only once they already have a live one.
   const [canAdd, setCanAdd] = useState(!isSupplier);
@@ -37,15 +52,19 @@ export default function HostListingsPage({ basePath = '/host' }) {
 
   // Search by name, location or price — client-side, over the host's own
   // (small) listing set.
+  const counts = useMemo(
+    () => listings.reduce((a, l) => { const k = tabOf(l); a[k] = (a[k] || 0) + 1; return a; }, {}),
+    [listings],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return listings;
-    return listings.filter((l) => (
+    return listings.filter((l) => tabOf(l) === tab).filter((l) => !q || (
       (l.title || '').toLowerCase().includes(q)
       || (l.city || '').toLowerCase().includes(q)
       || String(l.price || '').includes(q)
     ));
-  }, [listings, query]);
+  }, [listings, query, tab]);
 
   const remove = async (id) => {
     if (!window.confirm('Delete this listing? This cannot be undone.')) return;
@@ -87,6 +106,21 @@ export default function HostListingsPage({ basePath = '/host' }) {
       )}
 
       {listings.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`bg-white rounded-2xl shadow-soft p-3.5 flex items-center gap-2.5 text-left transition-all ${tab === t.key ? 'ring-2 ring-brand' : 'hover:shadow-lg hover:-translate-y-0.5'}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${t.tone}`}><t.icon size={17} /></div>
+              <div className="min-w-0">
+                <div className="text-xl font-display font-bold leading-none">{counts[t.key] || 0}</div>
+                <div className="text-[11px] text-ink-muted mt-0.5 truncate">{t.label}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {listings.length > 0 && (
         <div className="relative mb-5 max-w-md">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
@@ -121,7 +155,9 @@ export default function HostListingsPage({ basePath = '/host' }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-soft p-10 text-center text-ink-muted">
-          No listings match "{query}".
+          {query
+            ? `No listings match "${query}" in ${TABS.find((t) => t.key === tab)?.label}.`
+            : `Nothing in ${TABS.find((t) => t.key === tab)?.label}.`}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -162,16 +198,27 @@ export default function HostListingsPage({ basePath = '/host' }) {
                     </Link>
                   )}
 
+                  {/* Once it's been submitted for review the owner can't edit
+                      or delete it — same as the BD board. View details stands
+                      in so they can still see exactly what was submitted. */}
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                    <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
-                      <Pencil size={14} /> Edit
-                    </Link>
+                    {l.canEdit ? (
+                      <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                        <Pencil size={14} /> Edit
+                      </Link>
+                    ) : (
+                      <Link to={`${basePath}/listings/${l.id}/view`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                        <Eye size={14} /> View
+                      </Link>
+                    )}
                     <Link to={`${basePath}/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
                       <CalendarCheck size={15} /> See Booking
                     </Link>
-                    <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
-                      {removing === l.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </button>
+                    {l.canDelete && (
+                      <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
+                        {removing === l.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
