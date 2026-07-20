@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck,
+  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck, ListChecks,
 } from 'lucide-react';
 import { useTeamAuth } from '../context/TeamAuthContext.jsx';
 import { ReviewNotifyProvider } from '../context/ReviewNotifyContext.jsx';
@@ -31,6 +31,9 @@ export default function TeamLayout() {
     { to: '/team/qc-listings', label: 'Listing Management', icon: BadgeCheck, show: member?.roleType === 'qcops' },
     { to: '/team/qc-management', label: 'QCOPS Management', icon: BadgeCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
     { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts },
+    // Same gate as Assigned Suppliers — was previously only reachable by
+    // clicking a dashboard stat tile. Defaults to the Live view.
+    { to: '/team/am-listings', label: 'Listings', icon: ListChecks, show: !!perms.canManageAccounts },
     { to: '/team/my-customers', label: 'My Customers', icon: HeartHandshake, show: !!perms.canManageCustomers },
   ].filter((i) => i.show);
 
