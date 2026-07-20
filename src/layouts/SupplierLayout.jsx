@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, Link, useNavigate, NavLink } from 'react-router-dom';
 import {
-  Menu, LogOut, X, LayoutDashboard, ListChecks, Wallet, Bell, Ticket, Clock,
+  Menu, LogOut, X, LayoutDashboard, ListChecks, Wallet, Bell, Ticket, Clock, UserCog,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSupplierAuth } from '../context/SupplierAuthContext.jsx';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/supplier/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/supplier/listings', label: 'My Listings', icon: ListChecks },
   { to: '/supplier/transactions', label: 'Transactions', icon: Wallet },
+  { to: '/supplier/account-manager', label: 'Key Account Manager', icon: UserCog },
 ];
 
 const NOTIF_ICON = { host_booking: Ticket, reminder: Clock };

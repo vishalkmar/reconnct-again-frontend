@@ -90,6 +90,7 @@ import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 import SupplierLayout from './layouts/SupplierLayout.jsx';
 import SupplierProtectedRoute from './components/supplier/SupplierProtectedRoute.jsx';
 import SupplierLoginPage from './pages/supplier/SupplierLoginPage.jsx';
+import SupplierAccountManagerPage from './pages/supplier/SupplierAccountManagerPage.jsx';
 
 export default function App() {
   return (
@@ -253,6 +254,7 @@ export default function App() {
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage basePath="/supplier" />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage basePath="/supplier" />} />
           <Route path="transactions" element={<HostTransactionsPage basePath="/supplier" />} />
+          <Route path="account-manager" element={<SupplierAccountManagerPage />} />
         </Route>
 
         {/* Anything else → landing */}
