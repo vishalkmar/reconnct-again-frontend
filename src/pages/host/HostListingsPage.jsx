@@ -46,6 +46,68 @@ const tabOf = (l) => {
   — including while objections are open — the resolve page is the sole way in,
   so fixes always carry a note per section. Same as the BD board.
 */
+/* Post-QC changes the platform has asked this supplier to make. Acknowledging
+   is a written commitment, not a tick-box — it goes straight back onto the
+   submitter's card as the record of what was promised, so the note is required. */
+function UpChangesBlock({ listing, basePath, onDone }) {
+  const up = listing.upChanges;
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const send = async () => {
+    if (!note.trim()) return toast.error('Please write how you’ll address this');
+    setBusy(true);
+    try {
+      await api.post(`${basePath}/listings/${listing.id}/up-ack`, { note: note.trim() });
+      toast.success('Acknowledgement sent');
+      setOpen(false); setNote('');
+      onDone && onDone();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not send');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="mt-3 bg-amber-50 rounded-xl p-3 text-sm">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-1 flex items-center gap-1.5">
+        <MessageSquareWarning size={13} /> {up.changeType || ''} changes requested
+      </div>
+      <p className="text-amber-900">{up.changeDetails || '—'}</p>
+      {up.deadline && <p className="text-[11px] text-amber-700 mt-1">Agreed deadline: {up.deadline}</p>}
+
+      {up.ack ? (
+        <div className="mt-2 text-[12px] text-emerald-800 bg-white rounded-lg px-3 py-2">
+          <span className="font-semibold">You acknowledged:</span> {up.ack.note}
+        </div>
+      ) : up.needsAck && (
+        open ? (
+          <div className="mt-2">
+            <label className="text-[11px] font-semibold uppercase tracking-wide text-ink">
+              How will you address this? <span className="text-rose-500">*</span>
+            </label>
+            <textarea autoFocus rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+              className="mt-1.5 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand"
+              placeholder="e.g. Washrooms and pool will be deep-cleaned by 25 Jul, photos shared after." />
+            <div className="flex justify-end gap-2 mt-2">
+              <button onClick={() => setOpen(false)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:bg-white">Cancel</button>
+              <button onClick={send} disabled={busy}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-60">
+                {busy ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} Send acknowledgement
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setOpen(true)}
+            className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">
+            <Send size={13} /> Acknowledge
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
 const isPlainDraft = (l) => l.reviewStatus === 'draft' && l.status === 'draft' && !l.review?.stage;
 const canEditOf = (l) => (typeof l.canEdit === 'boolean' ? l.canEdit : isPlainDraft(l));
 const canDeleteOf = (l) => (typeof l.canDelete === 'boolean' ? l.canDelete : isPlainDraft(l));
@@ -212,6 +274,8 @@ export default function HostListingsPage({ basePath = '/host' }) {
                   <div className="mt-2 text-brand-dark font-bold">
                     {l.price ? `₹${Number(l.price).toLocaleString('en-IN')}` : '—'}<span className="text-xs font-normal text-ink-muted"> / {l.priceUnit}</span>
                   </div>
+
+                  {l.upChanges && <UpChangesBlock listing={l} basePath={basePath} onDone={load} />}
 
                   {hasObjections && (
                     <Link to={`${basePath}/listings/${l.id}/resolve`}

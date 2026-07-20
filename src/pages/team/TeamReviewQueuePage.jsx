@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Loader2, ClipboardCheck, UserCog, Truck, Home, Building2, Send, ChevronRight,
   CircleCheck, CircleAlert, Circle, CalendarClock, ShieldCheck, Rocket, Ban, Search,
-  Clock, Hourglass, XCircle, Globe, MessageSquareWarning,
+  Clock, Hourglass, XCircle, Globe, MessageSquareWarning, ThumbsUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -71,6 +71,7 @@ export default function TeamReviewQueuePage() {
   const goLive = (id) => act(id, async () => { await api.post(`/team/qc/${id}/go-live`); toast.success('Now live on web & app 🎉'); });
   const directList = (id) => act(id, async () => { await api.post(`/team/review-queue/${id}/direct-list`); toast.success('Listed directly — now live 🎉'); });
   const upReject = (id, reason) => act(id, async () => { await api.post(`/team/qc/${id}/up-reject`, { reason }); toast.success('Rejected — submitter notified'); });
+  const upAck = (id) => act(id, async () => { const r = await api.post(`/team/qc/${id}/up-ack`); toast.success(r.data?.message || 'Acknowledged'); });
   const delist = (id, reason) => act(id, async () => { await api.post(`/team/qc/${id}/delist`, { reason }); toast.success('Delisted from the platform'); });
 
   const filtered = useMemo(() => {
@@ -117,6 +118,7 @@ export default function TeamReviewQueuePage() {
               onGoLive={() => goLive(item.id)}
               onDirectList={() => directList(item.id)}
               onDelist={() => setModal({ kind: 'delist', item })}
+              onAck={() => upAck(item.id)}
               onReject={() => setModal({ kind: 'reject', item })} />
           ))}
         </div>
@@ -129,7 +131,7 @@ export default function TeamReviewQueuePage() {
   );
 }
 
-function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReject }) {
+function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReject, onAck }) {
   const src = SOURCE_STYLE[item.source?.kind] || SOURCE_STYLE.admin;
   const SrcIcon = src.icon;
   const s = item.review?.summary;
@@ -204,6 +206,27 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
         <div className="mt-3 bg-amber-50 rounded-xl p-3.5 text-sm">
           <div className="text-amber-900"><span className="font-semibold">QCOPS wants {qc.changeType || ''} changes:</span> {qc.changeDetails || qc.feedback?.changeDetails || '—'}</div>
           {qc.upState === 'pending_bd' && <div className="mt-2 text-[12px] text-amber-700 inline-flex items-center gap-1.5"><Clock size={13} /> Waiting for the submitter’s response…</div>}
+
+          {/* Acknowledge the submitter's response so they know it landed.
+              Separate from the decision below — this doesn't approve anything. */}
+          {['bd_approved', 'bd_rejected'].includes(qc.upState) && (
+            qc.copsAck ? (
+              <div className="mt-2 text-[12px] text-emerald-700 inline-flex items-center gap-1.5">
+                <CircleCheck size={13} /> You acknowledged this{qc.copsAck.at ? ` · ${new Date(qc.copsAck.at).toLocaleString()}` : ''}
+              </div>
+            ) : (
+              <button onClick={onAck} disabled={busy}
+                className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-60">
+                <ThumbsUp size={13} /> Got it
+              </button>
+            )
+          )}
+
+          {qc.supplierAck && (
+            <div className="mt-2 bg-white/70 rounded-lg px-3 py-2 text-[12px] text-emerald-800">
+              <span className="font-semibold">Supplier acknowledged:</span> {qc.supplierAck.note}
+            </div>
+          )}
           {qc.upState === 'bd_rejected' && (
             <div className="mt-2">
               <div className="text-rose-800"><span className="font-semibold">Submitter wants to reject:</span> {qc.bdReason}</div>
