@@ -296,17 +296,22 @@ export default function HostListingsPage({ basePath = '/host' }) {
                       in so they can still see exactly what was submitted. */}
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t">
                     {canEditOf(l) ? (
-                      <Link to={`${basePath}/listings/${l.id}/edit`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                      <Link to={`${basePath}/listings/${l.id}/edit`} className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition ${l.isPublished ? '' : 'flex-1'}`}>
                         <Pencil size={14} /> Edit
                       </Link>
                     ) : (
-                      <Link to={`${basePath}/listings/${l.id}/view`} className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium hover:bg-surface-alt transition">
+                      <Link to={`${basePath}/listings/${l.id}/view`} className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition ${l.isPublished ? 'border hover:bg-surface-alt' : 'flex-1 bg-brand text-ink font-bold hover:brightness-105'}`}>
                         <Eye size={14} /> View
                       </Link>
                     )}
-                    <Link to={`${basePath}/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
-                      <CalendarCheck size={15} /> See Booking
-                    </Link>
+                    {/* Bookings only exist once it's actually live — offering
+                        this on a listing still in review just leads to an
+                        empty page. */}
+                    {l.isPublished && (
+                      <Link to={`${basePath}/listings/${l.id}/bookings`} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
+                        <CalendarCheck size={15} /> See Booking
+                      </Link>
+                    )}
                     {canDeleteOf(l) && (
                       <button onClick={() => remove(l.id)} disabled={removing === l.id} className="inline-flex items-center justify-center px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:opacity-50" title="Delete">
                         {removing === l.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}

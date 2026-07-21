@@ -133,9 +133,12 @@ export default function HostListingViewPage({ basePath = '/host' }) {
                 <Pencil size={14} /> Edit
               </Link>
             )}
-            <Link to={`${basePath}/listings/${id}/bookings`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
-              <CalendarCheck size={14} /> See Bookings
-            </Link>
+            {/* Same rule as the listing card — bookings only exist once live. */}
+            {listing.isPublished && (
+              <Link to={`${basePath}/listings/${id}/bookings`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-ink text-sm font-bold hover:brightness-105 transition">
+                <CalendarCheck size={14} /> See Bookings
+              </Link>
+            )}
           </div>
         </div>
       </div>
