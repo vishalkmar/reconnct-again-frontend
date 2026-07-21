@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollText, FileText, FileType2, Pencil, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollText, FileText, FileType2, Pencil, Trash2, Plus, KeyRound, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Dropzone from '../../components/admin/Dropzone.jsx';
@@ -21,9 +21,7 @@ const blank = {
   supplierName: '',
   phone: '',
   email: '',
-  password: '',
   image: '',
-  notes: '',
   isActive: true,
 };
 
@@ -33,6 +31,9 @@ export default function SupplierFormPage() {
   const navigate = useNavigate();
 
   const [value, setValue] = useState(blank);
+  // The onboarder must explicitly ask for a login to be created; the password
+  // itself is generated server-side and never comes back to this screen.
+  const [passwordArmed, setPasswordArmed] = useState(false);
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [contract, setContract] = useState(null);
@@ -74,7 +75,6 @@ export default function SupplierFormPage() {
             phone: s.phone || '',
             email: s.email || '',
             image: s.image || '',
-            notes: s.notes || '',
             isActive: s.isActive !== false,
           });
         }
@@ -88,12 +88,13 @@ export default function SupplierFormPage() {
   }, [editing, id]);
 
   const save = async () => {
+    // Everything except the image is required on a new supplier.
     if (!value.companyName.trim()) return toast.error('Company name is required');
-    if (!editing) {
-      if (!value.email.trim()) return toast.error('Email is required — the supplier logs in with it');
-      if (!value.password || value.password.length < 6) return toast.error('Password (min 6 characters) is required');
-    } else if (value.password && value.password.length < 6) {
-      return toast.error('New password must be at least 6 characters');
+    if (!value.supplierName.trim()) return toast.error('Supplier name is required');
+    if (!value.phone.trim()) return toast.error('Phone is required');
+    if (!value.email.trim()) return toast.error('Email is required — the supplier logs in with it');
+    if (!editing && !passwordArmed) {
+      return toast.error('Click “Generate password” — the supplier needs a login');
     }
     setSaving(true);
     try {
@@ -128,27 +129,43 @@ export default function SupplierFormPage() {
         <Field label="Company name" required icon={Building2}>
           <input className="input" value={value.companyName} onChange={(e) => patch({ companyName: e.target.value })} placeholder="e.g. Adventure Rocks Pvt. Ltd." />
         </Field>
-        <Field label="Supplier name" icon={User}>
+        <Field label="Supplier name" required icon={User}>
           <input className="input" value={value.supplierName} onChange={(e) => patch({ supplierName: e.target.value })} placeholder="Contact person" />
         </Field>
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Phone" icon={Phone}>
+          <Field label="Phone" required icon={Phone}>
             <input className="input" value={value.phone} onChange={(e) => patch({ phone: e.target.value })} placeholder="+91…" />
           </Field>
-          <Field label="Email" required={!editing} icon={Mail}>
+          <Field label="Email" required icon={Mail}>
             <input type="email" className="input" value={value.email} onChange={(e) => patch({ email: e.target.value })} placeholder="name@company.com" />
           </Field>
         </div>
 
-        <Field label={editing ? 'New password' : 'Password'} required={!editing} icon={Lock}>
-          <input
-            type="password" className="input" value={value.password}
-            onChange={(e) => patch({ password: e.target.value })}
-            placeholder={editing ? 'Leave blank to keep the current password' : 'Min 6 characters'}
-            autoComplete="new-password"
-          />
-          <p className="text-xs text-ink-muted mt-1">The supplier signs in to the Supplier Portal (web &amp; app) with this email + password.</p>
-        </Field>
+        {/* No password input: whoever onboards a supplier has no business
+            knowing their login. The server generates it and emails it to the
+            supplier — this button is the (required) acknowledgement of that. */}
+        {!editing && (
+          <Field label="Password" required icon={Lock}>
+            {passwordArmed ? (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm font-medium">
+                <ShieldCheck size={16} className="shrink-0" />
+                Password will be generated and emailed to the supplier
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPasswordArmed(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-ink font-semibold text-sm hover:bg-surface-alt"
+              >
+                <KeyRound size={16} /> Generate password
+              </button>
+            )}
+            <p className="text-xs text-ink-muted mt-1.5">
+              A strong password (letters, numbers &amp; symbols) is created automatically and sent to the
+              supplier with their sign-in links. It is never shown here.
+            </p>
+          </Field>
+        )}
 
         <div>
           <label className="label">Image <span className="text-ink-muted font-normal">(optional)</span></label>
@@ -161,10 +178,6 @@ export default function SupplierFormPage() {
             placeholder="Drag & drop a logo/photo, click to browse, or paste a link"
           />
         </div>
-
-        <Field label="Notes" icon={null}>
-          <textarea className="input min-h-[80px]" value={value.notes} onChange={(e) => patch({ notes: e.target.value })} placeholder="Anything to remember about this supplier…" />
-        </Field>
 
         <label className="flex items-center gap-2 cursor-pointer pt-1">
           <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--brand))]" checked={value.isActive} onChange={(e) => patch({ isActive: e.target.checked })} />
