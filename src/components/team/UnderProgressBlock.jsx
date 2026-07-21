@@ -19,7 +19,7 @@ import api from '../../services/api';
   `item` needs { id, qc, reviewNote }. `inset` matches the BD board's avatar
   indent; the AM's table rows sit flush.
 */
-export default function UnderProgressBlock({ item, onChanged, inset = false }) {
+export default function UnderProgressBlock({ item, onChanged, inset = false, readOnly = false }) {
   const [modal, setModal] = useState(null); // 'reject' | 'approve'
   const [reason, setReason] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -47,7 +47,13 @@ export default function UnderProgressBlock({ item, onChanged, inset = false }) {
       </div>
       <p className="text-sm text-amber-900">{qc.changeDetails || item.reviewNote}</p>
 
-      {qc.upState === 'pending_bd' && (
+      {qc.upState === 'pending_bd' && readOnly && (
+        <div className="mt-2 text-[12px] text-ink-muted inline-flex items-center gap-1.5">
+          <Hourglass size={13} /> Waiting on the submitter’s response.
+        </div>
+      )}
+
+      {qc.upState === 'pending_bd' && !readOnly && (
         !modal ? (
           <div className="flex gap-2 mt-3">
             <button onClick={() => { setReason(''); setModal('reject'); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100"><XCircle size={13} /> Reject with reason</button>

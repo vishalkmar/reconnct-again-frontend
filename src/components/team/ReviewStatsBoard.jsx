@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Loader2, Clock, MessageSquareWarning, CheckCircle2, XCircle, ClipboardList,
-  CircleAlert, ChevronRight, Inbox, RefreshCw, Globe, Ban, Users,
+  CircleAlert, ChevronRight, Inbox, RefreshCw, Globe, Ban, Users, Sparkles, Hourglass,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -201,7 +201,12 @@ function AmBoard() {
       <h2 className="font-display font-bold text-lg">My suppliers at a glance</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatTile icon={Users} label="Assigned suppliers" value={s.totalSuppliers} tone="blue" to="/team/my-suppliers" />
+        <StatTile icon={Sparkles} label="Total listings" value={s.totalListings} tone="indigo" to="/team/am-listings?view=live" />
+        <StatTile icon={Clock} label="In queue" value={s.inQueue} tone="blue" to="/team/am-listings?view=in_queue" />
+        {/* Rounds waiting on THIS manager's answer — the AM's real to-do. */}
+        <StatTile icon={RefreshCw} label="Action needed" value={s.actionNeeded} tone="amber" to="/team/am-listings?view=under_progress" />
         <StatTile icon={Globe} label="Live listings" value={s.liveListings} tone="emerald" to="/team/am-listings?view=live" />
+        <StatTile icon={Hourglass} label="Under progress" value={s.underProgress} tone="amber" to="/team/am-listings?view=under_progress" />
         <StatTile icon={XCircle} label="Rejected" value={s.rejected} tone="rose" to="/team/am-listings?view=rejected" />
         <StatTile icon={Ban} label="Delisted" value={s.delisted} tone="slate" to="/team/am-listings?view=delisted" />
       </div>

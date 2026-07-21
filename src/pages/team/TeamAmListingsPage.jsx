@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  Loader2, Globe, XCircle, Ban, MapPin, RotateCcw, ClipboardList, RefreshCw,
+  Loader2, Globe, XCircle, Ban, MapPin, RotateCcw, ClipboardList, RefreshCw, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -10,9 +10,10 @@ import UnderProgressBlock from '../../components/team/UnderProgressBlock.jsx';
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 const TABS = [
+  { key: 'in_queue', label: 'In queue', icon: Clock },
   // QCOPS asked for changes on a supplier's OWN submission — there's no BD in
   // that loop, so answering is this account manager's job.
-  { key: 'under_progress', label: 'Action needed', icon: RefreshCw },
+  { key: 'under_progress', label: 'Under progress', icon: RefreshCw },
   { key: 'live', label: 'Live listings', icon: Globe },
   { key: 'rejected', label: 'Rejected', icon: XCircle },
   { key: 'delisted', label: 'Delisted', icon: Ban },
@@ -79,9 +80,14 @@ export default function TeamAmListingsPage() {
                     {r.location && <span className="inline-flex items-center gap-1"><MapPin size={11} /> {r.location}</span>}
                   </div>
                 </div>
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">Under progress</span>
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${r.canRespond ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                  {r.canRespond ? 'Your response needed' : (r.viaBd ? 'With the BD' : 'Under progress')}
+                </span>
               </div>
-              <UnderProgressBlock item={{ ...r, reviewNote: r.reason }} onChanged={load} />
+              {/* Read-only when the round isn't this manager's to answer — a BD
+                  owns their own submissions, so don't offer a button the API
+                  would reject. */}
+              <UnderProgressBlock item={{ ...r, reviewNote: r.reason }} onChanged={load} readOnly={!r.canRespond} />
             </div>
           ))}
         </div>

@@ -14,6 +14,17 @@ const STAGE = {
   qc_acknowledged: { label: 'QCOPS acknowledged', cls: 'bg-indigo-50 text-indigo-700' },
   qc_onsite: { label: 'QCOPS on-site', cls: 'bg-blue-50 text-blue-700' },
   qc_feedback: { label: 'Awaiting decision', cls: 'bg-indigo-50 text-indigo-700' },
+  // A supplier's own submission keeps status:'draft' the whole way through
+  // (it rides the Host code path), so without these the badge fell through to
+  // "Draft" on listings that were actually deep in the pipeline.
+  submitted: { label: 'Pending review', cls: 'bg-blue-50 text-blue-700' },
+  in_review: { label: 'In review', cls: 'bg-blue-50 text-blue-700' },
+  follow_up: { label: 'Objections', cls: 'bg-rose-50 text-rose-700' },
+  resubmitted: { label: 'Re-submitted', cls: 'bg-blue-50 text-blue-700' },
+  under_progress: { label: 'Under progress', cls: 'bg-amber-50 text-amber-700' },
+  qc_passed: { label: 'Ready to go live', cls: 'bg-emerald-50 text-emerald-700' },
+  rejected: { label: 'Rejected', cls: 'bg-rose-50 text-rose-700' },
+  delisted: { label: 'Delisted', cls: 'bg-slate-100 text-slate-500' },
 };
 const statusBadge = (e) => {
   if (STAGE[e.reviewStage]) return STAGE[e.reviewStage];
