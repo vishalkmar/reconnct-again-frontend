@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck, ListChecks,
 } from 'lucide-react';
 import { useTeamAuth } from '../context/TeamAuthContext.jsx';
+import { hasDashboard } from '../components/team/teamNav.js';
 import { ReviewNotifyProvider } from '../context/ReviewNotifyContext.jsx';
 import ReviewBell from '../components/team/ReviewBell.jsx';
 
@@ -22,18 +23,21 @@ export default function TeamLayout() {
   const [open, setOpen] = useState(false);
   const perms = member?.permissions || {};
 
+  const isCops = member?.roleType === 'cops';
+  const isQcops = member?.roleType === 'qcops';
+  // Center Ops and QCOPS work a single queue each — no dashboard, and none of
+  // the Account Manager surfaces even if the permission happens to be set on
+  // their account. Their sidebar is exactly their two working screens.
   const navItems = [
-    { to: '/team/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: true },
+    { to: '/team/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: hasDashboard(member) },
     { to: '/team/suppliers', label: 'My Suppliers', icon: Truck, show: !!perms.canCreateSupplier },
     { to: '/team/experiences', label: 'My Experiences', icon: Sparkles, show: !!perms.canAddExperience },
-    { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
-    { to: '/team/qc-visits', label: 'My QC Visits', icon: MapPinned, show: member?.roleType === 'qcops' },
-    { to: '/team/qc-listings', label: 'Listing Management', icon: BadgeCheck, show: member?.roleType === 'qcops' },
-    { to: '/team/qc-management', label: 'QCOPS Management', icon: BadgeCheck, show: !!perms.canReviewListings && member?.roleType !== 'qcops' },
-    { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts },
-    // Same gate as Assigned Suppliers — was previously only reachable by
-    // clicking a dashboard stat tile. Defaults to the Live view.
-    { to: '/team/am-listings', label: 'Listings', icon: ListChecks, show: !!perms.canManageAccounts },
+    { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings && !isQcops },
+    { to: '/team/qc-visits', label: 'My QC Visits', icon: MapPinned, show: isQcops },
+    { to: '/team/qc-listings', label: 'Listing Management', icon: BadgeCheck, show: isQcops },
+    { to: '/team/qc-management', label: 'QCOPS Management', icon: BadgeCheck, show: !!perms.canReviewListings && !isQcops },
+    { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts && !isCops && !isQcops },
+    { to: '/team/am-listings', label: 'Listings', icon: ListChecks, show: !!perms.canManageAccounts && !isCops && !isQcops },
     { to: '/team/my-customers', label: 'My Customers', icon: HeartHandshake, show: !!perms.canManageCustomers },
   ].filter((i) => i.show);
 

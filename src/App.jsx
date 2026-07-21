@@ -69,7 +69,7 @@ import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx
 import TeamLayout from './layouts/TeamLayout.jsx';
 import TeamProtectedRoute from './components/team/TeamProtectedRoute.jsx';
 import TeamLoginPage from './pages/team/TeamLoginPage.jsx';
-import TeamDashboardPage from './pages/team/TeamDashboardPage.jsx';
+import TeamDashboardGate, { TeamLanding } from './components/team/TeamDashboardGate.jsx';
 import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
 import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
 import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
@@ -216,8 +216,8 @@ export default function App() {
             </TeamProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<TeamDashboardPage />} />
+          <Route index element={<TeamLanding />} />
+          <Route path="dashboard" element={<TeamDashboardGate />} />
           <Route path="suppliers" element={<TeamSuppliersPage />} />
           <Route path="suppliers/new" element={<SupplierFormPage />} />
           <Route path="suppliers/:id/listings" element={<TeamSupplierListingsPage />} />
