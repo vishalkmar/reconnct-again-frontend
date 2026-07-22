@@ -11,6 +11,7 @@ const STATUS_BADGE = {
 // Booking status pill (upcoming until the date passes, then completed).
 const BOOKING_PILL = {
   upcoming: { label: 'Upcoming', cls: 'bg-brand/10 text-brand-dark' },
+  ongoing: { label: 'Ongoing', cls: 'bg-emerald-100 text-emerald-700' },
   completed: { label: 'Completed', cls: 'bg-slate-100 text-slate-600' },
   cancelled: { label: 'Cancelled', cls: 'bg-rose-100 text-rose-600' },
 };
@@ -18,6 +19,7 @@ const BOOKING_PILL = {
 const TABS = [
   { key: 'all', label: 'All' },
   { key: 'upcoming', label: 'Upcoming' },
+  { key: 'ongoing', label: 'Ongoing' },
   { key: 'completed', label: 'Completed' },
 ];
 

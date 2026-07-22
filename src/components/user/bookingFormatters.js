@@ -42,22 +42,39 @@ export const fmtDateTime = (iso) => {
   });
 };
 
-// Frontend-side categorisation. Backend status never auto-flips to "completed",
-// so we treat any booking whose scheduled time has already passed as completed
-// — same rule the backend's isCompletedNow (experienceReview.controller.js)
-// uses for the rate/review prompts, so "completed" never disagrees between the
-// booking list, the review popup, and My Bookings. Prefer scheduledEndAt (full
-// duration), then the exact scheduledAt timestamp, falling back to the
-// date-only scheduledFor for older bookings that predate that column.
+const DEFAULT_DURATION_MIN = 120; // 2h floor when an experience has no duration
+
+// End instant of a booking: an explicit scheduledEndAt, else start + duration.
+// The old code compared against the START, so a 10–11am slot wrongly read as
+// completed at 10:00.
+const bookingEnd = (booking) => {
+  if (booking.scheduledEndAt) return new Date(booking.scheduledEndAt).getTime();
+  const startIso = booking.scheduledAt || booking.scheduledFor;
+  if (!startIso) return null;
+  const start = new Date(startIso).getTime();
+  if (Number.isNaN(start)) return null;
+  const mins = Number(booking.item?.durationMinutes) || DEFAULT_DURATION_MIN;
+  return start + mins * 60000;
+};
+
+// Frontend-side categorisation, end-based so it matches the backend's
+// bookingLifecycle exactly: Upcoming until it starts, Ongoing while it's
+// running, Completed only once it has ended — so this list, the review popup
+// and the supplier/host boards never disagree.
 export const categorize = (booking) => {
   if (!booking) return 'other';
   if (booking.status === 'cancelled' || booking.status === 'refunded') return 'cancelled';
   if (booking.status === 'pending_payment') return 'pending';
   if (booking.status === 'completed') return 'completed';
+  if (booking.status !== 'confirmed') return 'upcoming';
 
-  const endIso = booking.scheduledEndAt || booking.scheduledAt || booking.scheduledFor;
-  const end = endIso ? new Date(endIso) : null;
-  if (booking.status === 'confirmed' && end && end.getTime() <= Date.now()) return 'completed';
+  const now = Date.now();
+  const startIso = booking.scheduledAt || booking.scheduledFor;
+  const start = startIso ? new Date(startIso).getTime() : null;
+  if (start && now < start) return 'upcoming';
+  const end = bookingEnd(booking);
+  if (end && now < end) return 'ongoing';
+  if (end) return 'completed';
   return 'upcoming';
 };
 

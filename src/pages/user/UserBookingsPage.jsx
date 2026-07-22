@@ -23,6 +23,7 @@ const TYPE_ICON = {
 const TABS = [
   { key: 'all', label: 'All' },
   { key: 'upcoming', label: 'Upcoming' },
+  { key: 'ongoing', label: 'Ongoing' },
   { key: 'pending', label: 'Pending payment' },
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
@@ -51,7 +52,7 @@ export default function UserBookingsPage() {
   // Pre-categorise once per data load so the tab filter is a constant-time
   // lookup instead of recomputing per render.
   const buckets = useMemo(() => {
-    const out = { all: bookings, upcoming: [], pending: [], completed: [], cancelled: [] };
+    const out = { all: bookings, upcoming: [], ongoing: [], pending: [], completed: [], cancelled: [] };
     for (const b of bookings) {
       const c = categorize(b);
       if (out[c]) out[c].push(b);
@@ -208,6 +209,7 @@ function BookingRow({ booking, onOpen }) {
 function EmptyState({ tab }) {
   const messages = {
     upcoming: { title: 'No upcoming bookings', body: 'When you book a future trip, it\'ll appear here.' },
+    ongoing: { title: 'Nothing happening right now', body: 'A booking shows here while the experience is actually taking place.' },
     pending: { title: 'No pending payments', body: 'All caught up — there are no bookings awaiting payment.' },
     completed: { title: 'No completed bookings yet', body: 'After your first trip wraps up, it\'ll move here.' },
     cancelled: { title: 'No cancellations', body: 'You haven\'t cancelled any bookings.' },
