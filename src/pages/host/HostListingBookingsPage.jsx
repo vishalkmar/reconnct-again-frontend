@@ -33,12 +33,16 @@ export default function HostListingBookingsPage({ basePath = '/host' }) {
 
   useEffect(() => {
     let alive = true;
-    api.get(`${basePath}/listings/${id}`)
+    const fetchOnce = () => api.get(`${basePath}/listings/${id}`)
       .then(({ data }) => { if (alive) setListing((data.data || data).listing); })
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
-  }, [id]);
+    fetchOnce();
+    // Booking status is computed server-side (upcoming/ongoing/completed), so
+    // refetch periodically to keep the tabs live without a manual reload.
+    const t = setInterval(fetchOnce, 60000);
+    return () => { alive = false; clearInterval(t); };
+  }, [id, basePath]);
 
   const bookings = useMemo(() => listing?.bookings || [], [listing]);
   const counts = useMemo(

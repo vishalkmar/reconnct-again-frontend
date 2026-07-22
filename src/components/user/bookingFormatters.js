@@ -43,12 +43,28 @@ export const fmtDateTime = (iso) => {
 };
 
 const DEFAULT_DURATION_MIN = 120; // 2h floor when an experience has no duration
+const IST_OFFSET_MIN = 5 * 60 + 30;
 
-// End instant of a booking: an explicit scheduledEndAt, else start + duration.
-// The old code compared against the START, so a 10–11am slot wrongly read as
-// completed at 10:00.
+// The booked slot's end from "Preferred time: 1:57 PM – 2:00 PM" — the truest
+// completion moment, matching the backend (utils/bookingLifecycle).
+const slotEnd = (booking) => {
+  const m = String(booking.specialRequests || '').match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*[–—-]\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return null;
+  const ymd = String(booking.scheduledFor || booking.scheduledAt || '').slice(0, 10);
+  const [y, mo, d] = ymd.split('-').map(Number);
+  if (!y || !mo || !d) return null;
+  let hh = parseInt(m[4], 10) % 12;
+  if (/PM/i.test(m[6])) hh += 12;
+  return Date.UTC(y, mo - 1, d, hh, parseInt(m[5], 10) || 0) - IST_OFFSET_MIN * 60000;
+};
+
+// End instant of a booking: explicit scheduledEndAt, else the booked slot end,
+// else start + duration. The old code compared against the START, so a
+// 10–11am slot wrongly read as completed at 10:00.
 const bookingEnd = (booking) => {
   if (booking.scheduledEndAt) return new Date(booking.scheduledEndAt).getTime();
+  const se = slotEnd(booking);
+  if (se) return se;
   const startIso = booking.scheduledAt || booking.scheduledFor;
   if (!startIso) return null;
   const start = new Date(startIso).getTime();

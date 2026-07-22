@@ -38,6 +38,25 @@ const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const toMin = (hhmm) => { const [h, m] = String(hhmm).split(':').map(Number); return h * 60 + m; };
 const toHHMM = (min) => `${pad(Math.floor(min / 60) % 24)}:${pad(min % 60)}`;
 
+// Reopen the slot editor with the slots ALREADY chosen, adjusted to the
+// current activity duration. If every slot already matches the duration they
+// come back untouched; if the duration changed (e.g. 10m → 30m) the same
+// number of back-to-back slots is rebuilt from the earliest start, so the
+// user just saves instead of deleting and re-adding everything.
+const fitSlotsToDuration = (slots, dur) => {
+  const list = Array.isArray(slots) ? slots.filter((s) => s && s.start && s.end) : [];
+  if (!list.length || dur <= 0) return list.map((s) => ({ ...s }));
+  const allMatch = list.every((s) => toMin(s.end) - toMin(s.start) === dur);
+  if (allMatch) return list.map((s) => ({ ...s }));
+  const sorted = [...list].sort((a, b) => toMin(a.start) - toMin(b.start));
+  let cur = toMin(sorted[0].start);
+  return sorted.map(() => {
+    const s = { start: toHHMM(cur), end: toHHMM(cur + dur) };
+    cur += dur;
+    return s;
+  });
+};
+
 const fmtDate = (s) => {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -186,7 +205,9 @@ export default function ExperienceScheduling({ value = {}, onChange, durationMin
       {bulkOpen && (
         <SlotModal
           title="Manage Slots · applies to every date"
-          slots={[]}
+          // Pre-fill with the set already applied to the dates (dynamic mode
+          // keeps them identical), so reopening doesn't start from scratch.
+          slots={dates.find((d) => d.slots?.length)?.slots || []}
           durationMinutes={durationMinutes}
           requireApplyAll
           onSave={applyToAll}
@@ -318,7 +339,9 @@ function MiniMonth({ year, month, sel, today, onToggle, name }) {
 // dynamic-mode bulk editor that applies its result to every date.
 function SlotModal({ title, slots, durationMinutes, requireApplyAll = false, onSave, onClose }) {
   const dur = durationMinutes > 0 ? durationMinutes : 60;
-  const [list, setList] = useState(slots.map((s) => ({ ...s })));
+  // Pre-fill with the chosen slots, snapped to the current duration (see
+  // fitSlotsToDuration) — so a changed duration auto-updates them.
+  const [list, setList] = useState(() => fitSlotsToDuration(slots, dur));
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState(toHHMM(toMin('09:00') + dur));
   const [applyAll, setApplyAll] = useState(false);

@@ -97,7 +97,6 @@ export default function HostListingViewPage({ basePath = '/host' }) {
   const inclusions = (form.inclusions || []).filter((it) => (it.kind === 'title_image' ? it.title || it.image : it.text));
   const nearby = (form.nearbyPlaces || []).filter((n) => n.name);
   const faqs = (form.faqs || []).filter((f) => f.question);
-  const dates = form.schedule?.dates || [];
   const dur = durationText(form);
 
   return (
@@ -207,20 +206,9 @@ export default function HostListingViewPage({ basePath = '/host' }) {
           )}
         </Card>
 
-        {dates.length > 0 && (
-          <Card title="Availability & slots">
-            <ul className="space-y-1.5 text-sm">
-              {dates.map((d) => (
-                <li key={d.date} className="flex flex-wrap gap-x-3">
-                  <span className="font-medium text-ink min-w-[120px]">
-                    {new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </span>
-                  <span className="text-ink-muted">{d.slots?.length ? d.slots.map((s) => `${s.start}–${s.end}`).join(', ') : 'No slots'}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
+        {/* Availability & slots intentionally hidden in this read-only view —
+            a dense slot schedule reads as an unusable wall of times. Slots are
+            managed in the edit wizard instead. */}
 
         {inclusions.length > 0 && (
           <Card title="Inclusions">

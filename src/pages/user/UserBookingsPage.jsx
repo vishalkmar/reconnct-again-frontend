@@ -34,6 +34,14 @@ export default function UserBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState(null);
+  const [tick, setTick] = useState(0); // ticks so upcoming→ongoing→completed flips live
+
+  // Category is a clock event, not a server one — re-bucket every 30s so a
+  // booking moves through its lifecycle without a manual refresh.
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,7 +66,7 @@ export default function UserBookingsPage() {
       if (out[c]) out[c].push(b);
     }
     return out;
-  }, [bookings]);
+  }, [bookings, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = buckets[tab] || [];
 
