@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollTex
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Dropzone from '../../components/admin/Dropzone.jsx';
+import KamCapacityAlert, { isCapacityError } from '../../components/KamCapacityAlert.jsx';
 
 // Authenticated blob download.
 const downloadFile = async (url, fallbackName) => {
@@ -36,6 +37,7 @@ export default function SupplierFormPage() {
   const [passwordArmed, setPasswordArmed] = useState(false);
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
+  const [capacityAlert, setCapacityAlert] = useState(null); // null | message string
   const [contract, setContract] = useState(null);
 
   const patch = (p) => setValue((v) => ({ ...v, ...p }));
@@ -107,7 +109,11 @@ export default function SupplierFormPage() {
       }
       navigate('..', { relative: 'path' });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Save failed');
+      if (isCapacityError(err)) {
+        setCapacityAlert(err.response?.data?.message || '');
+      } else {
+        toast.error(err.response?.data?.message || 'Save failed');
+      }
     } finally {
       setSaving(false);
     }
@@ -225,6 +231,12 @@ export default function SupplierFormPage() {
           )}
         </div>
       )}
+
+      <KamCapacityAlert
+        open={capacityAlert !== null}
+        message={capacityAlert}
+        onClose={() => setCapacityAlert(null)}
+      />
     </div>
   );
 }

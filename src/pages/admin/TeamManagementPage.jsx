@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Plus, Loader2, Users, ShieldCheck, ShieldOff, KeyRound, X,
+  Plus, Loader2, Users, ShieldCheck, ShieldOff, KeyRound, X, Gauge, Check,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -29,6 +29,7 @@ export default function TeamManagementPage() {
   const [permissionKeys, setPermissionKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalMember, setModalMember] = useState(null); // null = closed, {} = create, {...} = edit
+  const [kamPanel, setKamPanel] = useState(false);
   const roleLabel = (v) => roles.find((r) => r.value === v)?.label || v;
 
   const load = useCallback(async () => {
@@ -67,10 +68,16 @@ export default function TeamManagementPage() {
           <h1 className="text-2xl font-display font-bold mb-1">Team Management</h1>
           <p className="text-sm text-ink-muted">Internal staff accounts — BD, Center Ops, Account Manager, CSM, QCOPS, Marketing.</p>
         </div>
-        <button onClick={() => setModalMember({})}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105">
-          <Plus size={18} /> Add team member
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => setKamPanel(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 font-semibold hover:bg-purple-100">
+            <Gauge size={18} /> KAM Accounts Management
+          </button>
+          <button onClick={() => setModalMember({})}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105">
+            <Plus size={18} /> Add team member
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -129,6 +136,130 @@ export default function TeamManagementPage() {
           onSaved={() => { setModalMember(null); load(); }}
         />
       )}
+
+      {kamPanel && <KamPanel onClose={() => setKamPanel(false)} />}
+    </div>
+  );
+}
+
+// KAM Accounts Management — every Account Manager with their live supplier
+// load vs cap, and an inline editable cap. Admin raises a limit here the
+// moment a BD reports "all KAMs full" when onboarding a supplier.
+function KamPanel({ onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [kams, setKams] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [drafts, setDrafts] = useState({}); // id -> string being edited
+  const [savingId, setSavingId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/admin/team/kams');
+      const list = res.data?.data?.kams || [];
+      setKams(list);
+      setSummary(res.data?.data?.summary || null);
+      setDrafts(Object.fromEntries(list.map((k) => [k.id, String(k.maxSuppliers)])));
+    } catch {
+      toast.error('Could not load KAM accounts');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const saveCap = async (k) => {
+    const val = Number(drafts[k.id]);
+    if (!Number.isFinite(val) || val <= 0) { toast.error('Enter a positive number'); return; }
+    if (val === k.maxSuppliers) return;
+    if (val < k.assignedCount) {
+      toast.error(`${k.name} already holds ${k.assignedCount} suppliers — cap can’t be lower than that.`);
+      return;
+    }
+    setSavingId(k.id);
+    try {
+      await api.put(`/admin/team/${k.id}`, { maxSuppliers: val });
+      toast.success(`${k.name}: max suppliers set to ${val}`);
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="font-display font-bold text-lg flex items-center gap-2"><Gauge size={18} className="text-purple-600" /> KAM Accounts Management</h2>
+            <p className="text-xs text-ink-muted mt-0.5">Suppliers are auto-assigned round-robin to the least-loaded KAM under their cap.</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt text-ink-muted"><X size={18} /></button>
+        </div>
+
+        {summary && (
+          <div className="px-6 pt-4 grid grid-cols-3 gap-3">
+            <Stat label="Account Managers" value={summary.managers} />
+            <Stat label="Assigned / Capacity" value={`${summary.assigned} / ${summary.totalCap}`} />
+            <Stat label="Free slots" value={summary.remaining}
+              tone={summary.remaining === 0 ? 'danger' : 'ok'} />
+          </div>
+        )}
+
+        <div className="px-6 py-5">
+          {loading ? (
+            <div className="py-12 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>
+          ) : kams.length === 0 ? (
+            <div className="py-10 text-center text-sm text-ink-muted">
+              No Account Managers yet. Add one (role “Account Manager”) so suppliers can be assigned.
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {kams.map((k) => {
+                const full = k.remaining === 0;
+                return (
+                  <li key={k.id} className="py-3 flex items-center gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-ink truncate">{k.name}
+                        {!k.isActive && <span className="ml-2 text-[11px] text-slate-400">(disabled)</span>}
+                      </div>
+                      <div className="text-[11px] text-ink-muted truncate">{k.email} · {k.employeeCode}</div>
+                    </div>
+                    <div className="text-center px-2">
+                      <div className={`text-sm font-bold ${full ? 'text-rose-600' : 'text-ink'}`}>{k.assignedCount}/{k.maxSuppliers}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-ink-muted">{full ? 'FULL' : `${k.remaining} free`}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input type="number" min={1} value={drafts[k.id] ?? ''}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [k.id]: e.target.value }))}
+                        className="w-20 px-2 py-1.5 rounded-lg border border-gray-200 text-sm text-center focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+                      <button type="button" onClick={() => saveCap(k)}
+                        disabled={savingId === k.id || String(k.maxSuppliers) === String(drafts[k.id])}
+                        className="p-2 rounded-lg bg-brand text-ink disabled:opacity-40 hover:brightness-105">
+                        {savingId === k.id ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }) {
+  const toneCls = tone === 'danger' ? 'text-rose-600' : tone === 'ok' ? 'text-emerald-600' : 'text-ink';
+  return (
+    <div className="rounded-xl bg-surface-alt px-3 py-2.5 text-center">
+      <div className={`text-lg font-bold ${toneCls}`}>{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</div>
     </div>
   );
 }
@@ -153,6 +284,9 @@ function TeamMemberModal({
   const [permissions, setPermissions] = useState(
     member.permissions || roles.find((r) => r.value === roleType)?.defaultPermissions || {}
   );
+  const [maxSuppliers, setMaxSuppliers] = useState(
+    member.maxSuppliers != null ? String(member.maxSuppliers) : '30'
+  );
   const [saving, setSaving] = useState(false);
 
   // New member only — picking a role reseeds the toggles to that role's
@@ -172,6 +306,7 @@ function TeamMemberModal({
       if (isEdit) {
         const body = { name, permissions };
         if (password) body.password = password;
+        if (roleType === 'account_manager' && maxSuppliers) body.maxSuppliers = Number(maxSuppliers);
         await api.put(`/admin/team/${member.id}`, body);
         toast.success('Team member updated');
       } else {
@@ -179,6 +314,7 @@ function TeamMemberModal({
         // Password is generated server-side and emailed to them — never set here.
         await api.post('/admin/team', {
           name, email, roleType, permissions,
+          ...(roleType === 'account_manager' && maxSuppliers ? { maxSuppliers: Number(maxSuppliers) } : {}),
         });
         toast.success('Team member created — login details emailed to them');
       }
@@ -229,6 +365,17 @@ function TeamMemberModal({
               {roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </Field>
+
+          {roleType === 'account_manager' && (
+            <Field label="Max suppliers this KAM can hold">
+              <input type="number" min={1} value={maxSuppliers}
+                onChange={(e) => setMaxSuppliers(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+              <p className="text-[11px] text-ink-muted mt-1">
+                Round-robin never assigns beyond this. Default 30 — you can raise it any time from “KAM Accounts Management”.
+              </p>
+            </Field>
+          )}
 
           <div>
             <div className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">Access</div>
