@@ -14,6 +14,11 @@ const ROLE_BADGE = {
   marketing_manager: 'bg-pink-50 text-pink-700',
 };
 
+// A KAM's supplier cap is both defaulted to and floored at 20 — the server
+// rejects anything lower (lowering it once slots fill would orphan already-
+// assigned suppliers). Keep this in sync with MIN_MAX_SUPPLIERS on the backend.
+const MIN_MAX_SUPPLIERS = 20;
+
 const PERMISSION_LABELS = {
   canCreateSupplier: 'Create Supplier',
   canAddExperience: 'Add Experience',
@@ -175,7 +180,10 @@ function KamManageModal({ member, onClose, onSaved }) {
 
   const save = async () => {
     const val = Number(draft);
-    if (!Number.isFinite(val) || val <= 0) { toast.error('Enter a positive number'); return; }
+    if (!Number.isFinite(val) || val < MIN_MAX_SUPPLIERS) {
+      toast.error(`The limit can’t be below ${MIN_MAX_SUPPLIERS}.`);
+      return;
+    }
     if (kam && val < kam.assignedCount) {
       toast.error(`${member.name} already holds ${kam.assignedCount} suppliers — the limit can’t be lower than that.`);
       return;
@@ -227,11 +235,11 @@ function KamManageModal({ member, onClose, onSaved }) {
               </div>
 
               <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5">Max suppliers this KAM can hold</label>
-              <input type="number" min={1} value={draft}
+              <input type="number" min={MIN_MAX_SUPPLIERS} value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
               <p className="text-[11px] text-ink-muted mt-1.5">
-                Round-robin never assigns beyond this. Raise it when onboarding starts failing for lack of capacity.
+                Round-robin never assigns beyond this. Minimum {MIN_MAX_SUPPLIERS} — raise it when onboarding starts failing for lack of capacity.
               </p>
             </>
           )}
@@ -271,7 +279,7 @@ function TeamMemberModal({
     member.permissions || roles.find((r) => r.value === roleType)?.defaultPermissions || {}
   );
   const [maxSuppliers, setMaxSuppliers] = useState(
-    member.maxSuppliers != null ? String(member.maxSuppliers) : '20'
+    member.maxSuppliers != null ? String(member.maxSuppliers) : String(MIN_MAX_SUPPLIERS)
   );
   const [saving, setSaving] = useState(false);
 
@@ -287,6 +295,10 @@ function TeamMemberModal({
 
   const submit = async (e) => {
     e.preventDefault();
+    if (roleType === 'account_manager' && Number(maxSuppliers) < MIN_MAX_SUPPLIERS) {
+      toast.error(`Max suppliers can’t be below ${MIN_MAX_SUPPLIERS}.`);
+      return;
+    }
     setSaving(true);
     try {
       if (isEdit) {
@@ -354,11 +366,11 @@ function TeamMemberModal({
 
           {roleType === 'account_manager' && (
             <Field label="Max suppliers this KAM can hold">
-              <input type="number" min={1} value={maxSuppliers}
+              <input type="number" min={MIN_MAX_SUPPLIERS} value={maxSuppliers}
                 onChange={(e) => setMaxSuppliers(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
               <p className="text-[11px] text-ink-muted mt-1">
-                Round-robin never assigns beyond this. Default 20 — you can raise it any time from “KAM Accounts Management”.
+                Round-robin never assigns beyond this. Default &amp; minimum {MIN_MAX_SUPPLIERS} — raise it any time from a KAM’s row.
               </p>
             </Field>
           )}
