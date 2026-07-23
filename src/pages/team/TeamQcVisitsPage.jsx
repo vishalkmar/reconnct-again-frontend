@@ -69,11 +69,11 @@ export default function TeamQcVisitsPage() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (notifs.length) load(); }, [notifs.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const act = async (id, action) => {
+  const act = async (id, action, body) => {
     setBusyId(id);
     try {
-      await api.post(`/team/qc/${id}/${action}`);
-      toast.success(action === 'ack' ? 'Marked as received' : 'On-site confirmed — Center Ops notified');
+      await api.post(`/team/qc/${id}/${action}`, body || {});
+      toast.success(action === 'ack' ? 'Acknowledgement sent with your schedule' : 'On-site confirmed — Center Ops notified');
       load();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed');
@@ -198,8 +198,9 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
   const qc = item.qcReview || {};
   const stage = item.reviewStage;
   const today = isToday(qc.visitDate);
-  // "I'm at the location" unlocks the moment the slot arrives and stays
-  // unlocked after it — arriving late is normal. `now` ticks so it flips
+  const [scheduling, setScheduling] = useState(false);
+  // "I'm at the location" unlocks the moment the QCOPS-chosen slot arrives and
+  // stays unlocked after it — arriving late is normal. `now` ticks so it flips
   // without a page refresh.
   const now = useNow();
   const visitAt = istToInstant(qc.visitDate, qc.visitTime);
@@ -208,24 +209,43 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
       <div className="p-5">
         <CardHead item={item} />
-        <div className={`mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${today ? 'bg-rose-50 text-rose-700' : 'bg-indigo-50 text-indigo-700'}`}>
-          <CalendarClock size={13} /> Visit: {qc.visitDate} at {qc.visitTime} {today && '· TODAY'}
-        </div>
-        {qc.instructions && <div className="mt-2 text-sm bg-surface-alt rounded-lg px-3 py-2 text-ink"><span className="font-semibold">Instructions:</span> {qc.instructions}</div>}
+
+        {/* Before scheduling: the standard turnaround note from Center Ops. */}
+        {stage === 'qc_assigned' && (
+          <div className="mt-3 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-indigo-700 mb-0.5">{qc.turnaroundHeading || 'Turnaround time'}</div>
+            <p className="text-sm text-indigo-900 leading-relaxed">{qc.turnaroundNote || 'Turnaround time for the Quality check is 24 to 48 hrs. Coordinate with the supplier for their availability.'}</p>
+            <p className="text-[11px] text-indigo-700 mt-1.5">Supplier contact &amp; site details were emailed to you — coordinate a time, then send your schedule below.</p>
+          </div>
+        )}
+
+        {/* Once QCOPS has scheduled it: their own chosen visit date/time. */}
+        {stage !== 'qc_assigned' && qc.visitDate && (
+          <div className={`mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${today ? 'bg-rose-50 text-rose-700' : 'bg-indigo-50 text-indigo-700'}`}>
+            <CalendarClock size={13} /> Your visit: {qc.visitDate} at {qc.visitTime} {today && '· TODAY'}
+          </div>
+        )}
+        {qc.ackNote && stage !== 'qc_assigned' && <div className="mt-2 text-sm bg-surface-alt rounded-lg px-3 py-2 text-ink"><span className="font-semibold">Your note:</span> {qc.ackNote}</div>}
+
+        {/* The scheduling form — replaces the old "Got it" one-tap ack. */}
+        {stage === 'qc_assigned' && scheduling && (
+          <ScheduleForm busy={busyId === item.id} onCancel={() => setScheduling(false)}
+            onSend={(body) => onAct(item.id, 'ack', body)} />
+        )}
       </div>
       <div className="px-5 py-3 border-t border-slate-100 bg-surface-alt/40 flex items-center gap-2 flex-wrap">
         <StageTracker stage={stage} />
         <div className="ml-auto flex items-center gap-2">
-          {stage === 'qc_assigned' && (
-            <button onClick={() => onAct(item.id, 'ack')} disabled={busyId === item.id}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-60"><ThumbsUp size={15} /> Got it</button>
+          {stage === 'qc_assigned' && !scheduling && (
+            <button onClick={() => setScheduling(true)} disabled={busyId === item.id}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-60"><ThumbsUp size={15} /> Send acknowledgement with schedule</button>
           )}
           {stage === 'qc_acknowledged' && (reached ? (
             <button onClick={() => onAct(item.id, 'onsite')} disabled={busyId === item.id}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"><Navigation size={15} /> I’m at the location</button>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-400 text-sm font-semibold cursor-not-allowed" title={`Unlocks at ${qc.visitDate} ${qc.visitTime}`}>
-              <Clock size={15} /> Unlocks at visit time
+              <Clock size={15} /> Unlocks at your visit time
             </span>
           ))}
           {stage === 'qc_onsite' && (
@@ -233,6 +253,45 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"><ClipboardList size={15} /> Give Feedback</button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// QCOPS picks their own visit date/time (after coordinating with the supplier)
+// and writes a note back to Center Ops.
+function ScheduleForm({ busy, onSend, onCancel }) {
+  const [visitDate, setVisitDate] = useState('');
+  const [visitTime, setVisitTime] = useState('');
+  const [note, setNote] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const submit = () => {
+    if (!visitDate || !visitTime) return toast.error('Pick your visit date and time');
+    return onSend({ visitDate, visitTime, note: note.trim() });
+  };
+  return (
+    <div className="mt-3 rounded-xl border border-indigo-200 bg-white p-3.5">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-brand-dark mb-2">Your schedule of visit</div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] font-semibold text-ink uppercase tracking-wide">Visit date</label>
+          <input type="date" min={today} value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-ink uppercase tracking-wide">Time slot</label>
+          <input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" />
+        </div>
+      </div>
+      <div className="mt-2.5">
+        <label className="text-[11px] font-semibold text-ink uppercase tracking-wide">Note to Center Ops</label>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="e.g. Coordinated with supplier — visiting Friday morning."
+          className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" />
+      </div>
+      <div className="flex justify-end gap-2 mt-3">
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:bg-surface-alt">Cancel</button>
+        <button onClick={submit} disabled={busy} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-brand text-ink text-xs font-semibold hover:brightness-105 disabled:opacity-60">
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} />} Send acknowledgement
+        </button>
       </div>
     </div>
   );
@@ -255,7 +314,7 @@ function OutcomeCard({ item, tone, label, reason }) {
 
 const STEPS = [
   { key: 'qc_assigned', label: 'Assigned' },
-  { key: 'qc_acknowledged', label: 'Received' },
+  { key: 'qc_acknowledged', label: 'Scheduled' },
   { key: 'qc_onsite', label: 'On-site' },
   { key: 'qc_feedback', label: 'Feedback' },
 ];

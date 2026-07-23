@@ -251,34 +251,21 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
   );
 }
 
+// Center Ops no longer picks the timing — it hands the check to QCOPS with a
+// standard turnaround note, and QCOPS coordinates the visit time with the
+// supplier directly (see the QCOPS "Send acknowledgement with schedule" step).
 function SendQcopsModal({ name, busy, onSubmit, onClose }) {
-  const [visitDate, setVisitDate] = useState('');
-  const [visitTime, setVisitTime] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const today = new Date().toISOString().slice(0, 10);
-  const submit = () => {
-    if (!visitDate || !visitTime) return toast.error('Choose a date and time');
-    if (!instructions.trim()) return toast.error('Add instructions');
-    onSubmit({ visitDate, visitTime, instructions: instructions.trim() });
-  };
   return (
-    <Modal title="Schedule the QCOPS visit" name={name} onClose={onClose}>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold text-ink uppercase tracking-wide">Visit date</label>
-          <input type="date" min={today} value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className="mt-1.5 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-ink uppercase tracking-wide">Time slot</label>
-          <input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="mt-1.5 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" />
-        </div>
+    <Modal title="Send for on-site QCOPS check" name={name} onClose={onClose}>
+      <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4">
+        <div className="text-xs font-bold uppercase tracking-wide text-indigo-700 mb-1">Turnaround time</div>
+        <p className="text-sm text-indigo-900 leading-relaxed">
+          Turnaround time for the Quality check is <strong>24 to 48 hrs</strong>. The assigned QCOPS will coordinate
+          the visit timing directly with the supplier — the supplier's full details are sent to them automatically.
+        </p>
       </div>
-      <div className="mt-3">
-        <label className="text-xs font-semibold text-ink uppercase tracking-wide">Instructions — what to take care of on-site</label>
-        <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} className="mt-1.5 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-brand" placeholder="e.g. Verify pool & parking match the photos." />
-      </div>
-      <p className="text-xs text-ink-muted mt-2">Auto-assigned to the least-busy QCOPS (round-robin).</p>
-      <Actions busy={busy} confirm="Send" color="bg-indigo-600 hover:bg-indigo-700" onClose={onClose} onSubmit={submit} />
+      <p className="text-xs text-ink-muted mt-3">Auto-assigned to the least-busy QCOPS (round-robin). They’ll send back their own schedule once they’ve coordinated with the supplier.</p>
+      <Actions busy={busy} confirm="Send to QCOPS" color="bg-indigo-600 hover:bg-indigo-700" onClose={onClose} onSubmit={() => onSubmit({})} />
     </Modal>
   );
 }
