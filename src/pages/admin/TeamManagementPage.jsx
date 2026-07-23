@@ -175,11 +175,12 @@ function TeamMemberModal({
         await api.put(`/admin/team/${member.id}`, body);
         toast.success('Team member updated');
       } else {
-        if (!name || !email || !password || !roleType) { toast.error('All fields are required'); setSaving(false); return; }
+        if (!name || !email || !roleType) { toast.error('Name, email and role are required'); setSaving(false); return; }
+        // Password is generated server-side and emailed to them — never set here.
         await api.post('/admin/team', {
-          name, email, password, roleType, permissions,
+          name, email, roleType, permissions,
         });
-        toast.success('Team member created');
+        toast.success('Team member created — login details emailed to them');
       }
       onSaved();
     } catch (err) {
@@ -209,11 +210,17 @@ function TeamMemberModal({
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none disabled:bg-surface-alt disabled:text-ink-muted" />
           </Field>
 
-          <Field label={isEdit ? 'Reset password (leave blank to keep current)' : 'Password'}>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required={!isEdit} minLength={6}
-              placeholder={isEdit ? '••••••••' : ''}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
-          </Field>
+          {isEdit ? (
+            <Field label="Reset password (leave blank to keep current)">
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+            </Field>
+          ) : (
+            <div className="rounded-lg bg-surface-alt border border-gray-200 px-3 py-2.5 text-xs text-ink-muted">
+              A strong password is generated automatically and emailed to them with a Team Portal sign-in link. It is never shown here.
+            </div>
+          )}
 
           <Field label="Role">
             <select value={roleType} disabled={isEdit}
