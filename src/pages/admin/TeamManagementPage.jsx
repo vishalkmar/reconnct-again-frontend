@@ -116,6 +116,11 @@ export default function TeamManagementPage() {
                   </span>
                 </div>
                 <div className="col-span-6 md:col-span-2 flex items-center justify-end gap-1">
+                  {m.roleType === 'account_manager' && (
+                    <IconBtn title="Manage supplier limit" onClick={() => setKamPanel(true)}>
+                      <Gauge size={15} className="text-purple-600" />
+                    </IconBtn>
+                  )}
                   <IconBtn title="Edit permissions" onClick={() => setModalMember(m)}><KeyRound size={15} /></IconBtn>
                   <IconBtn title={m.isActive ? 'Deactivate' : 'Activate'} danger={m.isActive} onClick={() => toggleActive(m)}>
                     {m.isActive ? <ShieldOff size={15} /> : <ShieldCheck size={15} />}
@@ -285,7 +290,7 @@ function TeamMemberModal({
     member.permissions || roles.find((r) => r.value === roleType)?.defaultPermissions || {}
   );
   const [maxSuppliers, setMaxSuppliers] = useState(
-    member.maxSuppliers != null ? String(member.maxSuppliers) : '30'
+    member.maxSuppliers != null ? String(member.maxSuppliers) : '20'
   );
   const [saving, setSaving] = useState(false);
 
@@ -372,7 +377,7 @@ function TeamMemberModal({
                 onChange={(e) => setMaxSuppliers(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
               <p className="text-[11px] text-ink-muted mt-1">
-                Round-robin never assigns beyond this. Default 30 — you can raise it any time from “KAM Accounts Management”.
+                Round-robin never assigns beyond this. Default 20 — you can raise it any time from “KAM Accounts Management”.
               </p>
             </Field>
           )}
