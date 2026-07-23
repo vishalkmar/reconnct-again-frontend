@@ -138,6 +138,9 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
   const stage = item.review?.stage;
   const qc = item.qcReview || {};
   const canDirect = item.review?.canDirectList;
+  const [showAck, setShowAck] = useState(false);
+  // QCOPS has sent back their acknowledgement + schedule.
+  const hasAck = tab === 'level2' && !!qc.acknowledgedAt && !!qc.visitDate;
   const isReviewTab = tab === 'level1' && ['submitted', 'in_review', 'resubmitted', 'follow_up'].includes(stage);
   // Backend flag: false while the item sits with the submitter (follow_up).
   const awaitingCops = item.review?.awaitingCops !== false;
@@ -183,6 +186,11 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
           {tab === 'active' && (
             <button onClick={onDelist} disabled={busy} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60"><Ban size={15} /> Delist</button>
           )}
+          {hasAck && (
+            <button onClick={() => setShowAck((v) => !v)} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-sm font-semibold hover:bg-indigo-50">
+              <CalendarClock size={15} /> {showAck ? 'Hide' : 'View'} acknowledgement
+            </button>
+          )}
           {isReviewTab && !awaitingCops ? (
             // With the submitter (follow-up sent) — reviewing is impossible
             // until they resolve, so don't let the click reach a 400 toast.
@@ -200,6 +208,33 @@ function Row({ item, tab, busy, onSend, onGoLive, onDirectList, onDelist, onReje
           )}
         </div>
       </div>
+
+      {/* QCOPS acknowledgement + their chosen schedule (Level 2). */}
+      {hasAck && showAck && (
+        <div className="mt-3 bg-indigo-50 rounded-xl p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-indigo-700 mb-2 flex items-center gap-1.5">
+            <CircleCheck size={14} /> QCOPS sent their acknowledgement
+          </div>
+          <p className="text-sm text-indigo-900 mb-3">The assigned QCOPS coordinated with the supplier and scheduled their on-site visit.</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg px-3 py-2">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Visit date</div>
+              <div className="text-sm font-semibold text-ink mt-0.5">{qc.visitDate || '—'}</div>
+            </div>
+            <div className="bg-white rounded-lg px-3 py-2">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Time slot</div>
+              <div className="text-sm font-semibold text-ink mt-0.5">{qc.visitTime || '—'}</div>
+            </div>
+          </div>
+          {qc.ackNote && (
+            <div className="mt-3 bg-white rounded-lg px-3 py-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted mb-1">Note from QCOPS</div>
+              <p className="text-sm text-ink whitespace-pre-line">{qc.ackNote}</p>
+            </div>
+          )}
+          {qc.acknowledgedAt && <div className="text-[11px] text-indigo-600 mt-2">Acknowledged {new Date(qc.acknowledgedAt).toLocaleString()}</div>}
+        </div>
+      )}
 
       {/* Under Progress detail + decision */}
       {tab === 'under_progress' && (

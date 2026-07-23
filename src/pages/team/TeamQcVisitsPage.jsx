@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Loader2, MapPin, CalendarClock, ClipboardCheck, CheckCircle2, Navigation, Star,
-  ClipboardList, Clock, ChevronRight, ThumbsUp, XCircle, Globe, Hourglass,
+  ClipboardList, Clock, ChevronRight, ThumbsUp, XCircle, Globe, Hourglass, Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -199,6 +199,7 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
   const stage = item.reviewStage;
   const today = isToday(qc.visitDate);
   const [scheduling, setScheduling] = useState(false);
+  const [showSupplier, setShowSupplier] = useState(false);
   // "I'm at the location" unlocks the moment the QCOPS-chosen slot arrives and
   // stays unlocked after it — arriving late is normal. `now` ticks so it flips
   // without a page refresh.
@@ -215,7 +216,13 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
           <div className="mt-3 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2.5">
             <div className="text-[11px] font-bold uppercase tracking-wide text-indigo-700 mb-0.5">{qc.turnaroundHeading || 'Turnaround time'}</div>
             <p className="text-sm text-indigo-900 leading-relaxed">{qc.turnaroundNote || 'Turnaround time for the Quality check is 24 to 48 hrs. Coordinate with the supplier for their availability.'}</p>
-            <p className="text-[11px] text-indigo-700 mt-1.5">Supplier contact &amp; site details were emailed to you — coordinate a time, then send your schedule below.</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <p className="text-[11px] text-indigo-700">The supplier's details have also been sent to your email &amp; notifications.</p>
+              <button onClick={() => setShowSupplier((v) => !v)} className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 underline hover:text-indigo-900">
+                <Building2 size={12} /> {showSupplier ? 'Hide' : 'View'} supplier details
+              </button>
+            </div>
+            {showSupplier && <SupplierDetails item={item} />}
           </div>
         )}
 
@@ -254,6 +261,30 @@ function ActiveCard({ item, busyId, onAct, onFeedback }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The supplier's full contact + the site address, so QCOPS can coordinate the
+// visit timing without leaving the page (also emailed to them).
+function SupplierDetails({ item }) {
+  const sup = item.supplier || {};
+  const site = [item.location, item.nearbyLocation, item.city].filter(Boolean).join(', ');
+  const Row = ({ label, value }) => (value ? (
+    <div className="flex justify-between gap-3 py-1">
+      <span className="text-[11px] text-ink-muted">{label}</span>
+      <span className="text-[12px] text-ink font-medium text-right">{value}</span>
+    </div>
+  ) : null);
+  return (
+    <div className="mt-2.5 bg-white rounded-lg border border-indigo-100 px-3 py-2">
+      <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted mb-1">Supplier — coordinate the visit</div>
+      <Row label="Company" value={sup.companyName} />
+      <Row label="Contact person" value={sup.supplierName} />
+      <Row label="Phone" value={sup.phone} />
+      <Row label="Email" value={sup.email} />
+      <Row label="Site address" value={site} />
+      {!sup.companyName && !site && <p className="text-[12px] text-ink-muted py-1">No supplier details on record.</p>}
     </div>
   );
 }
