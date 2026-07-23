@@ -31,6 +31,7 @@ import HostSupportPage from './pages/host/HostSupportPage.jsx';
 import HostListingBookingsPage from './pages/host/HostListingBookingsPage.jsx';
 import HostListingViewPage from './pages/host/HostListingViewPage.jsx';
 import HostBookingDetailPage from './pages/host/HostBookingDetailPage.jsx';
+import HostAllBookingsPage from './pages/host/HostAllBookingsPage.jsx';
 import HostNotificationsPage from './pages/host/HostNotificationsPage.jsx';
 
 // Booking flow (kept — part of the member experience / payment via Cashfree)
@@ -162,6 +163,7 @@ export default function App() {
           <Route path="listings/:id/resolve" element={<HostResolveObjectionsPage />} />
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage />} />
           <Route path="listings/:id/view" element={<HostListingViewPage />} />
+          <Route path="all-bookings" element={<HostAllBookingsPage />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage />} />
           <Route path="notifications" element={<HostNotificationsPage />} />
           <Route path="transactions" element={<HostTransactionsPage />} />
@@ -255,6 +257,7 @@ export default function App() {
           <Route path="listings/:id/resolve" element={<HostResolveObjectionsPage basePath="/supplier" />} />
           <Route path="listings/:id/bookings" element={<HostListingBookingsPage basePath="/supplier" />} />
           <Route path="listings/:id/view" element={<HostListingViewPage basePath="/supplier" />} />
+          <Route path="all-bookings" element={<HostAllBookingsPage basePath="/supplier" />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage basePath="/supplier" />} />
           <Route path="transactions" element={<HostTransactionsPage basePath="/supplier" />} />
           <Route path="account-manager" element={<SupplierAccountManagerPage />} />
