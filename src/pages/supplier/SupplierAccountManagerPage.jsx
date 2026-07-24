@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, UserCog, Mail, BadgeCheck, CircleSlash } from 'lucide-react';
+import { Loader2, UserCog, Mail, Phone, BadgeCheck, CircleSlash } from 'lucide-react';
 import api from '../../services/api';
 
 const initials = (name) => String(name || '?')
@@ -7,14 +7,20 @@ const initials = (name) => String(name || '?')
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
-export default function SupplierAccountManagerPage() {
+/*
+  Shared Key Account Manager page. `basePath` picks whose manager to load, so
+  the Host portal renders the identical screen instead of a second copy.
+  A KAM is assigned to SUPPLIER accounts, so on /host this legitimately shows
+  the "none yet" state — see the host endpoint's comment.
+*/
+export default function SupplierAccountManagerPage({ basePath = '/supplier' }) {
   const [manager, setManager] = useState(null);
   const [since, setSince] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let off = false;
-    api.get('/supplier/account-manager')
+    api.get(`${basePath}/account-manager`)
       .then(({ data }) => {
         if (off) return;
         const d = data?.data || {};
@@ -24,7 +30,7 @@ export default function SupplierAccountManagerPage() {
       .catch(() => {})
       .finally(() => { if (!off) setLoading(false); });
     return () => { off = true; };
-  }, []);
+  }, [basePath]);
 
   if (loading) return <div className="p-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
@@ -71,6 +77,14 @@ export default function SupplierAccountManagerPage() {
                       <Mail size={14} /> {manager.email}
                     </a>
                   )}
+                />
+                <Row
+                  label="Phone"
+                  value={manager.phone ? (
+                    <a href={`tel:${String(manager.phone).replace(/[^\d+]/g, '')}`} className="inline-flex items-center gap-1.5 text-brand-dark font-medium hover:underline">
+                      <Phone size={14} /> {manager.phone}
+                    </a>
+                  ) : <span className="text-ink-muted">Not added yet</span>}
                 />
                 <Row label="Managing you since" value={fmtDate(since)} />
               </tbody>

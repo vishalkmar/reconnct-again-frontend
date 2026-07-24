@@ -273,6 +273,7 @@ function TeamMemberModal({
   const isEdit = !!member.id;
   const [name, setName] = useState(member.name || '');
   const [email, setEmail] = useState(member.email || '');
+  const [phone, setPhone] = useState(member.phone || '');
   const [password, setPassword] = useState('');
   const [roleType, setRoleType] = useState(member.roleType || roles[0]?.value || '');
   const [permissions, setPermissions] = useState(
@@ -299,10 +300,14 @@ function TeamMemberModal({
       toast.error(`Max suppliers can’t be below ${MIN_MAX_SUPPLIERS}.`);
       return;
     }
+    if (roleType === 'account_manager' && !phone.trim()) {
+      toast.error('Phone number is required for an Account Manager — suppliers call them from the app.');
+      return;
+    }
     setSaving(true);
     try {
       if (isEdit) {
-        const body = { name, permissions };
+        const body = { name, phone, permissions };
         if (password) body.password = password;
         if (roleType === 'account_manager' && maxSuppliers) body.maxSuppliers = Number(maxSuppliers);
         await api.put(`/admin/team/${member.id}`, body);
@@ -311,7 +316,7 @@ function TeamMemberModal({
         if (!name || !email || !roleType) { toast.error('Name, email and role are required'); setSaving(false); return; }
         // Password is generated server-side and emailed to them — never set here.
         await api.post('/admin/team', {
-          name, email, roleType, permissions,
+          name, email, phone, roleType, permissions,
           ...(roleType === 'account_manager' && maxSuppliers ? { maxSuppliers: Number(maxSuppliers) } : {}),
         });
         toast.success('Team member created — login details emailed to them');
@@ -342,6 +347,17 @@ function TeamMemberModal({
           <Field label="Email">
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isEdit}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none disabled:bg-surface-alt disabled:text-ink-muted" />
+          </Field>
+
+          <Field label={roleType === 'account_manager' ? 'Phone (required)' : 'Phone (optional)'}>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 9540792427"
+              required={roleType === 'account_manager'}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+            <p className="text-[11px] text-ink-muted mt-1">
+              {roleType === 'account_manager'
+                ? 'Required — their suppliers get a one-tap Call button on the app.'
+                : 'Shown to the suppliers this member looks after.'}
+            </p>
           </Field>
 
           {isEdit ? (

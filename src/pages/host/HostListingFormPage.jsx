@@ -97,7 +97,7 @@ export default function HostListingFormPage({ basePath = '/host' }) {
       <div className="bg-white border-b px-4 md:px-8 py-4 sticky top-16 z-20">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3">
-            <button onClick={() => (step > 1 ? setStep((s) => s - 1) : navigate('/host/listings'))} className="w-9 h-9 rounded-full bg-surface-alt flex items-center justify-center hover:bg-slate-200">
+            <button onClick={() => (step > 1 ? setStep((s) => s - 1) : navigate(`${basePath}/listings`))} className="w-9 h-9 rounded-full bg-surface-alt flex items-center justify-center hover:bg-slate-200">
               <ChevronLeft size={18} />
             </button>
             <div>

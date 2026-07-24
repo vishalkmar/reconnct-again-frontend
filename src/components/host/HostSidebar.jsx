@@ -1,15 +1,18 @@
 import { Link, NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListChecks, PlusCircle, UserCircle, Wallet, MessageCircle, ArrowLeft, X, CalendarCheck } from 'lucide-react';
+import { LayoutDashboard, ListChecks, PlusCircle, UserCircle, UserCog, Wallet, ArrowLeft, X, CalendarCheck } from 'lucide-react';
 import useSiteLogo from '../../hooks/useSiteLogo.js';
 
 const items = [
-  { to: '/host', label: 'Host Dashboard', icon: LayoutDashboard, end: true },
+  // Same order and wording as the Supplier Portal (SupplierLayout) so both
+  // owner portals read identically; Support/Profile stay because the host app
+  // has those tabs too, and Create Listing keeps its shortcut.
+  { to: '/host', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/host/listings', label: 'My Listings', icon: ListChecks },
   { to: '/host/all-bookings', label: 'All Bookings', icon: CalendarCheck },
-  { to: '/host/listings/new', label: 'Create Listing', icon: PlusCircle },
   { to: '/host/transactions', label: 'Transactions', icon: Wallet },
-  { to: '/host/support', label: 'Support', icon: MessageCircle },
-  { to: '/host/profile', label: 'Host Profile', icon: UserCircle },
+  { to: '/host/account-manager', label: 'Key Account Manager', icon: UserCog },
+  { to: '/host/listings/new', label: 'Create Listing', icon: PlusCircle },
+  { to: '/host/profile', label: 'Profile', icon: UserCircle },
 ];
 
 export default function HostSidebar({ open, onClose }) {

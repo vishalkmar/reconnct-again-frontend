@@ -27,7 +27,6 @@ import HostListingFormPage from './pages/host/HostListingFormPage.jsx';
 import HostResolveObjectionsPage from './pages/host/HostResolveObjectionsPage.jsx';
 import HostProfilePage from './pages/host/HostProfilePage.jsx';
 import HostTransactionsPage from './pages/host/HostTransactionsPage.jsx';
-import HostSupportPage from './pages/host/HostSupportPage.jsx';
 import HostListingBookingsPage from './pages/host/HostListingBookingsPage.jsx';
 import HostListingViewPage from './pages/host/HostListingViewPage.jsx';
 import HostBookingDetailPage from './pages/host/HostBookingDetailPage.jsx';
@@ -167,7 +166,7 @@ export default function App() {
           <Route path="bookings/:id" element={<HostBookingDetailPage />} />
           <Route path="notifications" element={<HostNotificationsPage />} />
           <Route path="transactions" element={<HostTransactionsPage />} />
-          <Route path="support" element={<HostSupportPage />} />
+          <Route path="account-manager" element={<SupplierAccountManagerPage basePath="/host" />} />
           <Route path="profile" element={<HostProfilePage />} />
         </Route>
 
