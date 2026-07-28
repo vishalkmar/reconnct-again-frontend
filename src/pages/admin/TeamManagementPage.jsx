@@ -285,12 +285,46 @@ function TeamMemberModal({
   );
   const [saving, setSaving] = useState(false);
 
+  // Category Manager assignment: the 10 broad categories with their current
+  // owner, the CMs available as hand-off targets, this member's selected set,
+  // and the hand-off target chosen for each category being de-assigned.
+  const [catData, setCatData] = useState(null); // { categories, managers }
+  const [selectedCats, setSelectedCats] = useState(() => (member.categoryIds || []));
+  const [handoffs, setHandoffs] = useState({}); // categoryId -> targetCmId
+  const [handoffFor, setHandoffFor] = useState(null); // category being de-assigned
+
+  useEffect(() => {
+    if (roleType !== 'category_manager') return;
+    api.get('/admin/team/categories')
+      .then(({ data }) => setCatData(data?.data || { categories: [], managers: [] }))
+      .catch(() => setCatData({ categories: [], managers: [] }));
+  }, [roleType]);
+
   // New member only — picking a role reseeds the toggles to that role's
   // defaults, so what the admin sees is what actually gets created (editing
   // an existing member never overwrites their already-set permissions).
   const onRoleChange = (value) => {
     setRoleType(value);
     if (!isEdit) setPermissions(roles.find((r) => r.value === value)?.defaultPermissions || {});
+  };
+
+  // Toggle a category. Freeing one that's currently ours needs a hand-off
+  // target — opening that picker is what actually removes it.
+  const ownedByMe = (c) => isEdit && c.categoryManagerId === member.id;
+  const toggleCat = (c) => {
+    if (c.categoryManagerId && !ownedByMe(c)) return; // locked — someone else's
+    if (selectedCats.includes(c.id)) {
+      if (ownedByMe(c)) { setHandoffFor(c); return; } // de-assign → must hand off
+      setSelectedCats((s) => s.filter((x) => x !== c.id)); // was just-added, drop freely
+    } else {
+      setSelectedCats((s) => [...s, c.id]);
+      setHandoffs((h) => { const n = { ...h }; delete n[c.id]; return n; });
+    }
+  };
+  const confirmHandoff = (catId, targetCmId) => {
+    setSelectedCats((s) => s.filter((x) => x !== catId));
+    setHandoffs((h) => ({ ...h, [catId]: targetCmId }));
+    setHandoffFor(null);
   };
 
   const togglePerm = (key) => setPermissions((p) => ({ ...p, [key]: !p[key] }));
@@ -312,6 +346,7 @@ function TeamMemberModal({
         if (roleType === 'cops') body.alsoQcops = alsoQcops;
         if (password) body.password = password;
         if (roleType === 'account_manager' && maxSuppliers) body.maxSuppliers = Number(maxSuppliers);
+        if (roleType === 'category_manager') { body.categoryIds = selectedCats; body.handoffs = handoffs; }
         await api.put(`/admin/team/${member.id}`, body);
         toast.success('Team member updated');
       } else {
@@ -321,6 +356,7 @@ function TeamMemberModal({
           name, email, phone, roleType, permissions,
           ...(roleType === 'cops' ? { alsoQcops } : {}),
           ...(roleType === 'account_manager' && maxSuppliers ? { maxSuppliers: Number(maxSuppliers) } : {}),
+          ...(roleType === 'category_manager' ? { categoryIds: selectedCats } : {}),
         });
         toast.success('Team member created — login details emailed to them');
       }
@@ -397,6 +433,45 @@ function TeamMemberModal({
             </div>
           )}
 
+          {roleType === 'category_manager' && (
+            <Field label="Assigned broad categories">
+              {!catData ? (
+                <div className="text-xs text-ink-muted py-2">Loading categories…</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {catData.categories.map((c) => {
+                      const mine = isEdit && c.categoryManagerId === member.id;
+                      const lockedElsewhere = c.categoryManagerId && !mine;
+                      const checked = selectedCats.includes(c.id);
+                      const handedOff = handoffs[c.id];
+                      return (
+                        <button type="button" key={c.id} disabled={lockedElsewhere}
+                          onClick={() => toggleCat(c)}
+                          title={lockedElsewhere ? `Already assigned to ${c.managerName || 'another manager'}` : ''}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm text-left transition
+                            ${lockedElsewhere ? 'border-gray-200 bg-surface-alt text-ink-muted cursor-not-allowed'
+                              : checked ? 'border-brand bg-brand/10 text-ink' : 'border-gray-200 hover:border-brand/40 text-ink'}`}>
+                          <span className="font-medium">{c.name}</span>
+                          {lockedElsewhere ? (
+                            <span className="text-[10px] font-semibold text-ink-muted inline-flex items-center gap-1">🔒 {c.managerName || 'assigned'}</span>
+                          ) : handedOff ? (
+                            <span className="text-[10px] font-semibold text-amber-600">→ handed off</span>
+                          ) : checked ? (
+                            <Check size={15} className="text-brand" />
+                          ) : <span className="text-[10px] text-ink-muted">tap to assign</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-ink-muted mt-1.5">
+                    Locked 🔒 = owned by another manager. Un-checking one you own asks who to hand it to — a category always keeps an owner.
+                  </p>
+                </>
+              )}
+            </Field>
+          )}
+
           {roleType === 'account_manager' && (
             <Field label="Max suppliers this KAM can hold">
               <input type="number" min={MIN_MAX_SUPPLIERS} value={maxSuppliers}
@@ -430,6 +505,48 @@ function TeamMemberModal({
           </button>
         </div>
       </form>
+
+      {handoffFor && (
+        <HandoffModal
+          category={handoffFor}
+          managers={(catData?.managers || []).filter((m) => m.id !== member.id)}
+          onCancel={() => setHandoffFor(null)}
+          onConfirm={(targetId) => confirmHandoff(handoffFor.id, targetId)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Un-assigning a category from this CM is a HAND-OFF, never a plain removal —
+// the admin picks exactly one other Category Manager to take it (and, with it,
+// that category's whole dashboard). Enforced here and again on the server.
+function HandoffModal({ category, managers, onCancel, onConfirm }) {
+  const [target, setTarget] = useState('');
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display font-bold text-lg mb-1">Hand off “{category.name}”</h3>
+        <p className="text-sm text-ink-muted mb-4">
+          A category always keeps an owner. Choose the Category Manager who should take “{category.name}” — everything under it moves to them.
+        </p>
+        {managers.length === 0 ? (
+          <p className="text-sm text-rose-600">No other Category Manager exists yet. Create one first, then hand off.</p>
+        ) : (
+          <select value={target} onChange={(e) => setTarget(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+            <option value="">Select a manager…</option>
+            {managers.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.employeeCode})</option>)}
+          </select>
+        )}
+        <div className="flex justify-end gap-2 mt-5">
+          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-semibold text-ink-muted hover:bg-surface-alt">Cancel</button>
+          <button type="button" disabled={!target} onClick={() => onConfirm(Number(target))}
+            className="px-5 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105 disabled:opacity-40">
+            Hand off
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

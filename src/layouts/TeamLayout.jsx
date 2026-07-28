@@ -25,11 +25,12 @@ export default function TeamLayout() {
 
   const isCops = member?.roleType === 'cops';
   const isQcops = member?.roleType === 'qcops';
+  const isCm = member?.roleType === 'category_manager';
   // Center Ops and QCOPS work a single queue each — no dashboard, and none of
   // the Account Manager surfaces even if the permission happens to be set on
   // their account. Their sidebar is exactly their two working screens.
   const navItems = [
-    { to: '/team/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: hasDashboard(member) },
+    { to: '/team/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: hasDashboard(member) && !isCm },
     { to: '/team/suppliers', label: 'My Suppliers', icon: Truck, show: !!perms.canCreateSupplier },
     { to: '/team/experiences', label: 'My Experiences', icon: Sparkles, show: !!perms.canAddExperience },
     { to: '/team/review-queue', label: 'Review Queue', icon: ClipboardCheck, show: !!perms.canReviewListings && !isQcops },
@@ -39,6 +40,15 @@ export default function TeamLayout() {
     { to: '/team/my-suppliers', label: 'Assigned Suppliers', icon: Users, show: !!perms.canManageAccounts && !isCops && !isQcops },
     { to: '/team/am-listings', label: 'Listings', icon: ListChecks, show: !!perms.canManageAccounts && !isCops && !isQcops },
     { to: '/team/my-customers', label: 'My Customers', icon: HeartHandshake, show: !!perms.canManageCustomers },
+    { to: '/team/category', label: 'Category Overview', icon: LayoutDashboard, show: isCm },
+    { to: '/team/category/suppliers', label: 'Suppliers', icon: Truck, show: isCm },
+    { to: '/team/category/status', label: 'Experience Status', icon: ClipboardCheck, show: isCm },
+    { to: '/team/category/reviews', label: 'Ratings & Reviews', icon: Sparkles, show: isCm },
+    { to: '/team/category/revenue', label: 'Revenue', icon: BadgeCheck, show: isCm },
+    { to: '/team/category/onboardings', label: 'Live Onboardings', icon: ListChecks, show: isCm },
+    { to: '/team/category/churn', label: 'Churn', icon: Users, show: isCm },
+    { to: '/team/category/delisted', label: 'Delisted', icon: MapPinned, show: isCm },
+    { to: '/team/category/winback', label: 'Win-Back', icon: HeartHandshake, show: isCm },
   ].filter((i) => i.show);
 
   const doLogout = () => { logout(); navigate('/team/login'); };

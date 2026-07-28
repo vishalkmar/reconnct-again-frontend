@@ -16,5 +16,6 @@ export const hasDashboard = (member) => !NO_DASHBOARD_ROLES.includes(member?.rol
 export const teamLandingPath = (member) => {
   if (member?.roleType === 'qcops') return '/team/qc-visits';
   if (member?.roleType === 'cops') return '/team/review-queue';
+  if (member?.roleType === 'category_manager') return '/team/category';
   return '/team/dashboard';
 };

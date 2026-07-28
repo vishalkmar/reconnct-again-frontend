@@ -73,6 +73,16 @@ import TeamDashboardGate, { TeamLanding } from './components/team/TeamDashboardG
 import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
 import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
 import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
+import CategoryOverviewPage from './pages/team/CategoryOverviewPage.jsx';
+import CategoryModulePlaceholder from './pages/team/CategoryModulePlaceholder.jsx';
+import CategorySuppliersPage from './pages/team/CategorySuppliersPage.jsx';
+import CategoryStatusPage from './pages/team/CategoryStatusPage.jsx';
+import CategoryReviewsPage from './pages/team/CategoryReviewsPage.jsx';
+import CategoryRevenuePage from './pages/team/CategoryRevenuePage.jsx';
+import CategoryOnboardingsPage from './pages/team/CategoryOnboardingsPage.jsx';
+import CategoryDelistedPage from './pages/team/CategoryDelistedPage.jsx';
+import CategoryChurnPage from './pages/team/CategoryChurnPage.jsx';
+import CategoryWinbackPage from './pages/team/CategoryWinbackPage.jsx';
 import TeamReviewDetailPage from './pages/team/TeamReviewDetailPage.jsx';
 import TeamResolveObjectionsPage from './pages/team/TeamResolveObjectionsPage.jsx';
 import TeamQcVisitsPage from './pages/team/TeamQcVisitsPage.jsx';
@@ -236,6 +246,16 @@ export default function App() {
           <Route path="am-listings" element={<TeamAmListingsPage />} />
           <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
           <Route path="my-customers" element={<TeamCsmPage />} />
+          {/* Category Manager dashboard */}
+          <Route path="category" element={<CategoryOverviewPage />} />
+          <Route path="category/suppliers" element={<CategorySuppliersPage />} />
+          <Route path="category/status" element={<CategoryStatusPage />} />
+          <Route path="category/reviews" element={<CategoryReviewsPage />} />
+          <Route path="category/revenue" element={<CategoryRevenuePage />} />
+          <Route path="category/onboardings" element={<CategoryOnboardingsPage />} />
+          <Route path="category/churn" element={<CategoryChurnPage />} />
+          <Route path="category/delisted" element={<CategoryDelistedPage />} />
+          <Route path="category/winback" element={<CategoryWinbackPage />} />
         </Route>
 
         {/* Supplier Portal — a supplier's own login, dashboard cloned from Host */}
