@@ -279,6 +279,7 @@ function TeamMemberModal({
   const [permissions, setPermissions] = useState(
     member.permissions || roles.find((r) => r.value === roleType)?.defaultPermissions || {}
   );
+  const [alsoQcops, setAlsoQcops] = useState(!!member.alsoQcops);
   const [maxSuppliers, setMaxSuppliers] = useState(
     member.maxSuppliers != null ? String(member.maxSuppliers) : String(MIN_MAX_SUPPLIERS)
   );
@@ -308,6 +309,7 @@ function TeamMemberModal({
     try {
       if (isEdit) {
         const body = { name, phone, permissions };
+        if (roleType === 'cops') body.alsoQcops = alsoQcops;
         if (password) body.password = password;
         if (roleType === 'account_manager' && maxSuppliers) body.maxSuppliers = Number(maxSuppliers);
         await api.put(`/admin/team/${member.id}`, body);
@@ -317,6 +319,7 @@ function TeamMemberModal({
         // Password is generated server-side and emailed to them — never set here.
         await api.post('/admin/team', {
           name, email, phone, roleType, permissions,
+          ...(roleType === 'cops' ? { alsoQcops } : {}),
           ...(roleType === 'account_manager' && maxSuppliers ? { maxSuppliers: Number(maxSuppliers) } : {}),
         });
         toast.success('Team member created — login details emailed to them');
@@ -379,6 +382,20 @@ function TeamMemberModal({
               {roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </Field>
+
+          {roleType === 'cops' && (
+            <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <span>
+                  <span className="text-sm font-semibold text-ink block">Assign QCOPS department too</span>
+                  <span className="text-[11px] text-ink-muted">
+                    Lets this Center Ops member also work the QCOPS queue. They’ll choose which dashboard to open at login.
+                  </span>
+                </span>
+                <ToggleSwitch checked={alsoQcops} onChange={() => setAlsoQcops((v) => !v)} />
+              </label>
+            </div>
+          )}
 
           {roleType === 'account_manager' && (
             <Field label="Max suppliers this KAM can hold">

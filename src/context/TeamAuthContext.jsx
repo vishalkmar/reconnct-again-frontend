@@ -32,6 +32,20 @@ export const TeamAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/team/auth/login', { email, password });
+    const { token, member: m, roles = [] } = res.data.data;
+    localStorage.setItem('team_token', token);
+    // A member with a single dashboard goes straight in. One with more than one
+    // (a COPS who also works QCOPS) is NOT signed into a dashboard yet — the
+    // login page shows a picker and calls selectRole once they choose, so we
+    // never flash them into the wrong board.
+    if (roles.length <= 1) setMember(m);
+    return { member: m, roles: roles.length ? roles : [m.roleType] };
+  };
+
+  // A dual-role member commits to one dashboard for this session. Swaps the
+  // token for one stamped with that active role, then signs them in.
+  const selectRole = async (role) => {
+    const res = await api.post('/team/auth/select-role', { role });
     const { token, member: m } = res.data.data;
     localStorage.setItem('team_token', token);
     setMember(m);
@@ -44,7 +58,7 @@ export const TeamAuthProvider = ({ children }) => {
   };
 
   return (
-    <TeamAuthContext.Provider value={{ member, loading, login, logout, refresh: fetchMe }}>
+    <TeamAuthContext.Provider value={{ member, loading, login, selectRole, logout, refresh: fetchMe }}>
       {children}
     </TeamAuthContext.Provider>
   );
