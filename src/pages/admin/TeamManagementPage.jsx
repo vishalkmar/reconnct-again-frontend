@@ -289,15 +289,20 @@ function TeamMemberModal({
   // owner, the CMs available as hand-off targets, this member's selected set,
   // and the hand-off target chosen for each category being de-assigned.
   const [catData, setCatData] = useState(null); // { categories, managers }
+  const [catError, setCatError] = useState('');
   const [selectedCats, setSelectedCats] = useState(() => (member.categoryIds || []));
   const [handoffs, setHandoffs] = useState({}); // categoryId -> targetCmId
   const [handoffFor, setHandoffFor] = useState(null); // category being de-assigned
 
   useEffect(() => {
     if (roleType !== 'category_manager') return;
+    setCatError('');
     api.get('/admin/team/categories')
       .then(({ data }) => setCatData(data?.data || { categories: [], managers: [] }))
-      .catch(() => setCatData({ categories: [], managers: [] }));
+      // Surface the real reason instead of a silently-empty list — almost
+      // always "the backend isn't running the latest code yet" (this endpoint
+      // is new).
+      .catch((err) => { setCatData({ categories: [], managers: [] }); setCatError(err.response?.data?.message || 'Could not load categories — is the backend up to date?'); });
   }, [roleType]);
 
   // New member only — picking a role reseeds the toggles to that role's
@@ -437,6 +442,10 @@ function TeamMemberModal({
             <Field label="Assigned broad categories">
               {!catData ? (
                 <div className="text-xs text-ink-muted py-2">Loading categories…</div>
+              ) : catError ? (
+                <div className="text-xs text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{catError}</div>
+              ) : catData.categories.length === 0 ? (
+                <div className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">No broad categories found. Seed the taxonomy first.</div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 gap-1.5">
@@ -483,17 +492,22 @@ function TeamMemberModal({
             </Field>
           )}
 
-          <div>
-            <div className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">Access</div>
-            <div className="space-y-2 bg-surface-alt rounded-xl p-3">
-              {permissionKeys.map((key) => (
-                <label key={key} className="flex items-center justify-between gap-3 text-sm py-1 cursor-pointer">
-                  <span className="text-ink">{PERMISSION_LABELS[key] || key}</span>
-                  <ToggleSwitch checked={!!permissions[key]} onChange={() => togglePerm(key)} />
-                </label>
-              ))}
+          {/* A Category Manager's access is defined entirely by the categories
+              they own (above) — the permission toggles don't apply to them, so
+              hide them and let the category picker be the whole story. */}
+          {roleType !== 'category_manager' && (
+            <div>
+              <div className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">Access</div>
+              <div className="space-y-2 bg-surface-alt rounded-xl p-3">
+                {permissionKeys.map((key) => (
+                  <label key={key} className="flex items-center justify-between gap-3 text-sm py-1 cursor-pointer">
+                    <span className="text-ink">{PERMISSION_LABELS[key] || key}</span>
+                    <ToggleSwitch checked={!!permissions[key]} onChange={() => togglePerm(key)} />
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
