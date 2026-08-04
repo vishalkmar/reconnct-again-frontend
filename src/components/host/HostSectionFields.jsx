@@ -30,7 +30,7 @@ import {
   supplier record.
 */
 export const SECTION_FORM_FIELDS = {
-  basic: ['name', 'location', 'city', 'nearbyLocation', 'mode'],
+  basic: ['name', 'location', 'city', 'pincode', 'nearbyLocation', 'mode'],
   taxonomy: ['audiences', 'categoryIds', 'typeIds'],
   about: ['about'],
   media: ['photos', 'videos'],
@@ -67,9 +67,10 @@ export default function HostSectionFields({ section, form, patch }) {
             <L>Experience title</L>
             <input className="win" value={form.name || ''} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. Sunrise Kayaking at Goa Beach" />
           </div>
+          <div><L>Location</L><input className="win" value={form.location || ''} onChange={(e) => patch({ location: e.target.value })} placeholder="City, State, Country" /></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><L>Location</L><input className="win" value={form.location || ''} onChange={(e) => patch({ location: e.target.value })} placeholder="City, State, Country" /></div>
             <div><L>City</L><input className="win" value={form.city || ''} onChange={(e) => patch({ city: e.target.value })} placeholder="e.g. Goa" /></div>
+            <div><L>Pincode</L><input className="win" value={form.pincode || ''} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 403516" inputMode="numeric" maxLength={6} /></div>
           </div>
           <div>
             <L>Nearby location</L>

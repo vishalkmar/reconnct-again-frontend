@@ -33,6 +33,7 @@ const blankActivity = () => ({
   name: '',
   location: '',
   city: '',
+  pincode: '',
   nearbyLocation: '',
   rating: 0,
   about: '',
@@ -70,6 +71,7 @@ const toActivity = (e) => ({
   name: e.name || '',
   location: e.location || '',
   city: e.city || '',
+  pincode: e.pincode || '',
   nearbyLocation: e.nearbyLocation || '',
   rating: Number(e.rating) || 0,
   about: e.about || '',
@@ -343,9 +345,14 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
             <input className="input" value={value.city} onChange={(e) => patch({ city: e.target.value })} placeholder="e.g. Rishikesh" />
           </div>
           <div>
-            <label className="label">Nearby location</label>
-            <input className="input" value={value.nearbyLocation} onChange={(e) => patch({ nearbyLocation: e.target.value })} placeholder="e.g. Near Laxman Jhula" />
+            <label className="label">Pincode</label>
+            <input className="input" value={value.pincode} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 249302" inputMode="numeric" maxLength={6} />
+            <p className="text-xs text-ink-muted mt-1">Helps place this experience precisely on the map for “near you”.</p>
           </div>
+        </div>
+        <div>
+          <label className="label">Nearby location</label>
+          <input className="input" value={value.nearbyLocation} onChange={(e) => patch({ nearbyLocation: e.target.value })} placeholder="e.g. Near Laxman Jhula" />
         </div>
         <div className="grid sm:grid-cols-2 gap-4 items-start">
           <div>
