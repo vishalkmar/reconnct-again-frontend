@@ -25,7 +25,9 @@ const blankPricing = {
 
 // One "activity" = one Experience record. Everything here is per-activity;
 // supplier + audiences + status are shared across all activities in the form.
-const blankActivity = () => ({
+// Exported so the Host/Supplier portals reuse the SAME form body (minus the
+// supplier section) — see HostListingFormPage.
+export const blankActivity = () => ({
   audiences: [],
   categoryIds: [],
   typeIds: [],
@@ -318,7 +320,9 @@ export default function ExperienceFormPage() {
 }
 
 // ─── One activity = one Experience ─────────────────────────────────────────
-function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) {
+// Exported: the Host/Supplier "Create listing" pages render this exact block
+// (without the supplier section around it).
+export function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) {
   const value = activity;
   const patch = (p) => onChange(p);
 
