@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Loader2, ClipboardCheck, UserCog, Truck, Home, Building2, Send, ChevronRight,
   CircleCheck, CircleAlert, Circle, CalendarClock, ShieldCheck, Rocket, Ban, Search,
-  Clock, Hourglass, XCircle, Globe, MessageSquareWarning, ThumbsUp,
+  Clock, Hourglass, XCircle, Globe, MessageSquareWarning, ThumbsUp, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -312,6 +312,26 @@ function SendQcopsModal({ name, busy, onSubmit, onClose }) {
 // final B2B price + GST / discount / convenience fee (the extra pricing) BEFORE
 // the listing publishes. The submitter's B2C price + source are shown as
 // read-only reference. Confirming publishes with these values.
+// Read-only view of the submitter's B2B pricing (locked until COPS taps Edit).
+function B2bSummary({ priceMethod, pricing }) {
+  const p = pricing || {};
+  return (
+    <div className="rounded-lg border border-gray-200 bg-surface-alt p-3 text-sm">
+      <div className="flex flex-wrap gap-x-6 gap-y-1">
+        <span className="text-ink-muted">Method: <strong className="text-ink">{priceMethod || 'per_person'}</strong></span>
+        <span className="text-ink-muted">Adult: <strong className="text-ink">₹{p.adultPrice || 0}</strong></span>
+      </div>
+      {p.childrenEnabled && (p.childBands || []).length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {p.childBands.map((b, i) => (
+            <li key={i} className="text-ink-muted">{b.startAge}–{b.endAge} yrs: <strong className="text-ink">{b.charge ? `₹${b.price}` : 'Free'}</strong></li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState({
@@ -320,6 +340,8 @@ function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
     convenienceFee: { type: 'free', value: 0, months: 0, cutThrough: 0 },
   });
   const [b2c, setB2c] = useState({ pricing: {}, sourceName: '', sourceLink: '' });
+  // The B2B pricing came from the submitter — shown locked; COPS clicks Edit to change it.
+  const [bEdit, setBEdit] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -371,8 +393,19 @@ function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
                 </div>
               )}
               <div>
-                <h3 className="font-semibold mb-2">B2B pricing</h3>
-                <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">B2B pricing <span className="text-xs font-normal text-ink-muted">(from submitter)</span></h3>
+                  {!bEdit && (
+                    <button type="button" onClick={() => setBEdit(true)} className="inline-flex items-center gap-1 text-sm text-brand font-semibold hover:underline">
+                      <Pencil size={14} /> Edit
+                    </button>
+                  )}
+                </div>
+                {bEdit ? (
+                  <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+                ) : (
+                  <B2bSummary priceMethod={draft.priceMethod} pricing={draft.pricing} />
+                )}
               </div>
               <div className="pt-4 border-t border-gray-100">
                 <h3 className="font-semibold mb-1">GST, discount &amp; convenience fee</h3>
