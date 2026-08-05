@@ -110,30 +110,65 @@ export const RENDERERS = {
   ),
   pricing: (e) => {
     const p = e.pricing || {};
+    const b2c = e.b2cPricing || {};
     const disc = e.discount && Number(e.discount.value) > 0
       ? (e.discount.type === 'fixed' ? `₹${e.discount.value}` : `${e.discount.value}%`) : null;
     const conv = convenienceLabel(e.convenienceFee);
     return (
-      <div>
-        <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          <Field label="Method" value={METHOD_LABEL[e.priceMethod] || e.priceMethod || '—'} />
-          {e.priceMethod === 'days' && <Field label="Days" value={p.days || 1} />}
-          <Field label="Adult" value={rupee(p.adultPrice)} />
-          {Number(e.gstRate) > 0 && <Field label="GST" value={`${e.gstRate}%`} />}
-          {disc && <Field label="Discount" value={disc} />}
-          {conv && <Field label="Convenience fee" value={conv} />}
+      <div className="space-y-4">
+        {/* B2B — the go-live price COPS owns; GST/discount/convenience apply here */}
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-brand mb-2">B2B pricing</div>
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <Field label="Method" value={METHOD_LABEL[e.priceMethod] || e.priceMethod || '—'} />
+            {e.priceMethod === 'days' && <Field label="Days" value={p.days || 1} />}
+            <Field label="Adult" value={rupee(p.adultPrice)} />
+            {Number(e.gstRate) > 0 && <Field label="GST" value={`${e.gstRate}%`} />}
+            {disc && <Field label="Discount" value={disc} />}
+            {conv && <Field label="Convenience fee" value={conv} />}
+          </div>
+          {p.childrenEnabled && p.childBands?.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">Children</div>
+              <ul className="space-y-1 text-sm">
+                {p.childBands.map((b, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <span className="text-ink">{b.startAge}–{b.endAge} yrs</span>
+                    <span className={b.charge ? 'font-semibold text-ink' : 'text-emerald-600 font-medium'}>{b.charge ? rupee(b.price) : 'Free'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        {p.childrenEnabled && p.childBands?.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">Children</div>
-            <ul className="space-y-1 text-sm">
-              {p.childBands.map((b, i) => (
+
+        {/* B2C — the customer-reference price the adder entered (read-only here) */}
+        <div className="pt-3 border-t border-gray-100">
+          <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">B2C pricing (from submitter)</div>
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <Field label="Method" value={METHOD_LABEL[e.b2cPriceMethod] || e.b2cPriceMethod || '—'} />
+            <Field label="Adult" value={rupee(b2c.adultPrice)} />
+          </div>
+          {b2c.childrenEnabled && b2c.childBands?.length > 0 && (
+            <ul className="space-y-1 text-sm mt-2">
+              {b2c.childBands.map((b, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <span className="text-ink">{b.startAge}–{b.endAge} yrs</span>
                   <span className={b.charge ? 'font-semibold text-ink' : 'text-emerald-600 font-medium'}>{b.charge ? rupee(b.price) : 'Free'}</span>
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        {/* Source — where the submitter sourced this experience from */}
+        {(e.sourceName || e.sourceLink) && (
+          <div className="pt-3 border-t border-gray-100">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">Source</div>
+            <div className="text-sm">
+              {e.sourceName && <span className="text-ink font-medium">{e.sourceName}</span>}
+              {e.sourceLink && <a href={e.sourceLink} target="_blank" rel="noreferrer" className="text-brand underline ml-2 break-all">{e.sourceLink}</a>}
+            </div>
           </div>
         )}
       </div>

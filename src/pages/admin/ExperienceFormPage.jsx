@@ -13,7 +13,6 @@ import ExperiencePricing from '../../components/admin/ExperiencePricing.jsx';
 import ExperienceInclusions from '../../components/admin/ExperienceInclusions.jsx';
 import ExperienceFacilities from '../../components/admin/ExperienceFacilities.jsx';
 import ExperienceScheduling from '../../components/admin/ExperienceScheduling.jsx';
-import ExperienceTaxPricing from '../../components/admin/ExperienceTaxPricing.jsx';
 import { FaqEditor } from '../../components/admin/KeyValueListEditor.jsx';
 
 const blankPricing = {
@@ -41,8 +40,14 @@ const blankActivity = () => ({
   gallery: [],
   videos: [],
   mode: 'offline',
+  // B2B pricing (COPS sets at go-live) — kept for duration/scheduling here.
   priceMethod: 'per_person',
   pricing: { ...blankPricing },
+  // B2C pricing (customer reference, set here) + where it was sourced from.
+  b2cPriceMethod: 'per_person',
+  b2cPricing: { ...blankPricing },
+  sourceName: '',
+  sourceLink: '',
   inclusions: [],
   faqs: [],
   facilities: [],
@@ -81,6 +86,10 @@ const toActivity = (e) => ({
   mode: e.mode || 'offline',
   priceMethod: e.priceMethod || 'per_person',
   pricing: e.pricing && Object.keys(e.pricing).length ? { ...blankPricing, ...e.pricing } : { ...blankPricing },
+  b2cPriceMethod: e.b2cPriceMethod || 'per_person',
+  b2cPricing: e.b2cPricing && Object.keys(e.b2cPricing).length ? { ...blankPricing, ...e.b2cPricing } : { ...blankPricing },
+  sourceName: e.sourceName || '',
+  sourceLink: e.sourceLink || '',
   inclusions: Array.isArray(e.inclusions) ? e.inclusions : [],
   faqs: Array.isArray(e.faqs) ? e.faqs : [],
   facilities: Array.isArray(e.facilities) ? e.facilities : [],
@@ -395,10 +404,35 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
         </div>
       </div>
 
-      {/* Pricing */}
+      {/* B2C pricing — the customer-reference price. The B2B price and GST /
+          discount / convenience fee are set by COPS at go-live. */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-4">Pricing</h2>
-        <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} />
+        <h2 className="font-semibold text-lg mb-1">B2C pricing</h2>
+        <p className="text-sm text-ink-muted mb-4">The customer-facing reference price. The B2B price &amp; GST/discount/convenience fee are added by Center Ops before it goes live.</p>
+        <ExperiencePricing
+          priceMethod={value.b2cPriceMethod}
+          pricing={value.b2cPricing}
+          onChange={(p) => patch({
+            ...(p.priceMethod !== undefined ? { b2cPriceMethod: p.priceMethod } : {}),
+            ...(p.pricing !== undefined ? { b2cPricing: p.pricing } : {}),
+          })}
+        />
+      </div>
+
+      {/* Source — where this experience was found/sourced from. */}
+      <div className="pt-2 border-t border-gray-100">
+        <h2 className="font-semibold text-lg mb-1">Source</h2>
+        <p className="text-sm text-ink-muted mb-4">Where this experience was sourced from — a listing name and its link.</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Source name</label>
+            <input className="input" value={value.sourceName} onChange={(e) => patch({ sourceName: e.target.value })} placeholder="e.g. Airbnb Experiences" />
+          </div>
+          <div>
+            <label className="label">Source link</label>
+            <input className="input" value={value.sourceLink} onChange={(e) => patch({ sourceLink: e.target.value })} placeholder="https://…" inputMode="url" />
+          </div>
+        </div>
       </div>
 
       {/* Inclusions */}
@@ -473,18 +507,8 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
         </div>
       </div>
 
-      {/* GST + discount + convenience fee */}
-      <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">GST, discount &amp; convenience fee</h2>
-        <p className="text-sm text-ink-muted mb-4">Discount applies before GST; the convenience fee is added on the final amount.</p>
-        <ExperienceTaxPricing
-          gstRate={value.gstRate}
-          discount={value.discount}
-          convenienceFee={value.convenienceFee}
-          basePrice={value.pricing?.adultPrice || 0}
-          onChange={patch}
-        />
-      </div>
+      {/* GST / discount / convenience fee + the B2B price live on the COPS
+          go-live step now, not here. */}
     </div>
   );
 }

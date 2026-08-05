@@ -67,9 +67,24 @@ function Editor({ sectionKey: key, draft, patch, exp }) {
     case 'pricing':
       return (
         <div className="space-y-6">
-          <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+          {/* B2C reference — what the submitter entered (read-only) */}
+          {(exp.b2cPricing?.adultPrice || exp.sourceName || exp.sourceLink) && (
+            <div className="bg-surface-alt rounded-lg p-3 text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Submitter's B2C reference</span>
+              <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
+                {exp.b2cPricing?.adultPrice ? <span>B2C adult: <strong>₹{exp.b2cPricing.adultPrice}</strong></span> : null}
+                {exp.sourceName ? <span>Source: <strong>{exp.sourceName}</strong></span> : null}
+                {exp.sourceLink ? <a href={exp.sourceLink} target="_blank" rel="noreferrer" className="text-brand underline break-all">{exp.sourceLink}</a> : null}
+              </div>
+            </div>
+          )}
+          <div>
+            <h3 className="font-semibold mb-2">B2B pricing</h3>
+            <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+          </div>
           <div className="pt-4 border-t border-gray-100">
             <h3 className="font-semibold mb-2">GST, discount &amp; convenience fee</h3>
+            <p className="text-sm text-ink-muted mb-3">Applied on the B2B price. Discount before GST; convenience fee on the final amount.</p>
             <ExperienceTaxPricing gstRate={draft.gstRate} discount={draft.discount} convenienceFee={draft.convenienceFee} basePrice={draft.pricing?.adultPrice || 0} onChange={patch} />
           </div>
         </div>

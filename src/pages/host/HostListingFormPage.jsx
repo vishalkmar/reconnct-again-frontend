@@ -11,7 +11,7 @@ import ExperienceTaxonomyPicker from '../../components/admin/ExperienceTaxonomyP
 // Global rule: every image upload must be under 5MB.
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-const STEPS = ['Basic info', 'Description', 'Pricing', 'Photos'];
+const STEPS = ['Basic info', 'Description', 'B2C pricing', 'Photos'];
 export const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
 export const FACILITIES = ['Restrooms', 'Parking', 'Locker', 'Wifi', 'Cafe', 'First Aid', 'Changing Room', 'Guide', 'Equipment'];
 export const PRICE_METHODS = [
@@ -29,6 +29,7 @@ const blank = {
   inclusions: [''], facilities: [], nearbyPlaces: [{ name: '', distance: '', unit: 'km' }], faqs: [],
   termsConditions: '', privacyPolicy: '', refundCancellationPolicy: '',
   priceMethod: 'per_person', adultPrice: '', childrenEnabled: false, childBands: [],
+  sourceName: '', sourceLink: '',
   capacity: 8, durationHours: 0, durationMinutes: 0,
   schedule: { dates: [] }, photos: [], videos: [],
 };
@@ -291,7 +292,9 @@ function Step3({ form, patch }) {
   return (
     <>
       <Card>
-        <h2 className="text-xl font-display font-bold mb-4">Set your price</h2>
+        <h2 className="text-xl font-display font-bold mb-1">Set your B2C price</h2>
+        <Hint>This is the customer-facing reference price. Center Ops sets the B2B price &amp; GST/discount/convenience fee before your listing goes live.</Hint>
+        <div className="mt-3" />
         <L>Price method</L>
         <div className="flex flex-wrap gap-2">{PRICE_METHODS.map((m) => <Chip key={m.value} active={form.priceMethod === m.value} onClick={() => patch({ priceMethod: m.value })}>{m.label}</Chip>)}</div>
         <div className="mt-5 max-w-xs">
@@ -338,6 +341,15 @@ function Step3({ form, patch }) {
         <div className="flex items-center justify-between">
           <L>Guests per session</L>
           <Stepper value={form.capacity} onChange={(v) => patch({ capacity: v })} />
+        </div>
+      </Card>
+
+      <Card>
+        <L>Source</L>
+        <Hint>Where this experience was sourced from — a listing name and its link.</Hint>
+        <div className="grid sm:grid-cols-2 gap-3 mt-2">
+          <div><L>Source name</L><input className="win" value={form.sourceName} onChange={(e) => patch({ sourceName: e.target.value })} placeholder="e.g. Airbnb Experiences" /></div>
+          <div><L>Source link</L><input className="win" value={form.sourceLink} onChange={(e) => patch({ sourceLink: e.target.value })} placeholder="https://…" inputMode="url" /></div>
         </div>
       </Card>
 

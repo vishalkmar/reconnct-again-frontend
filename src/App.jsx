@@ -69,6 +69,7 @@ import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx
 import TeamLayout from './layouts/TeamLayout.jsx';
 import TeamProtectedRoute from './components/team/TeamProtectedRoute.jsx';
 import TeamLoginPage from './pages/team/TeamLoginPage.jsx';
+import TeamResetPasswordPage from './pages/team/TeamResetPasswordPage.jsx';
 import TeamDashboardGate, { TeamLanding } from './components/team/TeamDashboardGate.jsx';
 import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
 import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
@@ -101,6 +102,7 @@ import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
 import SupplierLayout from './layouts/SupplierLayout.jsx';
 import SupplierProtectedRoute from './components/supplier/SupplierProtectedRoute.jsx';
 import SupplierLoginPage from './pages/supplier/SupplierLoginPage.jsx';
+import SupplierResetPasswordPage from './pages/supplier/SupplierResetPasswordPage.jsx';
 import SupplierAccountManagerPage from './pages/supplier/SupplierAccountManagerPage.jsx';
 
 export default function App() {
@@ -219,6 +221,7 @@ export default function App() {
 
         {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}
         <Route path="/team/login" element={<TeamLoginPage />} />
+        <Route path="/team/reset-password" element={<TeamResetPasswordPage />} />
         <Route
           path="/team"
           element={
@@ -260,6 +263,7 @@ export default function App() {
 
         {/* Supplier Portal — a supplier's own login, dashboard cloned from Host */}
         <Route path="/supplier/login" element={<SupplierLoginPage />} />
+        <Route path="/supplier/reset-password" element={<SupplierResetPasswordPage />} />
         <Route
           path="/supplier"
           element={

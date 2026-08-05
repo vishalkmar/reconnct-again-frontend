@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, ClipboardCheck, MapPinCheck } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, ClipboardCheck, MapPinCheck, MailCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTeamAuth } from '../../context/TeamAuthContext.jsx';
+import api from '../../services/api';
 
 export default function TeamLoginPage() {
   const { member, login, selectRole, loading } = useTeamAuth();
@@ -18,6 +19,24 @@ export default function TeamLoginPage() {
   // enter. The picker below then lets them choose one for this session.
   const [pickRoles, setPickRoles] = useState(null);
   const [picking, setPicking] = useState(false);
+  // Forgot-password: 'login' shows the sign-in form; 'forgot' shows the email
+  // form; once sent we show a "check your email" confirmation.
+  const [mode, setMode] = useState('login');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
+
+  const sendForgot = async (e) => {
+    e.preventDefault();
+    setForgotBusy(true);
+    try {
+      await api.post('/team/auth/forgot-password', { email });
+      setForgotSent(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send the reset link');
+    } finally {
+      setForgotBusy(false);
+    }
+  };
 
   if (!loading && member) {
     return <Navigate to={from} replace />;
@@ -91,6 +110,34 @@ export default function TeamLoginPage() {
             ← Back to sign in
           </button>
         </div>
+      ) : mode === 'forgot' ? (
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand/15 text-brand-dark mb-4">
+              {forgotSent ? <MailCheck size={28} /> : <Lock size={28} />}
+            </div>
+            <h1 className="text-2xl font-display font-bold">Reset your password</h1>
+            <p className="text-sm text-ink-muted mt-1">{forgotSent ? 'Check your inbox' : 'We\'ll email you a reset link'}</p>
+          </div>
+          {forgotSent ? (
+            <div className="bg-white rounded-2xl shadow-card p-8 text-center space-y-4">
+              <p className="text-sm text-ink">If <strong>{email}</strong> is a registered staff account, a password-reset link is on its way. It expires in 1 hour.</p>
+              <button type="button" onClick={() => { setMode('login'); setForgotSent(false); }} className="btn-primary w-full">Back to sign in</button>
+            </div>
+          ) : (
+            <form onSubmit={sendForgot} className="bg-white rounded-2xl shadow-card p-8 space-y-5">
+              <div>
+                <label className="label">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                  <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} className="input pl-10" placeholder="you@reconnct.com" />
+                </div>
+              </div>
+              <button type="submit" disabled={forgotBusy} className="btn-primary w-full">{forgotBusy ? 'Sending…' : 'Send reset link'}</button>
+              <button type="button" onClick={() => setMode('login')} className="w-full text-center text-sm text-ink-muted hover:text-brand">← Back to sign in</button>
+            </form>
+          )}
+        </div>
       ) : (
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -142,6 +189,10 @@ export default function TeamLoginPage() {
 
           <button type="submit" disabled={submitting} className="btn-primary w-full">
             {submitting ? 'Signing in…' : 'Sign in'}
+          </button>
+
+          <button type="button" onClick={() => { setMode('forgot'); setForgotSent(false); }} className="w-full text-center text-sm text-brand hover:underline">
+            Forgot password?
           </button>
 
           <p className="text-xs text-center text-ink-muted">
