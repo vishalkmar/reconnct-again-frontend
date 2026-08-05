@@ -8,6 +8,8 @@ import {
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
+import ExperiencePricing from '../../components/admin/ExperiencePricing.jsx';
+import ExperienceTaxPricing from '../../components/admin/ExperienceTaxPricing.jsx';
 
 const SOURCE_STYLE = {
   staff: { icon: Truck, className: 'bg-amber-50 text-amber-700' },
@@ -68,8 +70,8 @@ export default function TeamReviewQueuePage() {
     const r = await api.post(`/team/review-queue/${id}/send-qcops`, body);
     toast.success(r.data?.message || 'Assigned to QCOPS');
   });
-  const goLive = (id) => act(id, async () => { await api.post(`/team/qc/${id}/go-live`); toast.success('Now live on web & app 🎉'); });
-  const directList = (id) => act(id, async () => { await api.post(`/team/review-queue/${id}/direct-list`); toast.success('Listed directly — now live 🎉'); });
+  const goLive = (id, body) => act(id, async () => { await api.post(`/team/qc/${id}/go-live`, body || {}); toast.success('Now live on web & app 🎉'); });
+  const directList = (id, body) => act(id, async () => { await api.post(`/team/review-queue/${id}/direct-list`, body || {}); toast.success('Listed directly — now live 🎉'); });
   const upReject = (id, reason) => act(id, async () => { await api.post(`/team/qc/${id}/up-reject`, { reason }); toast.success('Rejected — submitter notified'); });
   const upAck = (id) => act(id, async () => { const r = await api.post(`/team/qc/${id}/up-ack`); toast.success(r.data?.message || 'Acknowledged'); });
   const delist = (id, reason) => act(id, async () => { await api.post(`/team/qc/${id}/delist`, { reason }); toast.success('Delisted from the platform'); });
@@ -115,8 +117,8 @@ export default function TeamReviewQueuePage() {
           {filtered.map((item) => (
             <Row key={item.id} item={item} tab={tab} busy={busyId === item.id}
               onSend={() => setModal({ kind: 'send', item })}
-              onGoLive={() => goLive(item.id)}
-              onDirectList={() => directList(item.id)}
+              onGoLive={() => setModal({ kind: 'golive', item, run: (body) => goLive(item.id, body) })}
+              onDirectList={() => setModal({ kind: 'golive', item, run: (body) => directList(item.id, body) })}
               onDelist={() => setModal({ kind: 'delist', item })}
               onAck={() => upAck(item.id)}
               onReject={() => setModal({ kind: 'reject', item })} />
@@ -125,6 +127,7 @@ export default function TeamReviewQueuePage() {
       )}
 
       {modal?.kind === 'send' && <SendQcopsModal name={modal.item.name} busy={busyId === modal.item.id} onSubmit={(b) => sendQcops(modal.item.id, b)} onClose={() => setModal(null)} />}
+      {modal?.kind === 'golive' && <GoLivePricingModal item={modal.item} busy={busyId === modal.item.id} onSubmit={(body) => modal.run(body)} onClose={() => setModal(null)} />}
       {modal?.kind === 'delist' && <ReasonModal title="Delist from the platform" name={modal.item.name} confirm="Delist" color="bg-slate-700 hover:bg-slate-800" placeholder="Why is this being pulled off the platform?" busy={busyId === modal.item.id} onSubmit={(r) => delist(modal.item.id, r)} onClose={() => setModal(null)} />}
       {modal?.kind === 'reject' && <ReasonModal title="Reject experience" name={modal.item.name} confirm="Reject" color="bg-rose-600 hover:bg-rose-700" placeholder="Reason (leave blank to use the submitter's / QCOPS reason)" optional busy={busyId === modal.item.id} onSubmit={(r) => upReject(modal.item.id, r)} onClose={() => setModal(null)} />}
     </div>
@@ -302,6 +305,92 @@ function SendQcopsModal({ name, busy, onSubmit, onClose }) {
       <p className="text-xs text-ink-muted mt-3">Auto-assigned to the least-busy QCOPS (round-robin). They’ll send back their own schedule once they’ve coordinated with the supplier.</p>
       <Actions busy={busy} confirm="Send to QCOPS" color="bg-indigo-600 hover:bg-indigo-700" onClose={onClose} onSubmit={() => onSubmit({})} />
     </Modal>
+  );
+}
+
+// Shown when Center Ops clicks "List directly" / "Live it Now": COPS sets the
+// final B2B price + GST / discount / convenience fee (the extra pricing) BEFORE
+// the listing publishes. The submitter's B2C price + source are shown as
+// read-only reference. Confirming publishes with these values.
+function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState({
+    priceMethod: 'per_person', pricing: {}, gstRate: 0,
+    discount: { type: 'percentage', value: 0 },
+    convenienceFee: { type: 'free', value: 0, months: 0, cutThrough: 0 },
+  });
+  const [b2c, setB2c] = useState({ pricing: {}, sourceName: '', sourceLink: '' });
+
+  useEffect(() => {
+    let alive = true;
+    api.get(`/experiences/${item.id}`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const e = data?.data?.item || {};
+        setDraft({
+          priceMethod: e.priceMethod || 'per_person',
+          pricing: e.pricing && Object.keys(e.pricing).length ? e.pricing : {},
+          gstRate: Number(e.gstRate) || 0,
+          discount: e.discount && e.discount.type ? e.discount : { type: 'percentage', value: 0 },
+          convenienceFee: e.convenienceFee && e.convenienceFee.type
+            ? { type: 'free', value: 0, months: 0, cutThrough: 0, ...e.convenienceFee }
+            : { type: 'free', value: 0, months: 0, cutThrough: 0 },
+        });
+        setB2c({ pricing: e.b2cPricing || {}, sourceName: e.sourceName || '', sourceLink: e.sourceLink || '' });
+      })
+      .catch(() => toast.error('Could not load pricing'))
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [item.id]);
+
+  const patch = (p) => setDraft((d) => ({ ...d, ...p }));
+  const confirm = () => onSubmit({
+    priceMethod: draft.priceMethod, pricing: draft.pricing, gstRate: draft.gstRate, discount: draft.discount, convenienceFee: draft.convenienceFee,
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="font-display font-bold text-lg">Set go-live pricing</h2>
+          <p className="text-xs text-ink-muted mt-0.5 truncate">{item.name} — this is the final price customers pay.</p>
+        </div>
+        <div className="px-6 py-5 overflow-y-auto space-y-6">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-brand" /></div>
+          ) : (
+            <>
+              {(b2c.pricing?.adultPrice || b2c.sourceName || b2c.sourceLink) && (
+                <div className="bg-surface-alt rounded-lg p-3 text-sm">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-1">Submitter's B2C reference</div>
+                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                    {b2c.pricing?.adultPrice ? <span>B2C adult: <strong>₹{b2c.pricing.adultPrice}</strong></span> : null}
+                    {b2c.sourceName ? <span>Source: <strong>{b2c.sourceName}</strong></span> : null}
+                    {b2c.sourceLink ? <a href={b2c.sourceLink} target="_blank" rel="noreferrer" className="text-brand underline break-all">{b2c.sourceLink}</a> : null}
+                  </div>
+                </div>
+              )}
+              <div>
+                <h3 className="font-semibold mb-2">B2B pricing</h3>
+                <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+              </div>
+              <div className="pt-4 border-t border-gray-100">
+                <h3 className="font-semibold mb-1">GST, discount &amp; convenience fee</h3>
+                <p className="text-sm text-ink-muted mb-3">Applied on the B2B price. Discount before GST; convenience fee on the final amount.</p>
+                <ExperienceTaxPricing gstRate={draft.gstRate} discount={draft.discount} convenienceFee={draft.convenienceFee} basePrice={draft.pricing?.adultPrice || 0} onChange={patch} />
+              </div>
+            </>
+          )}
+        </div>
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-ink-muted hover:bg-surface-alt">Cancel</button>
+          <button onClick={confirm} disabled={busy || loading}
+            className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 inline-flex items-center gap-2">
+            {busy && <Loader2 size={14} className="animate-spin" />} <Rocket size={15} /> Publish live
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

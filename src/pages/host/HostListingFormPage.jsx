@@ -336,7 +336,7 @@ function Step3({ form, patch }) {
       />
       <PriceSection
         form={form} patch={patch} title="B2C pricing"
-        hint="A reference price only — shown to Center Ops at go-live and stored, but not used for booking."
+        
         methodKey="b2cPriceMethod" priceKey="b2cAdultPrice" enabledKey="b2cChildrenEnabled" bandsKey="b2cChildBands"
       />
 

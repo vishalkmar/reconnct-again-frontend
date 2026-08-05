@@ -416,7 +416,7 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
           in the DB; it does NOT drive booking. */}
       <div className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">B2C pricing</h2>
-        <p className="text-sm text-ink-muted mb-4">A reference price only — shown to Center Ops at go-live and stored, but not used for booking.</p>
+   
         <ExperiencePricing
           priceMethod={value.b2cPriceMethod}
           pricing={value.b2cPricing}
