@@ -44,7 +44,6 @@ export default function HostListingFormPage({ basePath = '/host' }) {
   const editing = !!id;
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1);
   const [form, setForm] = useState(blank);
   const [loading, setLoading] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
@@ -61,18 +60,11 @@ export default function HostListingFormPage({ basePath = '/host' }) {
     return () => { alive = false; };
   }, [editing, id]);
 
-  const canNext = useMemo(() => {
-    if (step === 1) return !!form.name.trim() && !!form.categoryIds?.length && !!form.typeIds?.length;
-    return true;
-  }, [step, form]);
-
-  const goNext = () => {
-    if (step === 1 && !canNext) { toast.error('Add a title, category and type to continue'); return; }
-    setStep((s) => Math.min(4, s + 1));
-  };
+  const basicsOk = !!form.name.trim() && !!form.categoryIds?.length && !!form.typeIds?.length;
 
   const submit = async (isReview) => {
     if (submitting) return;
+    if (!basicsOk) return toast.error('Add a title, broad category and type first');
     // At least 6 photos are mandatory before submitting for review.
     if (isReview && form.photos.filter(Boolean).length < 6) {
       return toast.error(`Add at least 6 photos before submitting — you have ${form.photos.filter(Boolean).length}.`);
@@ -95,50 +87,37 @@ export default function HostListingFormPage({ basePath = '/host' }) {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-surface-alt">
-      {/* Header + progress */}
+      {/* Header — single scrollable form (same fields, no step wizard) */}
       <div className="bg-white border-b px-4 md:px-8 py-4 sticky top-16 z-20">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3">
-            <button onClick={() => (step > 1 ? setStep((s) => s - 1) : navigate(`${basePath}/listings`))} className="w-9 h-9 rounded-full bg-surface-alt flex items-center justify-center hover:bg-slate-200">
-              <ChevronLeft size={18} />
-            </button>
-            <div>
-              <h1 className="font-display font-bold text-lg leading-tight">{editing ? 'Edit listing' : STEPS[step - 1]}</h1>
-              <p className="text-xs text-ink-muted">Step {step} of 4 · {STEPS[step - 1]}</p>
-            </div>
-          </div>
-          <div className="flex gap-1.5 mt-3">
-            {[1, 2, 3, 4].map((s) => <div key={s} className={`flex-1 h-1.5 rounded-full ${s <= step ? 'bg-brand' : 'bg-slate-200'}`} />)}
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <button onClick={() => navigate(`${basePath}/listings`)} className="w-9 h-9 rounded-full bg-surface-alt flex items-center justify-center hover:bg-slate-200">
+            <ChevronLeft size={18} />
+          </button>
+          <div>
+            <h1 className="font-display font-bold text-lg leading-tight">{editing ? 'Edit listing' : 'Create listing'}</h1>
+            <p className="text-xs text-ink-muted">Fill in the details below, then save a draft or submit for review.</p>
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
-        <div className="max-w-3xl mx-auto">
-          {step === 1 && <Step1 form={form} patch={patch} />}
-          {step === 2 && <Step2 form={form} patch={patch} />}
-          {step === 3 && <Step3 form={form} patch={patch} />}
-          {step === 4 && <Step4 form={form} patch={patch} />}
+        <div className="max-w-3xl mx-auto space-y-2">
+          <Step1 form={form} patch={patch} />
+          <Step2 form={form} patch={patch} />
+          <Step3 form={form} patch={patch} />
+          <Step4 form={form} patch={patch} />
         </div>
       </div>
 
-      {/* Action bar */}
+      {/* Action bar — always Save / Submit */}
       <div className="bg-white border-t px-4 md:px-8 py-3 sticky bottom-0">
         <div className="max-w-3xl mx-auto flex gap-3">
-          {step < 4 ? (
-            <button onClick={goNext} className="ml-auto inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 disabled:opacity-50" disabled={!canNext}>
-              Next
-            </button>
-          ) : (
-            <>
-              <button onClick={() => submit(false)} disabled={submitting} className="ml-auto px-5 py-2.5 rounded-lg border font-medium hover:bg-surface-alt disabled:opacity-50">
-                {submitting ? 'Saving…' : 'Save Draft'}
-              </button>
-              <button onClick={() => submit(true)} disabled={submitting} className="px-6 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 disabled:opacity-50">
-                {submitting ? 'Submitting…' : 'Submit for Review'}
-              </button>
-            </>
-          )}
+          <button onClick={() => submit(false)} disabled={submitting} className="ml-auto px-5 py-2.5 rounded-lg border font-medium hover:bg-surface-alt disabled:opacity-50">
+            {submitting ? 'Saving…' : 'Save Draft'}
+          </button>
+          <button onClick={() => submit(true)} disabled={submitting} className="px-6 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 disabled:opacity-50">
+            {submitting ? 'Submitting…' : 'Submit for Review'}
+          </button>
         </div>
       </div>
 

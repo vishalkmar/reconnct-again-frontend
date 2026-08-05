@@ -234,6 +234,27 @@ function CalendarModal({ initial, initialMode, onSave, onClose }) {
     });
   };
 
+  // All non-past dates of a given month.
+  const monthDates = (year, month) => {
+    const days = new Date(year, month + 1, 0).getDate();
+    const out = [];
+    for (let d = 1; d <= days; d += 1) { const ds = dateStr(year, month, d); if (ds >= today) out.push(ds); }
+    return out;
+  };
+  // Select / clear a whole month at once (the per-month "All" checkbox).
+  const toggleMonth = (year, month, on) => setSel((prev) => {
+    const next = new Set(prev);
+    monthDates(year, month).forEach((ds) => (on ? next.add(ds) : next.delete(ds)));
+    return next;
+  });
+  // Select every future date across every month shown.
+  const selectAll = () => setSel((prev) => {
+    const next = new Set(prev);
+    months.forEach(({ year, month }) => monthDates(year, month).forEach((ds) => next.add(ds)));
+    return next;
+  });
+  const clearAll = () => setSel(new Set());
+
   const modeRequired = sel.size > 0;
   const canSave = !modeRequired || !!mode;
 
@@ -272,9 +293,14 @@ function CalendarModal({ initial, initialMode, onSave, onClose }) {
           {!mode && <p className="text-xs text-rose-500 mt-2">Pick one to continue.</p>}
         </div>
       )}
+      {/* Bulk select — a whole month (checkbox per month below) or everything. */}
+      <div className="flex items-center gap-3 mb-3">
+        <button type="button" onClick={selectAll} className="text-sm font-semibold text-brand hover:underline">Select all dates</button>
+        {sel.size > 0 && <button type="button" onClick={clearAll} className="text-sm text-ink-muted hover:text-rose-600">Clear all</button>}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {months.map(({ year, month }) => (
-          <MiniMonth key={`${year}-${month}`} year={year} month={month} sel={sel} today={today} onToggle={toggle} name={MONTHS[month]} />
+          <MiniMonth key={`${year}-${month}`} year={year} month={month} sel={sel} today={today} onToggle={toggle} onToggleMonth={toggleMonth} name={MONTHS[month]} />
         ))}
       </div>
     </Modal>
@@ -296,16 +322,29 @@ function ModeOption({ active, title, sub, onClick }) {
   );
 }
 
-function MiniMonth({ year, month, sel, today, onToggle, name }) {
+function MiniMonth({ year, month, sel, today, onToggle, onToggleMonth, name }) {
   const firstWd = new Date(year, month, 1).getDay();
   const days = new Date(year, month + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstWd; i++) cells.push(null);
   for (let d = 1; d <= days; d++) cells.push(d);
 
+  // Future dates of this month + whether they're all already selected.
+  const monthDs = [];
+  for (let d = 1; d <= days; d += 1) { const ds = dateStr(year, month, d); if (ds >= today) monthDs.push(ds); }
+  const allSelected = monthDs.length > 0 && monthDs.every((ds) => sel.has(ds));
+
   return (
     <div className="border border-gray-100 rounded-xl p-3">
-      <div className="text-center font-semibold text-sm mb-2">{name} {year}</div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-semibold text-sm">{name} {year}</span>
+        {monthDs.length > 0 && (
+          <label className="flex items-center gap-1 text-[11px] text-ink-muted cursor-pointer select-none">
+            <input type="checkbox" checked={allSelected} onChange={() => onToggleMonth(year, month, !allSelected)} className="accent-brand w-3.5 h-3.5" />
+            All
+          </label>
+        )}
+      </div>
       <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-ink-muted mb-1">
         {WD.map((w, i) => <span key={i}>{w}</span>)}
       </div>
