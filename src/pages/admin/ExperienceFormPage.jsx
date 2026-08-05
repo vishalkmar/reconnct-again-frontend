@@ -14,6 +14,7 @@ import ExperienceInclusions from '../../components/admin/ExperienceInclusions.js
 import ExperienceFacilities from '../../components/admin/ExperienceFacilities.jsx';
 import ExperienceScheduling from '../../components/admin/ExperienceScheduling.jsx';
 import { FaqEditor } from '../../components/admin/KeyValueListEditor.jsx';
+import { validateExperience } from '../../utils/validateExperience.js';
 
 const blankPricing = {
   adultPrice: 0,
@@ -171,18 +172,17 @@ export default function ExperienceFormPage() {
 
   const save = async () => {
     const acts = value.activities || [];
+    // BD submissions + admin "Published" go for review → every field required
+    // (video is the only optional one). A plain admin draft just needs a name.
+    const needsFull = isTeamPath || value.status === 'published';
     for (let i = 0; i < acts.length; i++) {
       const a = acts[i];
       const tag = acts.length > 1 ? ` (activity ${i + 1})` : '';
-      if (!a.name.trim()) return toast.error(`Name is required${tag}`);
-      if (!a.categoryIds?.length) return toast.error(`Pick at least one broad category${tag}`);
-      if (!a.typeIds?.length) return toast.error(`Pick at least one type${tag}`);
-      // At least 6 images (main + gallery) before it can go for review/publish.
-      const needsImages = isTeamPath || value.status === 'published';
-      if (needsImages) {
-        const imgCount = (a.mainImage ? 1 : 0) + (Array.isArray(a.gallery) ? a.gallery.filter(Boolean).length : 0);
-        if (!a.mainImage) return toast.error(`Add a main image${tag}`);
-        if (imgCount < 6) return toast.error(`At least 6 images are required — you have ${imgCount}${tag}`);
+      if (needsFull) {
+        const err = validateExperience(a, { forReview: true });
+        if (err) return toast.error(`${err}${tag}`);
+      } else if (!a.name.trim()) {
+        return toast.error(`Name is required${tag}`);
       }
     }
     setSaving(true);
@@ -349,22 +349,22 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
           <input className="input" value={value.name} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. Sunrise Himalayan Yoga Retreat" />
         </div>
         <div>
-          <label className="label">Location</label>
+          <label className="label">Location <span className="text-rose-500">*</span></label>
           <input className="input" value={value.location} onChange={(e) => patch({ location: e.target.value })} placeholder="e.g. Rishikesh, Uttarakhand" />
         </div>
         <div className="grid sm:grid-cols-2 gap-4 items-start">
           <div>
-            <label className="label">City</label>
+            <label className="label">City <span className="text-rose-500">*</span></label>
             <input className="input" value={value.city} onChange={(e) => patch({ city: e.target.value })} placeholder="e.g. Rishikesh" />
           </div>
           <div>
-            <label className="label">Pincode</label>
+            <label className="label">Pincode <span className="text-rose-500">*</span></label>
             <input className="input" value={value.pincode} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 249302" inputMode="numeric" maxLength={6} />
             <p className="text-xs text-ink-muted mt-1">Helps place this experience precisely on the map for “near you”.</p>
           </div>
         </div>
         <div>
-          <label className="label">Nearby location</label>
+          <label className="label">Nearby location <span className="text-rose-500">*</span></label>
           <input className="input" value={value.nearbyLocation} onChange={(e) => patch({ nearbyLocation: e.target.value })} placeholder="e.g. Near Laxman Jhula" />
         </div>
         <div className="grid sm:grid-cols-2 gap-4 items-start">
@@ -385,14 +385,14 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
 
       {/* About */}
       <div className="pt-2 border-t border-gray-100">
-        <label className="label">About this activity / event</label>
+        <label className="label">About this activity / event <span className="text-rose-500">*</span></label>
         <RichTextEditor value={value.about} onChange={(v) => patch({ about: v })} placeholder="Describe the experience…" />
       </div>
 
       {/* Media */}
       <div className="pt-2 border-t border-gray-100 space-y-6">
         <div>
-          <label className="label">Main image</label>
+          <label className="label">Main image <span className="text-rose-500">*</span></label>
           <Dropzone instant value={value.mainImage} onChange={(url) => patch({ mainImage: url })}
             existingUrl={value.mainImage} onClearExisting={() => patch({ mainImage: '' })}
             placeholder="Drag & drop the cover image, click to browse, or paste a link" />
@@ -403,7 +403,7 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
             placeholder="Add multiple images — drag & drop, browse, or paste links" />
         </div>
         <div>
-          <label className="label">Videos</label>
+          <label className="label">Videos <span className="text-ink-muted font-normal">(optional)</span></label>
           <MediaVideosField value={value.videos} onChange={(v) => patch({ videos: v })} />
         </div>
       </div>
@@ -411,16 +411,15 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       {/* B2B pricing — the WORKING price. Center Ops adds GST / discount /
           convenience fee on top of this at go-live → the final customer price. */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">B2B pricing</h2>
+        <h2 className="font-semibold text-lg mb-1">B2B pricing <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">The working price. Center Ops adds GST/discount/convenience fee on this at go-live — the result is what customers pay in the app.</p>
         <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} />
       </div>
 
       {/* B2C pricing — reference only. Shown to Center Ops at go-live and saved
-          in the DB; it does NOT drive booking. */}
+          in the DB; it does NOT drive booking. Source (name) sits right here. */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">B2C pricing</h2>
-   
+        <h2 className="font-semibold text-lg mb-1">B2C pricing <span className="text-rose-500">*</span></h2>
         <ExperiencePricing
           priceMethod={value.b2cPriceMethod}
           pricing={value.b2cPricing}
@@ -429,51 +428,40 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
             ...(p.pricing !== undefined ? { b2cPricing: p.pricing } : {}),
           })}
         />
-      </div>
-
-      {/* Source — where this experience was found/sourced from. */}
-      <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">Source</h2>
-        <p className="text-sm text-ink-muted mb-4">Where this experience was sourced from — a listing name and its link.</p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="label">Source name</label>
-            <input className="input" value={value.sourceName} onChange={(e) => patch({ sourceName: e.target.value })} placeholder="e.g. Airbnb Experiences" />
-          </div>
-          <div>
-            <label className="label">Source link</label>
-            <input className="input" value={value.sourceLink} onChange={(e) => patch({ sourceLink: e.target.value })} placeholder="https://…" inputMode="url" />
-          </div>
+        <div className="mt-4">
+          <label className="label">Source name <span className="text-rose-500">*</span></label>
+          <input className="input" value={value.sourceName} onChange={(e) => patch({ sourceName: e.target.value })} placeholder="e.g. Airbnb Experiences" />
+          <p className="text-[11px] text-ink-muted mt-1">Where this experience was sourced from.</p>
         </div>
       </div>
 
       {/* Inclusions */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">Inclusions</h2>
+        <h2 className="font-semibold text-lg mb-1">Inclusions <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Add what's included — as a text block, or a title with an image.</p>
         <ExperienceInclusions value={value.inclusions} onChange={(v) => patch({ inclusions: v })} />
       </div>
 
       {/* Facilities */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">Facilities</h2>
+        <h2 className="font-semibold text-lg mb-1">Facilities <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Pick from the shared list or add your own.</p>
         <ExperienceFacilities value={value.facilities} onChange={(v) => patch({ facilities: v })} />
       </div>
 
       {/* Nearby places */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">Nearby places</h2>
+        <h2 className="font-semibold text-lg mb-1">Nearby places <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Famous spots near the location and how far they are.</p>
         <NearbyPlacesEditor value={value.nearbyPlaces} onChange={(v) => patch({ nearbyPlaces: v })} />
       </div>
 
       {/* Availability & scheduling */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-1">Availability &amp; scheduling</h2>
+        <h2 className="font-semibold text-lg mb-1">Availability &amp; scheduling <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Set the session duration, pick available dates, then build time slots per date.</p>
         <div className="mb-5">
-          <label className="label">Each session duration</label>
+          <label className="label">Each session duration <span className="text-rose-500">*</span></label>
           <div className="flex items-center gap-2">
             <div className="relative">
               <input type="number" min={0} className="input w-24 pr-9" placeholder="0"
@@ -498,23 +486,23 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
 
       {/* FAQs */}
       <div className="pt-2 border-t border-gray-100">
-        <h2 className="font-semibold text-lg mb-4">FAQs</h2>
+        <h2 className="font-semibold text-lg mb-4">FAQs <span className="text-rose-500">*</span></h2>
         <FaqEditor value={value.faqs} onChange={(v) => patch({ faqs: v })} />
       </div>
 
       {/* Policies */}
       <div className="pt-2 border-t border-gray-100 space-y-5">
-        <h2 className="font-semibold text-lg">Policies &amp; terms</h2>
+        <h2 className="font-semibold text-lg">Policies &amp; terms <span className="text-rose-500">*</span></h2>
         <div>
-          <label className="label">Terms &amp; Conditions</label>
+          <label className="label">Terms &amp; Conditions <span className="text-rose-500">*</span></label>
           <RichTextEditor value={value.termsConditions} onChange={(v) => patch({ termsConditions: v })} minHeight={160} />
         </div>
         <div>
-          <label className="label">Privacy Policy</label>
+          <label className="label">Privacy Policy <span className="text-rose-500">*</span></label>
           <RichTextEditor value={value.privacyPolicy} onChange={(v) => patch({ privacyPolicy: v })} minHeight={160} />
         </div>
         <div>
-          <label className="label">Refund &amp; Cancellation Policy</label>
+          <label className="label">Refund &amp; Cancellation Policy <span className="text-rose-500">*</span></label>
           <RichTextEditor value={value.refundCancellationPolicy} onChange={(v) => patch({ refundCancellationPolicy: v })} minHeight={200} />
         </div>
       </div>

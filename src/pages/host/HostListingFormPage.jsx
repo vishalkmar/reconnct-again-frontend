@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import usePersistedForm from '../../hooks/usePersistedForm.js';
+import { validateExperience } from '../../utils/validateExperience.js';
 import { ActivityBlock, blankActivity } from '../admin/ExperienceFormPage.jsx';
 
 /*
@@ -106,7 +108,11 @@ export default function HostListingFormPage({ basePath = '/host' }) {
   const editing = !!id;
   const navigate = useNavigate();
 
-  const [act, setAct] = useState(blankActivity());
+  // Auto-persist to localStorage so a refresh / accidental navigation never
+  // loses the work (same behaviour as the BD/admin experience form).
+  const {
+    value: act, setValue: setAct, hydrateFromServer, clearDraft, discardDraft, hasDraft,
+  } = usePersistedForm(`${basePath.replace(/\//g, '')}-listing:${id || 'new'}`, blankActivity(), { editing });
   const [loading, setLoading] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const patch = (p) => setAct((a) => ({ ...a, ...p }));
@@ -115,21 +121,22 @@ export default function HostListingFormPage({ basePath = '/host' }) {
     if (!editing) return;
     let alive = true;
     api.get(`${basePath}/listings/${id}`)
-      .then(({ data }) => { if (alive) setAct(hostFormToActivity((data.data || data).form || {})); })
+      .then(({ data }) => { if (alive) hydrateFromServer(hostFormToActivity((data.data || data).form || {})); })
       .catch(() => toast.error('Could not load listing'))
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [editing, id, basePath]);
+  }, [editing, id, basePath, hydrateFromServer]);
 
   const submit = async (isReview) => {
     if (submitting) return;
-    if (!act.name.trim() || !act.categoryIds?.length || !act.typeIds?.length) {
-      return toast.error('Add a title, broad category and type first');
-    }
     const form = activityToHostForm(act);
     if (isReview) {
-      const photoCount = form.photos.filter(Boolean).length;
-      if (photoCount < 6) return toast.error(`Add at least 6 photos before submitting — you have ${photoCount}.`);
+      // Submitting for review → every field required (video is the only
+      // optional one). Each shows its own message.
+      const err = validateExperience(act, { forReview: true, photoCount: form.photos.filter(Boolean).length });
+      if (err) return toast.error(err);
+    } else if (!act.name.trim()) {
+      return toast.error('Please add the experience title to save a draft');
     }
     setSubmitting(true);
     try {
@@ -138,6 +145,7 @@ export default function HostListingFormPage({ basePath = '/host' }) {
         : { ...form, photos: ['https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80'] };
       if (editing) await api.put(`${basePath}/listings/${id}`, { form: payload, submit: isReview });
       else await api.post(`${basePath}/listings`, { form: payload, submit: isReview });
+      clearDraft();
       toast.success(isReview ? 'Submitted for review' : 'Saved as draft');
       navigate(`${basePath}/listings`);
     } catch (err) {
@@ -150,28 +158,43 @@ export default function HostListingFormPage({ basePath = '/host' }) {
   if (loading) return <div className="p-10 text-center text-ink-muted"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
   return (
-    <div className="max-w-3xl mx-auto pb-28">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
           <ArrowLeft size={16} /> Back to listings
         </button>
         <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit listing' : 'Create listing'}</h1>
-        <p className="text-sm text-ink-muted">Fill in the details below, then save a draft or submit for review.</p>
+        <p className="text-sm text-ink-muted">Fill in the details below, then save a draft or submit for review. Everything auto-saves as a draft.</p>
       </div>
 
-      {/* Same form body as the BD "New experience" — minus the supplier section. */}
-      <ActivityBlock index={0} activity={act} total={1} editing={editing} onChange={patch} onRemove={() => {}} />
-
-      {/* Action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 md:px-8 py-3 z-20">
-        <div className="max-w-3xl mx-auto flex justify-end gap-3">
-          <button onClick={() => submit(false)} disabled={submitting} className="px-5 py-2.5 rounded-lg border font-medium hover:bg-surface-alt disabled:opacity-50">
-            {submitting ? 'Saving…' : 'Save Draft'}
-          </button>
-          <button onClick={() => submit(true)} disabled={submitting} className="px-6 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 disabled:opacity-50">
-            {submitting ? 'Submitting…' : 'Submit for Review'}
-          </button>
+      <div className="grid lg:grid-cols-3 gap-6 items-start">
+        {/* Main column — the same form body as the BD "New experience", minus
+            the supplier section. */}
+        <div className="lg:col-span-2 space-y-5">
+          <ActivityBlock index={0} activity={act} total={1} editing={editing} onChange={patch} onRemove={() => {}} />
         </div>
+
+        {/* Save — sticky sidebar (same place as the BD form). */}
+        <aside className="lg:col-span-1 lg:sticky lg:top-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <h3 className="font-semibold mb-3">Save</h3>
+            <p className="text-xs text-ink-muted mb-4">This goes to Center Ops for review — it can’t be published directly from here.</p>
+            <button onClick={() => submit(true)} disabled={submitting} className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 disabled:opacity-60">
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              Submit for Review
+            </button>
+            <button onClick={() => submit(false)} disabled={submitting} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt disabled:opacity-60">
+              {submitting ? 'Saving…' : 'Save Draft'}
+            </button>
+            <button onClick={() => navigate(`${basePath}/listings`)} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
+            {hasDraft && (
+              <button onClick={discardDraft} className="w-full mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:underline">
+                <Trash2 size={13} /> Discard draft
+              </button>
+            )}
+            <p className="text-[11px] text-ink-muted mt-3 text-center">Changes auto-save as a draft.</p>
+          </div>
+        </aside>
       </div>
     </div>
   );
