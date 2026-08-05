@@ -11,7 +11,7 @@ import ExperienceTaxonomyPicker from '../../components/admin/ExperienceTaxonomyP
 // Global rule: every image upload must be under 5MB.
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-const STEPS = ['Basic info', 'Description', 'B2C pricing', 'Photos'];
+const STEPS = ['Basic info', 'Description', 'Pricing', 'Photos'];
 export const DURATIONS = [{ label: '1 hr', h: 1 }, { label: '2 hrs', h: 2 }, { label: '3 hrs', h: 3 }, { label: '4 hrs', h: 4 }];
 export const FACILITIES = ['Restrooms', 'Parking', 'Locker', 'Wifi', 'Cafe', 'First Aid', 'Changing Room', 'Guide', 'Equipment'];
 export const PRICE_METHODS = [
@@ -29,6 +29,7 @@ const blank = {
   inclusions: [''], facilities: [], nearbyPlaces: [{ name: '', distance: '', unit: 'km' }], faqs: [],
   termsConditions: '', privacyPolicy: '', refundCancellationPolicy: '',
   priceMethod: 'per_person', adultPrice: '', childrenEnabled: false, childBands: [],
+  b2cPriceMethod: 'per_person', b2cAdultPrice: '', b2cChildrenEnabled: false, b2cChildBands: [],
   sourceName: '', sourceLink: '',
   capacity: 8, durationHours: 0, durationMinutes: 0,
   schedule: { dates: [] }, photos: [], videos: [],
@@ -281,27 +282,33 @@ function Step2({ form, patch }) {
 }
 
 /* ---------- Step 3 ---------- */
-function Step3({ form, patch }) {
-  const perDay = form.priceMethod === 'per_day' || form.priceMethod === 'days';
+// One pricing block (method + adult + children bands) bound to a set of form
+// keys, so we can render both B2B (working) and B2C (reference) identically.
+function PriceSection({
+  form, patch, title, hint, methodKey, priceKey, enabledKey, bandsKey,
+}) {
+  const method = form[methodKey];
+  const bands = form[bandsKey] || [];
+  const perDay = method === 'per_day' || method === 'days';
   const addBand = () => {
-    const last = form.childBands[form.childBands.length - 1];
+    const last = bands[bands.length - 1];
     const start = last ? Math.min(14, Number(last.endAge) + 1) : 0;
-    patch({ childBands: [...form.childBands, { startAge: start, endAge: Math.min(14, start + 4), charge: true, price: '' }] });
+    patch({ [bandsKey]: [...bands, { startAge: start, endAge: Math.min(14, start + 4), charge: true, price: '' }] });
   };
-  const setBand = (i, p) => patch({ childBands: form.childBands.map((b, idx) => (idx === i ? { ...b, ...p } : b)) });
+  const setBand = (i, p) => patch({ [bandsKey]: bands.map((b, idx) => (idx === i ? { ...b, ...p } : b)) });
   return (
     <>
       <Card>
-        <h2 className="text-xl font-display font-bold mb-1">Set your B2C price</h2>
-        <Hint>This is the customer-facing reference price. Center Ops sets the B2B price &amp; GST/discount/convenience fee before your listing goes live.</Hint>
+        <h2 className="text-xl font-display font-bold mb-1">{title}</h2>
+        {hint && <Hint>{hint}</Hint>}
         <div className="mt-3" />
         <L>Price method</L>
-        <div className="flex flex-wrap gap-2">{PRICE_METHODS.map((m) => <Chip key={m.value} active={form.priceMethod === m.value} onClick={() => patch({ priceMethod: m.value })}>{m.label}</Chip>)}</div>
+        <div className="flex flex-wrap gap-2">{PRICE_METHODS.map((m) => <Chip key={m.value} active={method === m.value} onClick={() => patch({ [methodKey]: m.value })}>{m.label}</Chip>)}</div>
         <div className="mt-5 max-w-xs">
           <L>Adult price</L>
           <div className="flex items-center border rounded-lg px-3 focus-within:ring-2 focus-within:ring-brand/20">
             <span className="text-ink-muted">₹</span>
-            <input className="flex-1 px-2 py-2.5 outline-none text-sm" value={form.adultPrice} onChange={(e) => patch({ adultPrice: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" />
+            <input className="flex-1 px-2 py-2.5 outline-none text-sm" value={form[priceKey]} onChange={(e) => patch({ [priceKey]: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" />
             <span className="text-xs text-ink-muted">/ {perDay ? 'day' : 'person'}</span>
           </div>
         </div>
@@ -311,14 +318,14 @@ function Step3({ form, patch }) {
         <div className="flex items-center justify-between">
           <L>Add children pricing</L>
           <label className="inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" checked={form.childrenEnabled} onChange={(e) => patch({ childrenEnabled: e.target.checked, childBands: e.target.checked && form.childBands.length === 0 ? [{ startAge: 0, endAge: 5, charge: false, price: '' }] : form.childBands })} />
+            <input type="checkbox" className="sr-only peer" checked={form[enabledKey]} onChange={(e) => patch({ [enabledKey]: e.target.checked, [bandsKey]: e.target.checked && bands.length === 0 ? [{ startAge: 0, endAge: 5, charge: false, price: '' }] : bands })} />
             <div className="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:bg-brand peer-checked:after:translate-x-5 after:content-[''] after:absolute after:mt-0.5 after:ml-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition relative" />
           </label>
         </div>
-        {form.childrenEnabled && (
+        {form[enabledKey] && (
           <div className="mt-3 space-y-3">
             <Hint>Define age bands (years). Turn “Set a price” off to make a band free.</Hint>
-            {form.childBands.map((b, i) => (
+            {bands.map((b, i) => (
               <div key={i} className="bg-surface-alt rounded-xl p-3 flex flex-wrap items-center gap-3">
                 <input type="number" className="win w-20" value={b.startAge} onChange={(e) => setBand(i, { startAge: Number(e.target.value) || 0 })} />
                 <span className="text-ink-muted text-sm">to</span>
@@ -329,13 +336,30 @@ function Step3({ form, patch }) {
                 {b.charge ? (
                   <div className="inline-flex items-center border rounded-lg px-2"><span className="text-ink-muted text-sm">₹</span><input className="w-20 px-1 py-1.5 outline-none text-sm" value={b.price} onChange={(e) => setBand(i, { price: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" /></div>
                 ) : <span className="text-emerald-600 font-semibold text-sm">Free</span>}
-                <button type="button" onClick={() => patch({ childBands: form.childBands.filter((_, idx) => idx !== i) })} className="ml-auto text-red-600"><Trash2 size={15} /></button>
+                <button type="button" onClick={() => patch({ [bandsKey]: bands.filter((_, idx) => idx !== i) })} className="ml-auto text-red-600"><Trash2 size={15} /></button>
               </div>
             ))}
             <button type="button" onClick={addBand} className="text-sm font-semibold text-brand inline-flex items-center gap-1"><Plus size={14} /> Add age band</button>
           </div>
         )}
       </Card>
+    </>
+  );
+}
+
+function Step3({ form, patch }) {
+  return (
+    <>
+      <PriceSection
+        form={form} patch={patch} title="B2B pricing"
+        hint="The working price. Center Ops adds GST/discount/convenience fee on this at go-live — the result is what customers pay in the app."
+        methodKey="priceMethod" priceKey="adultPrice" enabledKey="childrenEnabled" bandsKey="childBands"
+      />
+      <PriceSection
+        form={form} patch={patch} title="B2C pricing"
+        hint="A reference price only — shown to Center Ops at go-live and stored, but not used for booking."
+        methodKey="b2cPriceMethod" priceKey="b2cAdultPrice" enabledKey="b2cChildrenEnabled" bandsKey="b2cChildBands"
+      />
 
       <Card>
         <div className="flex items-center justify-between">

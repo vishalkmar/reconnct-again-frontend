@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Lock, Eye, EyeOff, Building2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, Building2, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -16,6 +16,7 @@ export default function SupplierResetPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   const badLink = !token || !email;
 
@@ -26,14 +27,30 @@ export default function SupplierResetPasswordPage() {
     setBusy(true);
     try {
       await api.post('/supplier/auth/reset-password', { email, token, password });
-      toast.success('Password reset — please sign in');
-      navigate('/supplier/login', { replace: true });
+      setDone(true);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not reset password');
     } finally {
       setBusy(false);
     }
   };
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light/20 via-white to-wellness-light/20 px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mb-6">
+            <CheckCircle2 size={44} />
+          </div>
+          <h1 className="text-2xl font-display font-bold text-ink">Password reset successfully</h1>
+          <p className="text-sm text-ink-muted mt-2">Your new password is set. Please sign in to continue.</p>
+          <button type="button" onClick={() => navigate('/supplier/login', { replace: true })} className="btn-primary w-full max-w-xs mx-auto mt-8">
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light/20 via-white to-wellness-light/20 px-4">

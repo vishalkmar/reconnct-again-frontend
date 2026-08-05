@@ -404,11 +404,19 @@ function ActivityBlock({ index, activity, total, editing, onChange, onRemove }) 
         </div>
       </div>
 
-      {/* B2C pricing — the customer-reference price. The B2B price and GST /
-          discount / convenience fee are set by COPS at go-live. */}
+      {/* B2B pricing — the WORKING price. Center Ops adds GST / discount /
+          convenience fee on top of this at go-live → the final customer price. */}
+      <div className="pt-2 border-t border-gray-100">
+        <h2 className="font-semibold text-lg mb-1">B2B pricing</h2>
+        <p className="text-sm text-ink-muted mb-4">The working price. Center Ops adds GST/discount/convenience fee on this at go-live — the result is what customers pay in the app.</p>
+        <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} />
+      </div>
+
+      {/* B2C pricing — reference only. Shown to Center Ops at go-live and saved
+          in the DB; it does NOT drive booking. */}
       <div className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">B2C pricing</h2>
-        <p className="text-sm text-ink-muted mb-4">The customer-facing reference price. The B2B price &amp; GST/discount/convenience fee are added by Center Ops before it goes live.</p>
+        <p className="text-sm text-ink-muted mb-4">A reference price only — shown to Center Ops at go-live and stored, but not used for booking.</p>
         <ExperiencePricing
           priceMethod={value.b2cPriceMethod}
           pricing={value.b2cPricing}
