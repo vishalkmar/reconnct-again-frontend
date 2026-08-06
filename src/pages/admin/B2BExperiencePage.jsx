@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { StatusPill } from './B2BManagementPage.jsx';
+import { StatusPill, usePaged, Pager } from './B2BManagementPage.jsx';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
@@ -184,6 +184,7 @@ function PricingTab({ p }) {
 
 /* ── Bookings ──────────────────────────────────────────────────────────── */
 function BookingsTab({ bookings, openBk, setOpenBk }) {
+  const paged = usePaged(bookings);
   if (bookings.length === 0) return <Card><Empty>No bookings yet.</Empty></Card>;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
@@ -200,7 +201,7 @@ function BookingsTab({ bookings, openBk, setOpenBk }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {bookings.map((b) => (
+            {paged.slice.map((b) => (
               <Fragment key={b.id}>
                 <tr className="hover:bg-slate-50/70 cursor-pointer" onClick={() => setOpenBk(openBk === b.id ? null : b.id)}>
                   <td className="px-4 py-3 font-medium text-ink">{b.code}</td>
@@ -230,6 +231,7 @@ function BookingsTab({ bookings, openBk, setOpenBk }) {
           </tbody>
         </table>
       </div>
+      <Pager {...paged} />
     </div>
   );
 }

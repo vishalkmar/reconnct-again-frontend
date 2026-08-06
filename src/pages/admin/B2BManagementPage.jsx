@@ -1,14 +1,44 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import {
   Loader2, RotateCcw, IndianRupee, TrendingUp, ArrowLeftRight, Users,
-  Search, ChevronRight, Layers, CalendarDays,
+  Search, ChevronRight, ChevronLeft, Layers, CalendarDays,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+
+/* Pagination — every B2B table caps at 80 rows per page. */
+export const PAGE_SIZE = 80;
+export function usePaged(rows, size = PAGE_SIZE) {
+  const [page, setPage] = useState(1);
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / size));
+  useEffect(() => { if (page > pages) setPage(1); }, [pages, page]);
+  const slice = useMemo(() => rows.slice((page - 1) * size, page * size), [rows, page, size]);
+  return { page, setPage, pages, total, slice };
+}
+export function Pager({ page, pages, total, setPage, size = PAGE_SIZE }) {
+  if (total <= size) return null;
+  const from = (page - 1) * size + 1;
+  const to = Math.min(page * size, total);
+  const btn = 'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium border border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50';
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-sm">
+      <span className="text-ink-muted">{from}–{to} of {total}</span>
+      <div className="flex items-center gap-2">
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)} className={btn}><ChevronLeft size={14} /> Prev</button>
+        <span className="text-ink-muted">Page {page} / {pages}</span>
+        <button disabled={page >= pages} onClick={() => setPage(page + 1)} className={btn}>Next <ChevronRight size={14} /></button>
+      </div>
+    </div>
+  );
+}
 
 export default function B2BManagementPage() {
   const [tab, setTab] = useState('live'); // 'live' | 'tally'
@@ -56,6 +86,7 @@ function LiveList() {
     if (!s) return items;
     return items.filter((r) => `${r.name} ${r.city} ${r.supplier}`.toLowerCase().includes(s));
   }, [items, q]);
+  const paged = usePaged(rows);
 
   if (!items) return <Center><Loader2 className="animate-spin text-brand" /></Center>;
 
@@ -85,7 +116,7 @@ function LiveList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {rows.map((r) => (
+                {paged.slice.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/70 transition">
                     <td className="px-4 py-3">
                       <Link to={`/admin/b2b/${r.id}`} className="flex items-center gap-3 group">
@@ -108,6 +139,7 @@ function LiveList() {
               </tbody>
             </table>
           </div>
+          <Pager {...paged} />
         </div>
       )}
     </>
@@ -116,11 +148,19 @@ function LiveList() {
 
 /* ── Payment tally ─────────────────────────────────────────────────────── */
 const EMPTY = { from: '', to: '', name: '', email: '', supplier: '' };
+const METRICS = {
+  b2b: { label: 'B2B revenue', color: '#3b82f6', money: true },
+  b2c: { label: 'B2C revenue', color: '#22c55e', money: true },
+  difference: { label: 'Difference in B2B & B2C', color: '#a855f7', money: true },
+  bookings: { label: 'Paid bookings', color: '#f59e0b', money: false },
+};
+
 function PaymentTally() {
   const [f, setF] = useState(EMPTY);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('bookings'); // bookings | activity | date
+  const [metric, setMetric] = useState(null); // which card graph is open
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -142,6 +182,15 @@ function PaymentTally() {
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const dirty = Object.values(f).some(Boolean);
 
+  // Graph series — paid bookings rolled up by date, ascending.
+  const graphData = useMemo(() => {
+    const by = data?.byDate || [];
+    return [...by]
+      .filter((r) => r.date)
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+      .map((r) => ({ label: fmtDate(r.date), value: r[metric] || 0 }));
+  }, [data, metric]);
+
   return (
     <>
       {/* Filters */}
@@ -158,13 +207,39 @@ function PaymentTally() {
         )}
       </div>
 
-      {/* Total cards */}
+      {/* Total cards — click to chart the metric over time */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <TotalCard icon={IndianRupee} label="B2B revenue" hint="Base (before go-live extras)" value={rupee(t.b2b)} />
-        <TotalCard icon={TrendingUp} label="B2C revenue" hint="Final — what customers paid" value={rupee(t.b2c)} />
-        <TotalCard icon={ArrowLeftRight} label="Difference in B2B & B2C" hint="B2C − B2B (margin from extras)" value={rupee(t.difference)} accent />
-        <TotalCard icon={Users} label="Paid bookings" hint={`${t.bookings || 0} total`} value={t.paidBookings || 0} plain />
+        <TotalCard mkey="b2b" active={metric === 'b2b'} onClick={setMetric} icon={IndianRupee} label="B2B revenue" hint="Base (before go-live extras)" value={rupee(t.b2b)} />
+        <TotalCard mkey="b2c" active={metric === 'b2c'} onClick={setMetric} icon={TrendingUp} label="B2C revenue" hint="Final — what customers paid" value={rupee(t.b2c)} />
+        <TotalCard mkey="difference" active={metric === 'difference'} onClick={setMetric} icon={ArrowLeftRight} label="Difference in B2B & B2C" hint="B2C − B2B (margin from extras)" value={rupee(t.difference)} accent />
+        <TotalCard mkey="bookings" active={metric === 'bookings'} onClick={setMetric} icon={Users} label="Paid bookings" hint={`${t.bookings || 0} total`} value={t.paidBookings || 0} />
       </div>
+
+      {/* Metric line graph (paid only) */}
+      {metric && (
+        <div className="bg-white rounded-2xl shadow-soft p-5 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="font-semibold text-lg" style={{ color: METRICS[metric].color }}>{METRICS[metric].label}</h2>
+              <p className="text-xs text-ink-muted">Paid bookings, by date</p>
+            </div>
+            <button onClick={() => setMetric(null)} className="text-sm text-ink-muted hover:text-brand">Close ✕</button>
+          </div>
+          {graphData.length === 0 ? (
+            <div className="py-16 text-center text-sm text-ink-muted">No paid bookings in range.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={graphData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => (METRICS[metric].money && v >= 1000 ? `${v / 1000}k` : v)} allowDecimals={!METRICS[metric].money ? false : true} />
+                <Tooltip formatter={(v) => (METRICS[metric].money ? rupee(v) : v)} labelStyle={{ fontWeight: 700 }} />
+                <Line type="monotone" dataKey="value" name={METRICS[metric].label} stroke={METRICS[metric].color} strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
 
       {/* View switch */}
       <div className="flex gap-1 mb-3">
@@ -190,7 +265,8 @@ function PaymentTally() {
 }
 
 function TallyBookings({ rows }) {
-  if (rows.length === 0) return <Center><span className="text-ink-muted text-sm">No bookings for these filters.</span></Center>;
+  const paged = usePaged(rows);
+  if (rows.length === 0) return <Center><span className="text-ink-muted text-sm">No paid bookings for these filters.</span></Center>;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
       <div className="overflow-x-auto">
@@ -207,7 +283,7 @@ function TallyBookings({ rows }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {rows.map((r) => (
+            {paged.slice.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50/70">
                 <td className="px-4 py-3">
                   <div className="font-medium text-ink">{r.code}</div>
@@ -227,11 +303,13 @@ function TallyBookings({ rows }) {
           </tbody>
         </table>
       </div>
+      <Pager {...paged} />
     </div>
   );
 }
 
 function GroupTable({ rows, keyLabel, keyField, isDate }) {
+  const paged = usePaged(rows);
   if (rows.length === 0) return <Center><span className="text-ink-muted text-sm">Nothing to show.</span></Center>;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
@@ -247,7 +325,7 @@ function GroupTable({ rows, keyLabel, keyField, isDate }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {rows.map((r, i) => (
+            {paged.slice.map((r, i) => (
               <tr key={i} className="hover:bg-slate-50/70">
                 <td className="px-4 py-3 font-medium text-ink">{isDate ? fmtDate(r[keyField]) : r[keyField]}</td>
                 <td className="px-4 py-3 text-right text-ink-muted">{r.bookings}</td>
@@ -259,6 +337,7 @@ function GroupTable({ rows, keyLabel, keyField, isDate }) {
           </tbody>
         </table>
       </div>
+      <Pager {...paged} />
     </div>
   );
 }
@@ -274,16 +353,18 @@ function Diff({ v }) {
   const up = Number(v) >= 0;
   return <span className={up ? 'text-emerald-600' : 'text-rose-600'}>{up ? '+' : '−'}{rupee(Math.abs(v))}</span>;
 }
-function TotalCard({ icon: Icon, label, hint, value, accent, plain }) {
+function TotalCard({ mkey, onClick, active, icon: Icon, label, hint, value, accent }) {
   return (
-    <div className={`rounded-2xl shadow-soft p-5 ${accent ? 'bg-ink text-white' : 'bg-white'}`}>
+    <button type="button" onClick={() => onClick(active ? null : mkey)}
+      className={`text-left rounded-2xl shadow-soft p-5 transition ring-2 ${active ? 'ring-brand' : 'ring-transparent hover:ring-slate-200'} ${accent ? 'bg-ink text-white' : 'bg-white'}`}>
       <div className="flex items-start justify-between">
         <div className={`text-sm ${accent ? 'text-white/70' : 'text-ink-muted'}`}>{label}</div>
-        <Icon size={18} className={accent ? 'text-brand' : 'text-brand'} />
+        <Icon size={18} className="text-brand" />
       </div>
-      <div className={`mt-2 text-2xl font-bold ${accent ? 'text-white' : 'text-ink'}`}>{plain ? value : value}</div>
+      <div className={`mt-2 text-2xl font-bold ${accent ? 'text-white' : 'text-ink'}`}>{value}</div>
       {hint && <div className={`text-[11px] mt-1 ${accent ? 'text-white/60' : 'text-ink-muted'}`}>{hint}</div>}
-    </div>
+      <div className={`text-[10px] mt-2 font-semibold ${accent ? 'text-brand' : 'text-brand'}`}>{active ? 'Hide graph' : 'View graph →'}</div>
+    </button>
   );
 }
 export function StatusPill({ s }) {
