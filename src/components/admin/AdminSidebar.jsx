@@ -15,6 +15,7 @@ import {
   Star,
   ShieldCheck,
   ChevronDown,
+  Handshake,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -25,6 +26,7 @@ const mainItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarIcon },
   { to: '/admin/revenue', label: 'Revenue', icon: LineChart },
+  { to: '/admin/b2b', label: 'B2B Management', icon: Handshake },
   { to: '/admin/reviews', label: 'Review Management', icon: Star },
   {
     label: 'Experiences',
