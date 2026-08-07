@@ -127,10 +127,10 @@ export default function RevenuePage() {
           <p className="text-sm text-ink-muted">Which experiences earn, when, and where — with abandoned-booking insight.</p>
         </div>
         <Link
-          to="/admin/reviews/analytics"
+          to="/admin/revenue/analysis"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90 transition"
         >
-          <BarChart3 size={16} /> View analysis of Review and rating
+          <BarChart3 size={16} /> View Detailed Revenue Analysis
         </Link>
       </div>
 

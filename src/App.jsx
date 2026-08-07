@@ -58,6 +58,7 @@ import ContractFormPage from './pages/admin/ContractFormPage.jsx';
 import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
 import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
 import RevenuePage from './pages/admin/RevenuePage.jsx';
+import RevenueAnalysisPage from './pages/admin/RevenueAnalysisPage.jsx';
 import B2BManagementPage from './pages/admin/B2BManagementPage.jsx';
 import B2BExperiencePage from './pages/admin/B2BExperiencePage.jsx';
 import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
@@ -201,6 +202,7 @@ export default function App() {
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="transactions" element={<AdminTransactionsPage />} />
           <Route path="revenue" element={<RevenuePage />} />
+          <Route path="revenue/analysis" element={<RevenueAnalysisPage />} />
           <Route path="b2b" element={<B2BManagementPage />} />
           <Route path="b2b/:id" element={<B2BExperiencePage />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
