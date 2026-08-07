@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import DatePicker from '../../components/common/DatePicker.jsx';
+import { PERIOD_OPTIONS, rangeForPeriod } from '../../utils/datePresets.js';
 import { fmtMoney, fmtDate, fmtDateTime } from '../../components/user/bookingFormatters.js';
 
 const PAGE_SIZES = [25, 50, 100];
@@ -28,7 +29,7 @@ const BOOKING_FILTER_OPTIONS = [
 
 export default function AdminUsersPage() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({ q: '', from: '', to: '', hasBookings: '', sort: 'newest' });
+  const [filters, setFilters] = useState({ q: '', period: '', from: '', to: '', hasBookings: '', sort: 'newest' });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [data, setData] = useState(null);
@@ -38,7 +39,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     try {
       const params = { page, limit };
-      Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
+      Object.entries(filters).forEach(([k, v]) => { if (v && k !== 'period') params[k] = v; });
       const res = await api.get('/admin/users', { params });
       setData(res.data?.data || null);
     } catch (err) {
@@ -54,8 +55,13 @@ export default function AdminUsersPage() {
     setFilters((p) => ({ ...p, [key]: value }));
     setPage(1);
   };
+  // A period preset drives the joined-from/to range; 'custom' leaves the pickers editable.
+  const setPeriod = (value) => {
+    setFilters((p) => (value && value !== 'custom' ? { ...p, period: value, ...rangeForPeriod(value) } : { ...p, period: value }));
+    setPage(1);
+  };
   const resetFilters = () => {
-    setFilters({ q: '', from: '', to: '', hasBookings: '', sort: 'newest' });
+    setFilters({ q: '', period: '', from: '', to: '', hasBookings: '', sort: 'newest' });
     setPage(1);
   };
 
@@ -111,7 +117,15 @@ export default function AdminUsersPage() {
           >
             {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <div className="grid grid-cols-2 gap-2 lg:col-span-2">
+          <select
+            value={filters.period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none"
+            aria-label="Joined period"
+          >
+            {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.value === '' ? 'Joined: all time' : o.label}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
             <DatePicker
               value={filters.from}
               onChange={(iso) => updateFilter('from', iso)}

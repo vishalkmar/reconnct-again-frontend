@@ -2,10 +2,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus, Pencil, Eye, EyeOff, Trash2, Loader2, Search, Truck, Mail, Phone,
+  Users as UsersIcon, CheckCircle2, XCircle, UserCog,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import ContractsList from '../../components/admin/ContractsList.jsx';
+import { PERIOD_OPTIONS, rangeForPeriod } from '../../utils/datePresets.js';
 
 export default function SuppliersPage() {
   const [params, setParams] = useSearchParams();
@@ -45,6 +47,8 @@ function SupplierListPanel() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [period, setPeriod] = useState('');
+  const [statusF, setStatusF] = useState(''); // '' | 'active' | 'disabled' | 'kam'
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -71,19 +75,49 @@ function SupplierListPanel() {
     catch (e) { toast.error(e.response?.data?.message || 'Failed'); }
   };
 
-  const filtered = items.filter((s) => {
-    if (!q.trim()) return true;
+  const range = period === 'custom' ? { from: '', to: '' } : rangeForPeriod(period);
+  const inRange = (s) => {
+    if (!range.from && !range.to) return true;
+    const d = (s.createdAt || '').slice(0, 10);
+    if (!d) return true;
+    if (range.from && d < range.from) return false;
+    if (range.to && d > range.to) return false;
+    return true;
+  };
+  // Search + date scope drives both the stat cards and the table.
+  const base = items.filter((s) => {
     const t = q.trim().toLowerCase();
-    return s.companyName?.toLowerCase().includes(t) || s.supplierName?.toLowerCase().includes(t) || s.email?.toLowerCase().includes(t);
+    const matchQ = !t || s.companyName?.toLowerCase().includes(t) || s.supplierName?.toLowerCase().includes(t) || s.email?.toLowerCase().includes(t);
+    return matchQ && inRange(s);
   });
+  const activeN = base.filter((s) => s.isActive).length;
+  const disabledN = base.length - activeN;
+  const kamN = base.filter((s) => s.accountManagerId).length;
+  const filtered = base.filter((s) => (
+    statusF === 'active' ? s.isActive : statusF === 'disabled' ? !s.isActive : statusF === 'kam' ? s.accountManagerId : true
+  ));
 
   return (
     <div>
+      {/* Stat cards — click to filter the list */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <SupStat icon={UsersIcon} label="Suppliers" value={base.length} active={!statusF} onClick={() => setStatusF('')} tint="text-blue-600 bg-blue-50" ring="ring-blue-300" />
+        <SupStat icon={CheckCircle2} label="Active" value={activeN} active={statusF === 'active'} onClick={() => setStatusF(statusF === 'active' ? '' : 'active')} tint="text-emerald-600 bg-emerald-50" ring="ring-emerald-300" />
+        <SupStat icon={XCircle} label="Disabled" value={disabledN} active={statusF === 'disabled'} onClick={() => setStatusF(statusF === 'disabled' ? '' : 'disabled')} tint="text-rose-600 bg-rose-50" ring="ring-rose-300" />
+        <SupStat icon={UserCog} label="With account manager" value={kamN} active={statusF === 'kam'} onClick={() => setStatusF(statusF === 'kam' ? '' : 'kam')} tint="text-purple-600 bg-purple-50" ring="ring-purple-300" />
+      </div>
+
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, name, email…"
-            className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-full sm:w-72">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, name, email…"
+              className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+          </div>
+          <select value={period} onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            {PERIOD_OPTIONS.filter((o) => o.value !== 'custom').map((o) => <option key={o.value} value={o.value}>{o.value === '' ? 'Joined: all time' : o.label}</option>)}
+          </select>
         </div>
         <Link to="/admin/suppliers/new" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105">
           <Plus size={18} /> New supplier
@@ -145,6 +179,19 @@ function SupplierListPanel() {
         </div>
       )}
     </div>
+  );
+}
+
+function SupStat({ icon: Icon, label, value, active, onClick, tint, ring }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`bg-white rounded-2xl shadow-soft p-3.5 flex items-center gap-3 text-left transition ring-2 ${active ? ring : 'ring-transparent'} hover:shadow-md`}>
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${tint} shrink-0`}><Icon size={20} /></div>
+      <div className="min-w-0">
+        <div className="text-xs text-ink-muted truncate">{label}</div>
+        <div className="text-xl font-bold text-ink">{value}</div>
+      </div>
+    </button>
   );
 }
 

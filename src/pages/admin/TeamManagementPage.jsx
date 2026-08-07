@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Plus, Loader2, Users, ShieldCheck, ShieldOff, KeyRound, X, Gauge, Check,
+  Briefcase, UserCog, Headphones, Megaphone, Layers, Truck, UserCheck, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -12,6 +14,17 @@ const ROLE_BADGE = {
   csm: 'bg-emerald-50 text-emerald-700',
   qcops: 'bg-rose-50 text-rose-700',
   marketing_manager: 'bg-pink-50 text-pink-700',
+};
+
+// Icon + tint per role for the stat cards (colours mirror the row badges).
+const ROLE_META = {
+  bd: { icon: Briefcase, tint: 'text-amber-600 bg-amber-50', ring: 'ring-amber-300' },
+  cops: { icon: UserCog, tint: 'text-blue-600 bg-blue-50', ring: 'ring-blue-300' },
+  qcops: { icon: ShieldCheck, tint: 'text-rose-600 bg-rose-50', ring: 'ring-rose-300' },
+  account_manager: { icon: Gauge, tint: 'text-purple-600 bg-purple-50', ring: 'ring-purple-300' },
+  csm: { icon: Headphones, tint: 'text-emerald-600 bg-emerald-50', ring: 'ring-emerald-300' },
+  marketing_manager: { icon: Megaphone, tint: 'text-pink-600 bg-pink-50', ring: 'ring-pink-300' },
+  category_manager: { icon: Layers, tint: 'text-indigo-600 bg-indigo-50', ring: 'ring-indigo-300' },
 };
 
 // A KAM's supplier cap is both defaulted to and floored at 20 — the server
@@ -35,6 +48,8 @@ export default function TeamManagementPage() {
   const [loading, setLoading] = useState(true);
   const [modalMember, setModalMember] = useState(null); // null = closed, {} = create, {...} = edit
   const [kamManage, setKamManage] = useState(null); // null | the KAM row being managed
+  const [supplierCount, setSupplierCount] = useState(null);
+  const [filter, setFilter] = useState(null); // null | roleType | 'active' | 'disabled'
   const roleLabel = (v) => roles.find((r) => r.value === v)?.label || v;
 
   const load = useCallback(async () => {
@@ -55,6 +70,24 @@ export default function TeamManagementPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Supplier headcount for its own stat card (links to the Suppliers module).
+  useEffect(() => {
+    api.get('/suppliers').then((res) => {
+      const list = res.data?.data?.items || res.data?.data?.suppliers || res.data?.data || [];
+      setSupplierCount(Array.isArray(list) ? list.length : null);
+    }).catch(() => {});
+  }, []);
+
+  const countByRole = (v) => members.filter((m) => m.roleType === v).length;
+  const activeCount = members.filter((m) => m.isActive).length;
+  const filtered = !filter ? members
+    : filter === 'active' ? members.filter((m) => m.isActive)
+      : filter === 'disabled' ? members.filter((m) => !m.isActive)
+        : members.filter((m) => m.roleType === filter);
+  // Roles that actually have members lead; the rest still show (count 0) so the
+  // admin sees the full org at a glance.
+  const roleCards = roles.filter((r) => ROLE_META[r.value]);
 
   const toggleActive = async (m) => {
     try {
@@ -88,6 +121,32 @@ export default function TeamManagementPage() {
           <p className="text-sm text-ink-muted mt-1">Add your first internal staff account.</p>
         </div>
       ) : (
+        <>
+        {/* Stat cards — click to filter the list; Suppliers opens its module. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+          <StatCard icon={Users} label="Total team" value={members.length} active={!filter} onClick={() => setFilter(null)} tint="text-slate-700 bg-slate-100" ring="ring-slate-300" />
+          <StatCard icon={UserCheck} label="Active" value={activeCount} active={filter === 'active'} onClick={() => setFilter(filter === 'active' ? null : 'active')} tint="text-emerald-600 bg-emerald-50" ring="ring-emerald-300" />
+          {roleCards.map((r) => {
+            const meta = ROLE_META[r.value];
+            return (
+              <StatCard key={r.value} icon={meta.icon} label={r.label} value={countByRole(r.value)}
+                active={filter === r.value} onClick={() => setFilter(filter === r.value ? null : r.value)}
+                tint={meta.tint} ring={meta.ring} />
+            );
+          })}
+          <StatCard icon={Truck} label="Suppliers" value={supplierCount == null ? '—' : supplierCount} to="/admin/suppliers" tint="text-blue-600 bg-blue-50" ring="ring-blue-300" />
+        </div>
+
+        {filter && (
+          <div className="flex items-center gap-2 mb-3 text-sm">
+            <span className="text-ink-muted">Showing:</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 text-ink font-semibold">
+              {filter === 'active' ? 'Active' : filter === 'disabled' ? 'Disabled' : roleLabel(filter)} ({filtered.length})
+              <button onClick={() => setFilter(null)} className="hover:text-brand"><X size={13} /></button>
+            </span>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
           <div className="hidden md:grid grid-cols-12 px-5 py-3 bg-surface-alt text-[11px] font-bold uppercase tracking-wider text-ink-muted">
             <div className="col-span-4">Name</div>
@@ -97,7 +156,8 @@ export default function TeamManagementPage() {
             <div className="col-span-2 text-right">Actions</div>
           </div>
           <ul className="divide-y divide-slate-100">
-            {members.map((m) => (
+            {filtered.length === 0 && <li className="px-5 py-8 text-center text-sm text-ink-muted">No team members in this filter.</li>}
+            {filtered.map((m) => (
               <li key={m.id} className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center">
                 <div className="col-span-12 md:col-span-4 min-w-0">
                   <div className="font-semibold text-ink truncate">{m.name}</div>
@@ -129,6 +189,7 @@ export default function TeamManagementPage() {
             ))}
           </ul>
         </div>
+        </>
       )}
 
       {modalMember && (
@@ -256,6 +317,23 @@ function KamManageModal({ member, onClose, onSaved }) {
       </div>
     </div>
   );
+}
+
+// Clickable stat card — either filters the list (onClick) or links out (to).
+function StatCard({ icon: Icon, label, value, active, onClick, to, tint, ring }) {
+  const inner = (
+    <>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tint} shrink-0`}><Icon size={18} /></div>
+      <div className="min-w-0">
+        <div className="text-[11px] text-ink-muted truncate">{label}</div>
+        <div className="text-xl font-bold text-ink leading-tight">{value}</div>
+      </div>
+      {to && <ChevronRight size={15} className="text-ink-muted ml-auto" />}
+    </>
+  );
+  const cls = `bg-white rounded-2xl shadow-soft p-3.5 flex items-center gap-3 transition text-left ring-2 ${active ? ring : 'ring-transparent'} hover:shadow-md`;
+  if (to) return <Link to={to} className={cls}>{inner}</Link>;
+  return <button type="button" onClick={onClick} className={cls}>{inner}</button>;
 }
 
 function IconBtn({ title, onClick, children, danger }) {

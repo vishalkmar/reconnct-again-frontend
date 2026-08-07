@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import AdminBookingDetailsModal from '../../components/admin/AdminBookingDetailsModal.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
+import { PERIOD_OPTIONS, rangeForPeriod, PRICE_RANGES } from '../../utils/datePresets.js';
 import {
   TYPE_LABEL, fmtMoney, fmtDateTime,
 } from '../../components/user/bookingFormatters.js';
@@ -16,20 +17,35 @@ const PAGE_SIZES = [25, 50, 100];
 // Admin transactions page — same backing endpoint as Bookings but always
 // filtered to paid rows so it reads like a finance ledger.
 export default function AdminTransactionsPage() {
-  const [filters, setFilters] = useState({ q: '', from: '', to: '' });
+  const [filters, setFilters] = useState({ q: '', period: '', from: '', to: '', category: '', activityId: '', priceIdx: 0 });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [uni, setUni] = useState({ categories: [], experiences: [] });
+
+  // Filter universes (categories + experiences) from the analysis endpoint.
+  useEffect(() => {
+    const now = new Date(); const y = now.getFullYear();
+    api.get('/admin/analytics/revenue-analysis', { params: { start: `${y - 1}-01-01`, end: `${y}-12-31` } })
+      .then((r) => setUni(r.data?.data?.filters || { categories: [], experiences: [] })).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page, limit, paidOnly: true };
       if (filters.q) params.q = filters.q;
-      if (filters.from) params.from = filters.from;
-      if (filters.to) params.to = filters.to;
+      // Payment-date range from the period preset (or a custom range).
+      const range = filters.period === 'custom' ? { from: filters.from, to: filters.to } : rangeForPeriod(filters.period);
+      if (range.from) params.paidFrom = range.from;
+      if (range.to) params.paidTo = range.to;
+      if (filters.category) params.category = filters.category;
+      if (filters.activityId) params.itemId = filters.activityId;
+      const pr = PRICE_RANGES[filters.priceIdx];
+      if (pr && pr.min !== '') params.priceMin = pr.min;
+      if (pr && pr.max !== '') params.priceMax = pr.max;
       const res = await api.get('/admin/bookings', { params });
       setData(res.data?.data || null);
     } catch (err) {
@@ -85,9 +101,9 @@ export default function AdminTransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-soft p-4 mb-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="relative lg:col-span-2">
+      <div className="bg-white rounded-2xl shadow-soft p-4 mb-5 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="relative lg:col-span-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
               type="text"
@@ -97,24 +113,31 @@ export default function AdminTransactionsPage() {
               className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none"
             />
           </div>
-          <DatePicker
-            value={filters.from}
-            onChange={(iso) => updateFilter('from', iso)}
-            placeholder="From"
-            compact
-            size="sm"
-            ariaLabel="From date"
-          />
-          <DatePicker
-            value={filters.to}
-            min={filters.from || undefined}
-            onChange={(iso) => updateFilter('to', iso)}
-            placeholder="To"
-            compact
-            size="sm"
-            ariaLabel="To date"
-          />
+          <select value={filters.period} onChange={(e) => updateFilter('period', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <select value={filters.priceIdx} onChange={(e) => updateFilter('priceIdx', Number(e.target.value))}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            {PRICE_RANGES.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
+          </select>
+          <select value={filters.category} onChange={(e) => updateFilter('category', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            <option value="">All categories</option>
+            {(uni.categories || []).map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={filters.activityId} onChange={(e) => updateFilter('activityId', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none lg:col-span-2">
+            <option value="">All activities</option>
+            {(uni.experiences || []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
         </div>
+        {filters.period === 'custom' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+            <DatePicker value={filters.from} onChange={(v) => updateFilter('from', v)} placeholder="From" compact size="sm" ariaLabel="From date" />
+            <DatePicker value={filters.to} min={filters.from || undefined} onChange={(v) => updateFilter('to', v)} placeholder="To" compact size="sm" ariaLabel="To date" />
+          </div>
+        )}
       </div>
 
       {/* Ledger table */}
