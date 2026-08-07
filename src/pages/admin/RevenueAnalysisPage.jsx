@@ -7,7 +7,7 @@ import {
 import {
   Loader2, ArrowLeft, RotateCcw, Download, Printer, IndianRupee, TrendingUp, TrendingDown,
   ArrowUpRight, ArrowDownRight, Wallet, Percent, Users, Receipt, Undo2, AlertTriangle,
-  Trophy, Target, Sparkles, Building2, MapPin, Layers, ChevronRight,
+  Trophy, Target, Sparkles, Building2, MapPin, Layers, ChevronRight, GitCompare,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -109,6 +109,7 @@ export default function RevenueAnalysisPage() {
           <p className="text-sm text-ink-muted">Why the numbers moved — trends, margins, funnel leakage, suppliers, cities & customers.</p>
         </div>
         <div className="no-print flex items-center gap-2">
+          <Link to="/admin/revenue/compare" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-ink text-sm font-semibold hover:brightness-105"><GitCompare size={15} /> Compare</Link>
           <button onClick={exportCsv} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white shadow-soft text-sm font-semibold hover:text-brand"><Download size={15} /> Export CSV</button>
           <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90"><Printer size={15} /> Print / PDF</button>
         </div>
