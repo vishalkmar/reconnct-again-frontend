@@ -43,6 +43,7 @@ import BookingSuccessPage from './pages/user/BookingSuccessPage.jsx';
 import AdminLoginPage from './pages/admin/AdminLoginPage.jsx';
 import DashboardPage from './pages/admin/DashboardPage.jsx';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage.jsx';
+import AdminBookingAnalyticsPage from './pages/admin/AdminBookingAnalyticsPage.jsx';
 import AdminTransactionsPage from './pages/admin/AdminTransactionsPage.jsx';
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import AdminUserDetailPage from './pages/admin/AdminUserDetailPage.jsx';
@@ -199,6 +200,7 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
+          <Route path="bookings/analytics" element={<AdminBookingAnalyticsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="transactions" element={<AdminTransactionsPage />} />

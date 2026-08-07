@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Search, Loader2, ChevronLeft, ChevronRight, Filter, Calendar as CalendarIcon,
-  TrendingUp, CheckCircle2, XCircle, Hash, Clock,
+  TrendingUp, CheckCircle2, XCircle, Hash, Clock, BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import AdminBookingDetailsModal from '../../components/admin/AdminBookingDetailsModal.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
+import { PERIOD_OPTIONS, rangeForPeriod } from '../../utils/datePresets.js';
 import {
   TYPE_LABEL, STATUS_BADGE, fmtMoney, fmtDate,
 } from '../../components/user/bookingFormatters.js';
@@ -32,23 +34,35 @@ const PAGE_SIZES = [25, 50, 100];
 
 export default function AdminBookingsPage() {
   const [filters, setFilters] = useState({
-    q: '',
-    status: '',
-    itemType: '',
-    from: '',
-    to: '',
+    q: '', status: '', itemType: '', period: '', from: '', to: '', category: '', activityId: '',
   });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [uni, setUni] = useState({ categories: [], experiences: [] });
+
+  // Category + activity universes for the dropdowns.
+  useEffect(() => {
+    const now = new Date(); const y = now.getFullYear();
+    api.get('/admin/analytics/revenue-analysis', { params: { start: `${y - 1}-01-01`, end: `${y}-12-31` } })
+      .then((r) => setUni(r.data?.data?.filters || { categories: [], experiences: [] })).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page, limit };
-      Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
+      if (filters.q) params.q = filters.q;
+      if (filters.status) params.status = filters.status;
+      if (filters.itemType) params.itemType = filters.itemType;
+      if (filters.category) params.category = filters.category;
+      if (filters.activityId) params.itemId = filters.activityId;
+      // Period preset (or custom) → scheduled-date range.
+      const range = filters.period === 'custom' ? { from: filters.from, to: filters.to } : rangeForPeriod(filters.period);
+      if (range.from) params.from = range.from;
+      if (range.to) params.to = range.to;
       const res = await api.get('/admin/bookings', { params });
       setData(res.data?.data || null);
     } catch (err) {
@@ -68,9 +82,13 @@ export default function AdminBookingsPage() {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
   };
+  const setPeriod = (value) => {
+    setFilters((p) => (value && value !== 'custom' ? { ...p, period: value, ...rangeForPeriod(value) } : { ...p, period: value }));
+    setPage(1);
+  };
 
   const resetFilters = () => {
-    setFilters({ q: '', status: '', itemType: '', from: '', to: '' });
+    setFilters({ q: '', status: '', itemType: '', period: '', from: '', to: '', category: '', activityId: '' });
     setPage(1);
   };
 
@@ -97,9 +115,14 @@ export default function AdminBookingsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">Bookings</h1>
-        <p className="text-ink-muted text-sm">Every booking across the platform, with full traveller and payment details.</p>
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-display font-bold mb-1">Bookings</h1>
+          <p className="text-ink-muted text-sm">Every booking across the platform, with full traveller and payment details.</p>
+        </div>
+        <Link to="/admin/bookings/analytics" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90">
+          <BarChart3 size={16} /> Booking analytics
+        </Link>
       </div>
 
       {/* Stat strip */}
@@ -116,7 +139,7 @@ export default function AdminBookingsPage() {
         <div className="flex items-center gap-2 text-sm font-semibold text-ink-muted mb-3">
           <Filter size={14} /> Filters
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="relative lg:col-span-2">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
@@ -127,41 +150,36 @@ export default function AdminBookingsPage() {
               className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none"
             />
           </div>
-          <select
-            value={filters.status}
-            onChange={(e) => updateFilter('status', e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none"
-          >
+          <select value={filters.period} onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.value === '' ? 'Any date' : o.label}</option>)}
+          </select>
+          <select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <select
-            value={filters.itemType}
-            onChange={(e) => updateFilter('itemType', e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none"
-          >
+          <select value={filters.itemType} onChange={(e) => updateFilter('itemType', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
             {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <div className="grid grid-cols-2 gap-2">
-            <DatePicker
-              value={filters.from}
-              onChange={(iso) => updateFilter('from', iso)}
-              placeholder="From"
-              compact
-              size="sm"
-              ariaLabel="Scheduled from"
-            />
-            <DatePicker
-              value={filters.to}
-              min={filters.from || undefined}
-              onChange={(iso) => updateFilter('to', iso)}
-              placeholder="To"
-              compact
-              size="sm"
-              ariaLabel="Scheduled to"
-            />
-          </div>
+          <select value={filters.category} onChange={(e) => updateFilter('category', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none">
+            <option value="">All categories</option>
+            {(uni.categories || []).map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={filters.activityId} onChange={(e) => updateFilter('activityId', e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:border-brand outline-none lg:col-span-2">
+            <option value="">All activities</option>
+            {(uni.experiences || []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
         </div>
-        {(filters.q || filters.status || filters.itemType || filters.from || filters.to) && (
+        {filters.period === 'custom' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mt-3">
+            <DatePicker value={filters.from} onChange={(v) => updateFilter('from', v)} placeholder="From" compact size="sm" ariaLabel="Scheduled from" />
+            <DatePicker value={filters.to} min={filters.from || undefined} onChange={(v) => updateFilter('to', v)} placeholder="To" compact size="sm" ariaLabel="Scheduled to" />
+          </div>
+        )}
+        {(filters.q || filters.status || filters.itemType || filters.period || filters.category || filters.activityId) && (
           <div className="mt-3 text-right">
             <button
               type="button"

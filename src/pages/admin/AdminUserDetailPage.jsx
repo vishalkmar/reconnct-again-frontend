@@ -4,7 +4,7 @@ import {
   ArrowLeft, Loader2, User as UserIcon, Calendar, CreditCard, FileText,
   Wallet, Mail, Settings, BadgeCheck, Power, ExternalLink, Copy, Gift,
   TrendingUp, CheckCircle2, Hourglass, XCircle, ChevronRight, Send,
-  Tag, Phone, MapPin, RefreshCcw, Sparkles, Users as UsersIcon,
+  Tag, Phone, MapPin, RefreshCcw, Sparkles, Users as UsersIcon, Heart, MapPin as MapPinIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -27,8 +27,7 @@ const TABS = [
   { id: 'bookings',  label: 'Bookings',     icon: Calendar },
   { id: 'payments',  label: 'Payments',     icon: CreditCard },
   { id: 'vouchers',  label: 'Vouchers',     icon: FileText },
-  { id: 'wallet',    label: 'Wallet',       icon: Wallet },
-  { id: 'referrals', label: 'Refer & Earn', icon: Gift },
+  { id: 'wishlist',  label: 'Wishlist',     icon: Heart },
   { id: 'email',     label: 'Send Email',   icon: Mail },
   { id: 'settings',  label: 'Actions',      icon: Settings },
 ];
@@ -177,8 +176,7 @@ export default function AdminUserDetailPage() {
           {tab === 'bookings'  && <BookingsTab bookings={data.bookings} onOpenBooking={openBooking} />}
           {tab === 'payments'  && <PaymentsTab bookings={data.bookings} stats={stats} />}
           {tab === 'vouchers'  && <VouchersTab vouchers={data.vouchers} />}
-          {tab === 'wallet'    && <WalletTab wallet={data.wallet} balance={stats.walletBalance} />}
-          {tab === 'referrals' && <ReferralsTab user={user} referees={data.referees} coupons={data.coupons} />}
+          {tab === 'wishlist'  && <WishlistTab wishlist={data.wishlist} />}
           {tab === 'email'     && <EmailTab user={user} />}
           {tab === 'settings'  && <SettingsTab user={user} onReload={load} />}
         </div>
@@ -537,6 +535,51 @@ function VouchersTab({ vouchers = [] }) {
           </button>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ───────────── Wishlist ─────────────
+function WishlistTab({ wishlist = [] }) {
+  if (wishlist.length === 0) {
+    return (
+      <div className="text-sm text-ink-muted bg-surface-alt/40 rounded-xl p-8 text-center">
+        <Heart size={26} className="mx-auto mb-2 text-ink-muted/60" />
+        This user hasn’t wishlisted anything yet.
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4 text-sm text-ink-muted">
+        <Heart size={15} className="text-rose-500 fill-rose-500" />
+        <span>{wishlist.length} saved item{wishlist.length === 1 ? '' : 's'} — updates live as the user adds or removes them.</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {wishlist.map((w, i) => (
+          <div key={i} className="rounded-2xl border border-slate-100 overflow-hidden bg-white hover:shadow-md transition group">
+            <div className="relative h-32 bg-slate-100">
+              {w.image ? (
+                <img src={fileUrl(w.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.visibility = 'hidden'; }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-ink-muted"><Heart size={26} /></div>
+              )}
+              <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow"><Heart size={15} className="text-rose-500 fill-rose-500" /></span>
+              {w.live === false && <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-slate-900/70 text-white text-[10px] font-semibold">Not live</span>}
+            </div>
+            <div className="p-3">
+              <div className="font-semibold text-ink text-sm truncate">{w.name}</div>
+              <div className="text-[11px] text-ink-muted flex items-center gap-1 mt-0.5">
+                {w.city && <><MapPinIcon size={11} /> {w.city} · </>}<span className="capitalize">{w.entityType}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-sm font-bold text-brand">{w.price != null ? fmtMoney(w.price) : '—'}</span>
+                <span className="text-[10px] text-ink-muted">Saved {fmtDate(w.addedAt)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
