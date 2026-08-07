@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  CalendarDays, Clock, Plus, Trash2, X, Check, Layers,
+  CalendarDays, Clock, Plus, Trash2, X, Check, Layers, ChevronDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -88,6 +88,11 @@ export default function ExperienceScheduling({ value = {}, onChange, durationMin
   const [calOpen, setCalOpen] = useState(false);
   const [slotDate, setSlotDate] = useState(null); // date string currently editing slots for
   const [bulkOpen, setBulkOpen] = useState(false);
+  // Month accordions — collapsed by default (first month open) so a long
+  // multi-month schedule stays short. `key in openMonths` overrides the default.
+  const [openMonths, setOpenMonths] = useState({});
+  const isMonthOpen = (key, i) => (key in openMonths ? openMonths[key] : i === 0);
+  const toggleMonthOpen = (key, i) => setOpenMonths((o) => ({ ...o, [key]: !isMonthOpen(key, i) }));
 
   const setDates = (next) => onChange({ ...value, dates: next });
 
@@ -151,34 +156,45 @@ export default function ExperienceScheduling({ value = {}, onChange, durationMin
           {slotMode === 'dynamic' && (
             <p className="text-xs text-ink-muted italic">Dynamic mode — use “Manage Slots” above to apply a slot set to every date at once, or edit a single date below.</p>
           )}
-          {byMonth.map(([key, rows]) => {
+          {byMonth.map(([key, rows], i) => {
             const [y, m] = key.split('-').map(Number);
+            const open = isMonthOpen(key, i);
+            const mSlots = rows.reduce((n, d) => n + (d.slots?.length || 0), 0);
             return (
               <div key={key} className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="bg-surface-alt px-4 py-2 font-semibold text-sm">{MONTHS[m - 1]} {y}</div>
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-slate-100">
-                    {rows.map((d) => (
-                      <tr key={d.date}>
-                        <td className="px-4 py-2.5 font-medium text-ink whitespace-nowrap">{fmtDate(d.date)}</td>
-                        <td className="px-4 py-2.5 text-ink-muted">
-                          {d.slots?.length
-                            ? d.slots.map((s) => `${fmtTime(s.start)}–${fmtTime(s.end)}`).join(', ')
-                            : <span className="italic text-amber-600">No slots yet</span>}
-                        </td>
-                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                          <button type="button" onClick={() => setSlotDate(d.date)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline mr-3">
-                            <Clock size={13} /> Manage slots{d.slots?.length ? ` (${d.slots.length})` : ''}
-                          </button>
-                          <button type="button" onClick={() => removeDate(d.date)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg">
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <button type="button" onClick={() => toggleMonthOpen(key, i)}
+                  className="w-full flex items-center justify-between gap-3 bg-surface-alt px-4 py-2.5 text-left hover:brightness-95 transition">
+                  <span className="flex items-center gap-2 font-semibold text-sm">
+                    <ChevronDown size={16} className={`transition-transform ${open ? '' : '-rotate-90'}`} />
+                    {MONTHS[m - 1]} {y}
+                  </span>
+                  <span className="text-xs text-ink-muted">{rows.length} date{rows.length > 1 ? 's' : ''} · {mSlots} slot{mSlots !== 1 ? 's' : ''}</span>
+                </button>
+                {open && (
+                  <table className="w-full text-sm border-t border-gray-200">
+                    <tbody className="divide-y divide-slate-100">
+                      {rows.map((d) => (
+                        <tr key={d.date}>
+                          <td className="px-4 py-2.5 font-medium text-ink whitespace-nowrap">{fmtDate(d.date)}</td>
+                          <td className="px-4 py-2.5 text-ink-muted">
+                            {d.slots?.length
+                              ? d.slots.map((s) => `${fmtTime(s.start)}–${fmtTime(s.end)}`).join(', ')
+                              : <span className="italic text-amber-600">No slots yet</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                            <button type="button" onClick={() => setSlotDate(d.date)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline mr-3">
+                              <Clock size={13} /> Manage slots{d.slots?.length ? ` (${d.slots.length})` : ''}
+                            </button>
+                            <button type="button" onClick={() => removeDate(d.date)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             );
           })}

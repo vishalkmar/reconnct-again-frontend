@@ -5,7 +5,7 @@ import {
   Mail, Phone, MapPin, Clock, Users, TrendingUp, ArrowLeftRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../../services/api';
+import api, { fileUrl } from '../../services/api';
 import { StatusPill, usePaged, Pager } from './B2BManagementPage.jsx';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -86,24 +86,133 @@ export default function B2BExperiencePage() {
 /* ── Details ───────────────────────────────────────────────────────────── */
 function DetailsTab({ exp }) {
   const arr = (v) => (Array.isArray(v) ? v : []);
+  const p = exp.pricing || {};
+  const d = exp.data || {};
+  const durationLabel = p.durationLabel || d.durationLabel
+    || ((p.durationHours || p.durationMinutes) ? `${p.durationHours || 0}h${p.durationMinutes ? ` ${p.durationMinutes}m` : ''}` : '');
+  const capacity = p.capacity || exp.capacity;
+  const category = (exp.category && exp.category.name) || d.categoryName || '';
+  const type = (exp.type && exp.type.name) || d.typeName || '';
+  const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+  // Gallery = cover + gallery, de-duped.
+  const photos = [...new Set([exp.mainImage, ...arr(exp.gallery)].filter(Boolean))];
+  const videos = arr(exp.videos).map((v) => (typeof v === 'string' ? v : (v && v.url))).filter(Boolean);
+  const inclusions = arr(exp.inclusions);
+  const facilities = arr(exp.facilities);
+  const nearbyPlaces = arr(exp.nearbyPlaces);
+  const faqs = arr(exp.faqs).filter((q) => q && (q.question || q.answer));
+  const policies = [
+    ['Terms & Conditions', exp.termsConditions],
+    ['Privacy Policy', exp.privacyPolicy],
+    ['Refund & Cancellation Policy', exp.refundCancellationPolicy || exp.refundPolicy || exp.cancellationPolicy],
+  ].filter(([, html]) => html && String(html).trim());
+
   return (
-    <Card>
-      <Row label="Name" value={exp.name} />
-      <Row label="City" value={exp.city} />
-      <Row label="Location" value={exp.location} />
-      <Row label="Pincode" value={exp.pincode} />
-      <Row label="Nearby" value={exp.nearbyLocation} />
-      <Row label="Duration" value={exp.durationLabel || exp.duration} />
-      <Row label="Capacity" value={exp.capacity} />
-      <Row label="Source" value={exp.sourceName} />
-      <div className="py-3 border-t border-slate-50">
-        <div className="text-xs text-ink-muted mb-1">About</div>
-        <p className="text-sm text-ink whitespace-pre-line">{exp.about || '—'}</p>
-      </div>
-      {arr(exp.inclusions).length > 0 && <Chips label="Inclusions" items={exp.inclusions} />}
-      {arr(exp.facilities).length > 0 && <Chips label="Facilities" items={exp.facilities} />}
-      {arr(exp.nearbyPlaces).length > 0 && <Chips label="Nearby places" items={exp.nearbyPlaces} />}
-    </Card>
+    <div className="space-y-5">
+      {/* Photos & videos */}
+      {(photos.length > 0 || videos.length > 0) && (
+        <Card title="Photos & videos">
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">
+              {photos.map((src, i) => (
+                <a key={i} href={fileUrl(src)} target="_blank" rel="noreferrer" className="block">
+                  <img src={fileUrl(src)} alt="" className="w-full h-28 rounded-lg object-cover border border-slate-100" onError={(e) => { e.target.style.visibility = 'hidden'; }} />
+                </a>
+              ))}
+            </div>
+          )}
+          {videos.length > 0 && (
+            <div className="pt-3 flex flex-wrap gap-2">
+              {videos.map((v, i) => (
+                <a key={i} href={v} target="_blank" rel="noreferrer" className="text-xs text-brand hover:underline break-all">▶ {v}</a>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Core fields */}
+      <Card title="Details">
+        <Row label="Name" value={exp.name} />
+        <Row label="Category" value={category} />
+        <Row label="Type" value={type} />
+        <Row label="Mode" value={cap(exp.mode)} />
+        <Row label="City" value={exp.city} />
+        <Row label="Location" value={exp.location} />
+        <Row label="Pincode" value={exp.pincode} />
+        <Row label="Nearby" value={exp.nearbyLocation} />
+        <Row label="Duration" value={durationLabel} />
+        <Row label="Capacity" value={capacity} />
+        <Row label="Source" value={exp.sourceName} />
+        <div className="py-3 border-t border-slate-50">
+          <div className="text-xs text-ink-muted mb-1">About</div>
+          {exp.about ? <div className="rich-prose text-sm text-ink" dangerouslySetInnerHTML={{ __html: exp.about }} /> : <span className="text-sm text-ink">—</span>}
+        </div>
+      </Card>
+
+      {/* Inclusions */}
+      {inclusions.length > 0 && (
+        <Card title="What's included">
+          <div className="space-y-3 pt-1">
+            {inclusions.map((it, i) => {
+              if (typeof it === 'string') return <div key={i} className="text-sm text-ink">• {it}</div>;
+              return (
+                <div key={i} className="flex items-start gap-3">
+                  {it.image && <img src={fileUrl(it.image)} alt="" className="w-16 h-16 rounded-lg object-cover border border-slate-100 shrink-0" />}
+                  <div className="min-w-0">
+                    {it.title && <div className="text-sm font-semibold text-ink">{it.title}</div>}
+                    {it.text && <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: it.text }} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {facilities.length > 0 && (
+        <Card><Chips label="Facilities" items={facilities} /></Card>
+      )}
+      {nearbyPlaces.length > 0 && (
+        <Card>
+          <div className="text-xs text-ink-muted mb-2">Nearby places</div>
+          <div className="space-y-1.5">
+            {nearbyPlaces.map((n, i) => {
+              const dist = n.distance ?? n.distanceKm;
+              const unit = n.unit === 'hr' ? 'hrs' : n.unit === 'min' ? 'min' : 'km';
+              return <div key={i} className="text-sm text-ink">• {n.name}{dist != null && dist !== '' ? ` · ${dist} ${unit}` : ''}</div>;
+            })}
+          </div>
+        </Card>
+      )}
+
+      {faqs.length > 0 && (
+        <Card title="FAQs">
+          <div className="space-y-3 pt-1">
+            {faqs.map((q, i) => (
+              <div key={i}>
+                <div className="text-sm font-semibold text-ink">{q.question}</div>
+                {q.answer && <div className="text-sm text-ink-muted mt-0.5 whitespace-pre-line">{q.answer}</div>}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {policies.length > 0 && (
+        <Card title="Policies & terms">
+          <div className="space-y-4 pt-1">
+            {policies.map(([label, html]) => (
+              <div key={label}>
+                <div className="text-sm font-semibold text-ink mb-1">{label}</div>
+                <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: html }} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
   );
 }
 

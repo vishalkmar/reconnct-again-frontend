@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
   Loader2, RotateCcw, IndianRupee, TrendingUp, ArrowLeftRight, Users,
-  Search, ChevronRight, ChevronLeft, Layers, CalendarDays,
+  Search, ChevronRight, ChevronLeft, Layers, CalendarDays, X, Printer,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 
 /* Pagination — every B2B table caps at 80 rows per page. */
 export const PAGE_SIZE = 80;
@@ -65,6 +66,7 @@ export default function B2BManagementPage() {
 
 /* ── Live experiences list ─────────────────────────────────────────────── */
 function LiveList() {
+  const navigate = useNavigate();
   const [items, setItems] = useState(null);
   const [q, setQ] = useState('');
 
@@ -117,15 +119,15 @@ function LiveList() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {paged.slice.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/70 transition">
+                  <tr key={r.id} onClick={() => navigate(`/admin/b2b/${r.id}`)} className="hover:bg-slate-50/70 transition cursor-pointer">
                     <td className="px-4 py-3">
-                      <Link to={`/admin/b2b/${r.id}`} className="flex items-center gap-3 group">
+                      <div className="flex items-center gap-3 group">
                         <img src={r.image || '/placeholder.png'} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" onError={(e) => { e.target.style.visibility = 'hidden'; }} />
                         <div className="min-w-0">
                           <div className="font-semibold text-ink truncate group-hover:text-brand">{r.name}</div>
                           <div className="text-xs text-ink-muted truncate">{r.city || '—'}</div>
                         </div>
-                      </Link>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-ink-muted">{r.supplier}</td>
                     <td className="px-4 py-3 text-ink-muted whitespace-nowrap">{fmtDate(r.listedAt)}</td>
@@ -133,7 +135,7 @@ function LiveList() {
                     <td className="px-4 py-3 text-right font-medium text-ink whitespace-nowrap">{rupee(r.b2b)}</td>
                     <td className="px-4 py-3 text-right font-medium text-ink whitespace-nowrap">{rupee(r.b2c)}</td>
                     <td className="px-4 py-3 text-right font-semibold whitespace-nowrap"><Diff v={r.difference} /></td>
-                    <td className="px-2 py-3 text-right"><Link to={`/admin/b2b/${r.id}`}><ChevronRight size={16} className="text-ink-muted" /></Link></td>
+                    <td className="px-2 py-3 text-right"><ChevronRight size={16} className="text-ink-muted" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -161,6 +163,7 @@ function PaymentTally() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('bookings'); // bookings | activity | date
   const [metric, setMetric] = useState(null); // which card graph is open
+  const [voucher, setVoucher] = useState(null); // booking row shown as a voucher
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -254,17 +257,19 @@ function PaymentTally() {
       {loading ? (
         <Center><Loader2 className="animate-spin text-brand" /></Center>
       ) : view === 'bookings' ? (
-        <TallyBookings rows={data?.rows || []} />
+        <TallyBookings rows={data?.rows || []} onOpen={setVoucher} />
       ) : view === 'activity' ? (
         <GroupTable rows={data?.byActivity || []} keyLabel="Activity" keyField="experience" />
       ) : (
         <GroupTable rows={data?.byDate || []} keyLabel="Date" keyField="date" isDate />
       )}
+
+      {voucher && <VoucherModal row={voucher} onClose={() => setVoucher(null)} />}
     </>
   );
 }
 
-function TallyBookings({ rows }) {
+function TallyBookings({ rows, onOpen }) {
   const paged = usePaged(rows);
   if (rows.length === 0) return <Center><span className="text-ink-muted text-sm">No paid bookings for these filters.</span></Center>;
   return (
@@ -284,7 +289,7 @@ function TallyBookings({ rows }) {
           </thead>
           <tbody className="divide-y divide-slate-50">
             {paged.slice.map((r) => (
-              <tr key={r.id} className="hover:bg-slate-50/70">
+              <tr key={r.id} onClick={() => onOpen(r)} className="hover:bg-slate-50/70 cursor-pointer">
                 <td className="px-4 py-3">
                   <div className="font-medium text-ink">{r.code}</div>
                   <div className="text-xs text-ink-muted">{fmtDate(r.bookedAt)}</div>
@@ -338,6 +343,95 @@ function GroupTable({ rows, keyLabel, keyField, isDate }) {
         </table>
       </div>
       <Pager {...paged} />
+    </div>
+  );
+}
+
+/* ── Payment voucher (contract-style) ──────────────────────────────────── */
+function VoucherModal({ row, onClose }) {
+  const paid = row.paymentStatus === 'paid';
+  return (
+    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/50 p-4 overflow-y-auto" onClick={onClose}>
+      {/* Print rules: on print, show only the voucher document. */}
+      <style>{`@media print { body * { visibility: hidden !important; } #b2b-voucher, #b2b-voucher * { visibility: visible !important; } #b2b-voucher { position: absolute; inset: 0; margin: 0; box-shadow: none; border-radius: 0; } .no-print { display: none !important; } }`}</style>
+      <div className="my-6 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Action bar (not printed) */}
+        <div className="no-print flex items-center justify-end gap-2 mb-2">
+          <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90"><Printer size={15} /> Print / Save PDF</button>
+          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink text-sm font-semibold shadow-soft"><X size={15} /> Close</button>
+        </div>
+
+        <div id="b2b-voucher" className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+          {/* Letterhead */}
+          <div className="flex items-start justify-between gap-4 px-7 py-5 bg-ink text-white">
+            <div>
+              <div className="font-display text-2xl font-bold tracking-tight">reconn<span className="text-brand">ct</span></div>
+              <div className="text-xs text-white/60 mt-0.5">B2B Payment Voucher</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] uppercase tracking-wide text-white/60">Voucher No.</div>
+              <div className="font-mono font-bold">{row.code}</div>
+              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${paid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{paid ? 'PAID' : (row.paymentStatus || 'pending').toUpperCase()}</span>
+            </div>
+          </div>
+
+          {/* Parties / booking meta */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 px-7 py-6">
+            <VField label="Experience" value={row.experience} />
+            <VField label="Supplier" value={row.supplier} />
+            <VField label="Guest" value={row.guest} />
+            <VField label="Contact" value={[row.email, row.phone].filter(Boolean).join(' · ')} />
+            <VField label="Guests" value={row.guestCount} />
+            <VField label="Experience date" value={fmtDate(row.date)} />
+            <VField label="Booked on" value={fmtDateTime(row.bookedAt)} />
+            <VField label="Paid on" value={row.paidAt ? fmtDateTime(row.paidAt) : '—'} />
+          </div>
+
+          {/* Pricing table — B2B (received) vs B2C (paid at live) */}
+          <div className="px-7 pb-2">
+            <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted">
+                  <th className="px-4 py-2.5 font-semibold">Particulars</th>
+                  <th className="px-4 py-2.5 font-semibold text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-ink">B2B price (supplier rate)</div>
+                    <div className="text-xs text-ink-muted">Base received, before go-live extras</div>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-ink whitespace-nowrap">{rupee(row.b2b)}</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-ink">B2C price (paid at live)</div>
+                    <div className="text-xs text-ink-muted">Final amount the customer paid</div>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-ink whitespace-nowrap">{rupee(row.b2c)}</td>
+                </tr>
+                <tr className="bg-ink/[0.03]">
+                  <td className="px-4 py-3 font-bold text-ink">Difference in B2B &amp; B2C</td>
+                  <td className="px-4 py-3 text-right font-bold whitespace-nowrap"><Diff v={row.difference} /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-7 py-5 text-[11px] text-ink-muted leading-relaxed">
+            This voucher is a system-generated summary of the B2B/B2C settlement for the above booking. “B2B price” is the rate received from the supplier before go-live extras; “B2C price” is the final amount paid by the customer at the live listing. Difference = B2C − B2B.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function VField({ label, value }) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wide text-ink-muted">{label}</div>
+      <div className="text-sm font-medium text-ink break-words">{value || '—'}</div>
     </div>
   );
 }
