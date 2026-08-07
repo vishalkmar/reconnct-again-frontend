@@ -268,6 +268,7 @@ function PricingTab({ p }) {
       </Card>
 
       <Card title="Go-live extras applied (by COPS)">
+        <Row label="Markup" value={p.markup && p.markup.value ? (p.markup.type === 'percentage' ? `${p.markup.value}%` : rupee(p.markup.value)) : '—'} />
         <Row label="Discount" value={discLabel} />
         <Row label="GST" value={p.gstRate ? `${p.gstRate}%` : '—'} />
         <Row label="Convenience fee" value={cfLabel} />

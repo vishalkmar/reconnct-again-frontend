@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { IndianRupee, Percent, Tag, Sparkles } from 'lucide-react';
+import { IndianRupee, Percent, Tag, Sparkles, TrendingUp } from 'lucide-react';
 
 /**
  * GST + discount + convenience fee with a LIVE breakdown.
@@ -23,14 +23,20 @@ import { IndianRupee, Percent, Tag, Sparkles } from 'lucide-react';
 const GST_OPTS = [0, 5, 12, 18, 28];
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienceFee, basePrice = 0, onChange }) {
+export default function ExperienceTaxPricing({
+  gstRate = 0, markup, discount, convenienceFee, basePrice = 0, onChange,
+}) {
+  const mk = markup || { type: 'percentage', value: 0 };
   const disc = discount || { type: 'percentage', value: 0 };
   const cf = { type: 'free', value: 0, months: 0, cutThrough: 0, ...(convenienceFee || {}) };
 
   const setCf = (patch) => onChange({ convenienceFee: { ...cf, ...patch } });
 
   const calc = useMemo(() => {
-    const base = Number(basePrice) || 0;
+    const raw = Number(basePrice) || 0;
+    const mv = Number(mk.value) || 0;
+    const markupAmt = mk.type === 'fixed' ? mv : (raw * mv) / 100;
+    const base = raw + markupAmt; // markup applies first, on the base
     const dv = Number(disc.value) || 0;
     const discountAmt = disc.type === 'fixed' ? Math.min(dv, base) : (base * dv) / 100;
     const net = Math.max(0, base - discountAmt);
@@ -40,14 +46,33 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
     if (cf.type === 'fixed') convFee = Number(cf.value) || 0;
     else if (cf.type === 'percentage') convFee = (subtotal * (Number(cf.value) || 0)) / 100;
     const total = subtotal + convFee;
-    return { base, discountAmt, net, gst, subtotal, convFee, total };
-  }, [basePrice, disc.type, disc.value, gstRate, cf.type, cf.value]);
+    return { raw, markupAmt, base, discountAmt, net, gst, subtotal, convFee, total };
+  }, [basePrice, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Controls */}
       <div className="space-y-4">
-        {/* Discount first — it's applied on the base price, before GST */}
+        {/* Markup — a margin added on the base, before discount/GST */}
+        <div>
+          <label className="label inline-flex items-center gap-1.5"><TrendingUp size={14} /> Markup</label>
+          <div className="flex gap-2">
+            <select className="input w-40" value={mk.type} onChange={(e) => onChange({ markup: { ...mk, type: e.target.value } })}>
+              <option value="percentage">Percentage %</option>
+              <option value="fixed">Fixed amount ₹</option>
+            </select>
+            <div className="relative flex-1">
+              {mk.type === 'fixed'
+                ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={mk.value || ''}
+                onChange={(e) => onChange({ markup: { ...mk, value: e.target.value === '' ? 0 : Number(e.target.value) } })} />
+            </div>
+          </div>
+          <p className="text-[11px] text-ink-muted mt-1">Added on the B2B base first — increases the price the customer pays.</p>
+        </div>
+
+        {/* Discount — applied on the marked-up base, before GST */}
         <div>
           <label className="label inline-flex items-center gap-1.5"><Tag size={14} /> Discount</label>
           <div className="flex gap-2">
@@ -134,7 +159,10 @@ export default function ExperienceTaxPricing({ gstRate = 0, discount, convenienc
           <p className="text-sm text-ink-muted italic">Set an adult price in Pricing to preview the totals.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            <Row label="Base price" value={rupee(calc.base)} />
+            <Row label="Base price (B2B)" value={rupee(calc.raw)} />
+            {calc.markupAmt > 0 && (
+              <Row label={`Markup${mk.type === 'percentage' ? ` (${mk.value}%)` : ''}`} value={`+ ${rupee(calc.markupAmt)}`} />
+            )}
             {calc.discountAmt > 0 && (
               <Row label={`Discount${disc.type === 'percentage' ? ` (${disc.value}%)` : ''}`} value={`− ${rupee(calc.discountAmt)}`} accent="text-emerald-600" />
             )}

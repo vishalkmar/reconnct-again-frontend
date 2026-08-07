@@ -410,7 +410,7 @@ function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
               <div className="pt-4 border-t border-gray-100">
                 <h3 className="font-semibold mb-1">GST, discount &amp; convenience fee</h3>
                 <p className="text-sm text-ink-muted mb-3">Applied on the B2B price. Discount before GST; convenience fee on the final amount.</p>
-                <ExperienceTaxPricing gstRate={draft.gstRate} discount={draft.discount} convenienceFee={draft.convenienceFee} basePrice={draft.pricing?.adultPrice || 0} onChange={patch} />
+                <ExperienceTaxPricing gstRate={draft.gstRate} markup={draft.markup} discount={draft.discount} convenienceFee={draft.convenienceFee} basePrice={draft.pricing?.adultPrice || 0} onChange={patch} />
               </div>
             </>
           )}

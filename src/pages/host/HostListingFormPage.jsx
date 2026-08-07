@@ -42,6 +42,7 @@ const hostFormToActivity = (f = {}) => ({
   pricing: {
     adultPrice: Number(f.adultPrice) || 0,
     childrenEnabled: !!f.childrenEnabled,
+    childMode: f.childMode || 'age',
     childBands: f.childBands || [],
     capacity: f.capacity || 8,
     duration: { hours: f.durationHours || 0, minutes: f.durationMinutes || 0 },
@@ -51,6 +52,7 @@ const hostFormToActivity = (f = {}) => ({
   b2cPricing: {
     adultPrice: Number(f.b2cAdultPrice) || 0,
     childrenEnabled: !!f.b2cChildrenEnabled,
+    childMode: f.b2cChildMode || 'age',
     childBands: f.b2cChildBands || [],
   },
   sourceName: f.sourceName || '',
@@ -80,10 +82,12 @@ const activityToHostForm = (a = {}) => ({
   priceMethod: a.priceMethod || 'per_person',
   adultPrice: a.pricing?.adultPrice ?? '',
   childrenEnabled: !!a.pricing?.childrenEnabled,
+  childMode: a.pricing?.childMode || 'age',
   childBands: a.pricing?.childBands || [],
   b2cPriceMethod: a.b2cPriceMethod || 'per_person',
   b2cAdultPrice: a.b2cPricing?.adultPrice ?? '',
   b2cChildrenEnabled: !!a.b2cPricing?.childrenEnabled,
+  b2cChildMode: a.b2cPricing?.childMode || 'age',
   b2cChildBands: a.b2cPricing?.childBands || [],
   sourceName: a.sourceName || '',
   sourceLink: a.sourceLink || '',

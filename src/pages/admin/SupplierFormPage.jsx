@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollText, FileText, FileType2, Pencil, Trash2, Plus, KeyRound, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Building2, User, Phone, Mail, Lock, ScrollText, FileText, FileType2, Pencil, Trash2, Plus, KeyRound, ShieldCheck, Landmark, MapPin, CreditCard, Hash } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Dropzone from '../../components/admin/Dropzone.jsx';
@@ -23,6 +23,11 @@ const blank = {
   phone: '',
   email: '',
   image: '',
+  bankAccountName: '',
+  bankName: '',
+  bankAddress: '',
+  accountNumber: '',
+  ifscCode: '',
   isActive: true,
 };
 
@@ -77,6 +82,11 @@ export default function SupplierFormPage() {
             phone: s.phone || '',
             email: s.email || '',
             image: s.image || '',
+            bankAccountName: s.bankAccountName || '',
+            bankName: s.bankName || '',
+            bankAddress: s.bankAddress || '',
+            accountNumber: s.accountNumber || '',
+            ifscCode: s.ifscCode || '',
             isActive: s.isActive !== false,
           });
         }
@@ -95,6 +105,11 @@ export default function SupplierFormPage() {
     if (!value.supplierName.trim()) return toast.error('Supplier name is required');
     if (!value.phone.trim()) return toast.error('Phone is required');
     if (!value.email.trim()) return toast.error('Email is required — the supplier logs in with it');
+    if (!value.bankAccountName.trim()) return toast.error('Account name is required');
+    if (!value.bankName.trim()) return toast.error('Bank name is required');
+    if (!value.bankAddress.trim()) return toast.error('Bank address is required');
+    if (!value.accountNumber.trim()) return toast.error('Account number is required');
+    if (!value.ifscCode.trim()) return toast.error('IFSC code is required');
     if (!editing && !passwordArmed) {
       return toast.error('Click “Generate password” — the supplier needs a login');
     }
@@ -144,6 +159,28 @@ export default function SupplierFormPage() {
           </Field>
           <Field label="Email" required icon={Mail}>
             <input type="email" className="input" value={value.email} onChange={(e) => patch({ email: e.target.value })} placeholder="name@company.com" />
+          </Field>
+        </div>
+
+        {/* Bank / settlement account — mandatory, so payouts can be made. */}
+        <div className="rounded-xl border border-gray-100 bg-surface-alt/40 p-4 space-y-4">
+          <div className="text-sm font-semibold text-ink inline-flex items-center gap-2"><Landmark size={15} className="text-brand" /> Bank account details</div>
+          <Field label="Account name" required icon={User}>
+            <input className="input" value={value.bankAccountName} onChange={(e) => patch({ bankAccountName: e.target.value })} placeholder="e.g. Traveon Ventures" />
+          </Field>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Bank name" required icon={Landmark}>
+              <input className="input" value={value.bankName} onChange={(e) => patch({ bankName: e.target.value })} placeholder="e.g. Axis Bank Ltd." />
+            </Field>
+            <Field label="IFSC code" required icon={Hash}>
+              <input className="input" value={value.ifscCode} onChange={(e) => patch({ ifscCode: e.target.value.toUpperCase() })} placeholder="e.g. UTIB0000392" />
+            </Field>
+          </div>
+          <Field label="Bank address" required icon={MapPin}>
+            <input className="input" value={value.bankAddress} onChange={(e) => patch({ bankAddress: e.target.value })} placeholder="e.g. Model Town-3, New Delhi-110009" />
+          </Field>
+          <Field label="Account number" required icon={CreditCard}>
+            <input className="input" value={value.accountNumber} onChange={(e) => patch({ accountNumber: e.target.value.replace(/[^0-9]/g, '') })} placeholder="e.g. 925020041473450" inputMode="numeric" />
           </Field>
         </div>
 

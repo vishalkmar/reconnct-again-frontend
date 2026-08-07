@@ -39,17 +39,31 @@ export default function ExperiencePricing({ priceMethod = 'per_person', pricing 
 
   const setPricing = (patch) => onChange({ pricing: { ...p, ...patch } });
 
+  const mode = p.childMode || 'age'; // 'age' (default) | 'height'
   const setBand = (i, patch) => {
     const next = p.childBands.map((b, idx) => (idx === i ? { ...b, ...patch } : b));
     setPricing({ childBands: next });
   };
   const addBand = () => {
-    // Chain the next band from the previous one's end age for convenience.
     const last = p.childBands[p.childBands.length - 1];
-    const start = last ? Math.min(14, Number(last.endAge) + 1) : 0;
-    setPricing({ childBands: [...p.childBands, { startAge: start, endAge: Math.min(14, start + 4), charge: true, price: 0 }] });
+    if (mode === 'height') {
+      const start = last ? (Number(last.endHeight) || 0) + 1 : 80;
+      setPricing({ childBands: [...p.childBands, { startHeight: start, endHeight: start + 20, charge: true, price: 0 }] });
+    } else {
+      const start = last ? Math.min(14, Number(last.endAge) + 1) : 0;
+      setPricing({ childBands: [...p.childBands, { startAge: start, endAge: Math.min(14, start + 4), charge: true, price: 0 }] });
+    }
   };
   const removeBand = (i) => setPricing({ childBands: p.childBands.filter((_, idx) => idx !== i) });
+  // Switching the basis re-seeds a single default band of the new kind, so a
+  // band never carries stale age keys while shown as height (or vice-versa).
+  const setMode = (m) => {
+    if (mode === m) return;
+    const seed = m === 'height'
+      ? { startHeight: 80, endHeight: 120, charge: false, price: 0 }
+      : { startAge: 0, endAge: 5, charge: false, price: 0 };
+    setPricing({ childMode: m, childBands: [seed] });
+  };
 
   return (
     <div className="space-y-5">
@@ -91,18 +105,45 @@ export default function ExperiencePricing({ priceMethod = 'per_person', pricing 
 
         {p.childrenEnabled && (
           <div className="mt-4 space-y-3">
-            <p className="text-xs text-ink-muted">Define age bands (years). Toggle <strong>Set a price</strong> off to make that band free.</p>
+            {/* Basis: age (default) or height — one at a time */}
+            <div className="flex flex-wrap gap-5">
+              <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--brand))]" checked={mode === 'age'} onChange={() => setMode('age')} />
+                Based on age
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--brand))]" checked={mode === 'height'} onChange={() => setMode('height')} />
+                Based on height
+              </label>
+            </div>
+            <p className="text-xs text-ink-muted">Define {mode === 'height' ? 'height ranges (cm)' : 'age bands (years)'}. Toggle <strong>Set a price</strong> off to make that band free.</p>
             {p.childBands.map((b, i) => (
               <div key={i} className="flex flex-wrap items-end gap-3 bg-surface-alt rounded-lg p-3">
-                <div>
-                  <span className="block text-[11px] text-ink-muted mb-1">Start age</span>
-                  <NumberBox value={b.startAge} onChange={(v) => setBand(i, { startAge: v })} min={0} max={14} suffix="yr" />
-                </div>
-                <span className="pb-2 text-ink-muted">to</span>
-                <div>
-                  <span className="block text-[11px] text-ink-muted mb-1">End age</span>
-                  <NumberBox value={b.endAge} onChange={(v) => setBand(i, { endAge: v })} min={0} max={14} suffix="yr" />
-                </div>
+                {mode === 'height' ? (
+                  <>
+                    <div>
+                      <span className="block text-[11px] text-ink-muted mb-1">Min height</span>
+                      <NumberBox value={b.startHeight} onChange={(v) => setBand(i, { startHeight: v })} min={0} suffix="cm" />
+                    </div>
+                    <span className="pb-2 text-ink-muted">to</span>
+                    <div>
+                      <span className="block text-[11px] text-ink-muted mb-1">Max height</span>
+                      <NumberBox value={b.endHeight} onChange={(v) => setBand(i, { endHeight: v })} min={0} suffix="cm" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <span className="block text-[11px] text-ink-muted mb-1">Start age</span>
+                      <NumberBox value={b.startAge} onChange={(v) => setBand(i, { startAge: v })} min={0} max={14} suffix="yr" />
+                    </div>
+                    <span className="pb-2 text-ink-muted">to</span>
+                    <div>
+                      <span className="block text-[11px] text-ink-muted mb-1">End age</span>
+                      <NumberBox value={b.endAge} onChange={(v) => setBand(i, { endAge: v })} min={0} max={14} suffix="yr" />
+                    </div>
+                  </>
+                )}
                 <label className="inline-flex items-center gap-1.5 pb-2 text-sm cursor-pointer">
                   <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--brand))]" checked={!!b.charge} onChange={(e) => setBand(i, { charge: e.target.checked })} />
                   Set a price
@@ -121,7 +162,7 @@ export default function ExperiencePricing({ priceMethod = 'per_person', pricing 
               </div>
             ))}
             <button type="button" onClick={addBand} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline">
-              <Plus size={14} /> Add age band
+              <Plus size={14} /> {mode === 'height' ? 'Add height band' : 'Add age band'}
             </button>
           </div>
         )}
