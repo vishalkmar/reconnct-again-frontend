@@ -54,6 +54,7 @@ import AdminAllListedPage from './pages/admin/AdminAllListedPage.jsx';
 import AdminDelistedPage from './pages/admin/AdminDelistedPage.jsx';
 import ExperienceSetupPage from './pages/admin/ExperienceSetupPage.jsx';
 import SuppliersPage from './pages/admin/SuppliersPage.jsx';
+import SupplierRevenuePage from './pages/admin/SupplierRevenuePage.jsx';
 import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
 import ContractFormPage from './pages/admin/ContractFormPage.jsx';
 import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
@@ -220,6 +221,7 @@ export default function App() {
           <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="suppliers/new" element={<SupplierFormPage />} />
           <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
+          <Route path="suppliers/:id/revenue" element={<SupplierRevenuePage />} />
           <Route path="contracts/new" element={<ContractFormPage />} />
           <Route path="contracts/:id/edit" element={<ContractFormPage />} />
           <Route path="company-profile" element={<CompanyProfilePage />} />

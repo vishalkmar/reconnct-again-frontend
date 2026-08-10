@@ -43,12 +43,15 @@ function TabBtn({ active, onClick, children }) {
   );
 }
 
+const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
 function SupplierListPanel() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [period, setPeriod] = useState('');
   const [statusF, setStatusF] = useState(''); // '' | 'active' | 'disabled' | 'kam'
+  const [rev, setRev] = useState({}); // supplierId -> { b2b, b2c }
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -64,6 +67,17 @@ function SupplierListPanel() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Per-supplier B2B/B2C revenue (paid bookings) for the two revenue columns.
+  useEffect(() => {
+    api.get('/admin/b2b/supplier-revenue')
+      .then((res) => {
+        const map = {};
+        (res.data?.data?.items || []).forEach((r) => { map[r.supplierId] = r; });
+        setRev(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const toggle = async (id) => {
     try { await api.patch(`/suppliers/${id}/toggle`); load(); }
@@ -136,15 +150,16 @@ function SupplierListPanel() {
       ) : (
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
           <div className="hidden md:grid grid-cols-12 px-5 py-3 bg-surface-alt text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-            <div className="col-span-5">Company</div>
-            <div className="col-span-4">Contact</div>
-            <div className="col-span-1">Status</div>
+            <div className="col-span-4">Company</div>
+            <div className="col-span-2">Contact</div>
+            <div className="col-span-2 text-right">B2B revenue</div>
+            <div className="col-span-2 text-right">B2C revenue</div>
             <div className="col-span-2 text-right">Actions</div>
           </div>
           <ul className="divide-y divide-slate-100">
             {filtered.map((s) => (
               <li key={s.id} className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center">
-                <div className="col-span-12 md:col-span-5 min-w-0 flex items-center gap-3">
+                <div className="col-span-12 md:col-span-4 min-w-0 flex items-center gap-3">
                   {s.image ? (
                     <img src={fileUrl(s.image)} alt="" className="w-10 h-10 rounded-lg object-cover border" />
                   ) : (
@@ -153,22 +168,25 @@ function SupplierListPanel() {
                   <div className="min-w-0">
                     <div className="font-semibold text-ink truncate flex items-center gap-2">
                       {s.companyName}
-                      {!s.isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Disabled</span>}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{s.isActive ? 'Active' : 'Disabled'}</span>
                     </div>
                     {s.supplierName && <div className="text-[11px] text-ink-muted truncate">{s.supplierName}</div>}
                   </div>
                 </div>
-                <div className="col-span-6 md:col-span-4 text-sm text-ink-muted min-w-0">
+                <div className="col-span-6 md:col-span-2 text-sm text-ink-muted min-w-0">
                   {s.email && <div className="truncate inline-flex items-center gap-1"><Mail size={12} /> {s.email}</div>}
                   {s.phone && <div className="truncate inline-flex items-center gap-1"><Phone size={12} /> {s.phone}</div>}
                   {!s.email && !s.phone && '—'}
                 </div>
-                <div className="col-span-3 md:col-span-1">
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${s.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {s.isActive ? 'Active' : 'Off'}
-                  </span>
+                <div className="col-span-4 md:col-span-2 text-right">
+                  <button onClick={() => navigate(`/admin/suppliers/${s.id}/revenue`)} title="View B2B vs B2C bookings"
+                    className="font-semibold text-blue-700 hover:underline">{inr(rev[s.id]?.b2b)}</button>
                 </div>
-                <div className="col-span-9 md:col-span-2 flex items-center justify-end gap-1">
+                <div className="col-span-4 md:col-span-2 text-right">
+                  <button onClick={() => navigate(`/admin/suppliers/${s.id}/revenue`)} title="View B2B vs B2C bookings"
+                    className="font-semibold text-emerald-700 hover:underline">{inr(rev[s.id]?.b2c)}</button>
+                </div>
+                <div className="col-span-4 md:col-span-2 flex items-center justify-end gap-1">
                   <IconBtn title="Edit" onClick={() => navigate(`/admin/suppliers/${s.id}/edit`)}><Pencil size={15} /></IconBtn>
                   <IconBtn title={s.isActive ? 'Disable' : 'Enable'} onClick={() => toggle(s.id)}>{s.isActive ? <EyeOff size={15} /> : <Eye size={15} />}</IconBtn>
                   <IconBtn title="Delete" danger onClick={() => remove(s.id, s.companyName)}><Trash2 size={15} /></IconBtn>

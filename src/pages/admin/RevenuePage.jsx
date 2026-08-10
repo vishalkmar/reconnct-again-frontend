@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import SupplierRevenueSplit from '../../components/admin/SupplierRevenueSplit.jsx';
 
 // Distinct, high-contrast palette. Index 0 = hottest-selling activity.
 const PALETTE = [
@@ -57,6 +58,13 @@ export default function RevenuePage() {
   const [custom, setCustom] = useState({ start: iso(new Date(new Date().setMonth(now.getMonth() - 3))), end: iso(now) });
   const [city, setCity] = useState('');
   const [activityKey, setActivityKey] = useState('');
+  const [supplierId, setSupplierId] = useState('');
+  const [suppliers, setSuppliers] = useState([]);
+
+  // Supplier list for the "filter by supplier" dropdown.
+  useEffect(() => {
+    api.get('/suppliers').then((r) => setSuppliers(r.data?.data?.items || [])).catch(() => {});
+  }, []);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -181,14 +189,27 @@ export default function RevenuePage() {
             {(data?.activities || []).map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
           </select>
         </Field>
+        <Field label="Supplier (B2B vs B2C)">
+          <select className="input min-w-[200px]" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+            <option value="">All suppliers</option>
+            {suppliers.map((s) => <option key={s.id} value={s.id}>{s.companyName}</option>)}
+          </select>
+        </Field>
 
-        {(city || activityKey || mode !== 'last3') && (
-          <button onClick={() => { setMode('last3'); setCity(''); setActivityKey(''); }}
+        {(city || activityKey || supplierId || mode !== 'last3') && (
+          <button onClick={() => { setMode('last3'); setCity(''); setActivityKey(''); setSupplierId(''); }}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-ink-muted hover:text-brand">
             <RotateCcw size={14} /> Reset
           </button>
         )}
       </div>
+
+      {/* Supplier B2B vs B2C split — shown the moment a supplier is picked */}
+      {supplierId && (
+        <div className="mb-6">
+          <SupplierRevenueSplit supplierId={supplierId} />
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

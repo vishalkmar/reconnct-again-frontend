@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Loader2, Search, X, CalendarClock, Ticket, Eye, Users, Star,
+  Loader2, Search, X, CalendarClock, Ticket, Eye, Users, Star, Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -72,6 +72,7 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
   const [minRating, setMinRating] = useState('');
   const [, setTick] = useState(0);
 
+  const [downloading, setDownloading] = useState(null);
   const load = useCallback(async () => {
     try {
       const res = await api.get(`${basePath}/all-bookings`);
@@ -82,6 +83,20 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
       setLoading(false);
     }
   }, [basePath]);
+
+  // Authenticated blob download of the owner's voucher PDF (B2B pricing).
+  const downloadVoucher = async (r) => {
+    setDownloading(r.id);
+    try {
+      const res = await api.get(`${basePath}/bookings/${r.id}/voucher.pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = `voucher-${r.bookingCode || r.id}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not download voucher');
+    } finally { setDownloading(null); }
+  };
   useEffect(() => { load(); }, [load]);
 
   // Status is a clock event — re-render every 30s so ongoing→completed flips live.
@@ -197,6 +212,7 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
                   <th className="px-4 py-3 font-semibold">Booked</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Voucher</th>
                   <th className="px-4 py-3 font-semibold text-right">Action</th>
                 </tr>
               </thead>
@@ -222,6 +238,12 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
                     <td className="px-4 py-3 text-right font-semibold text-ink whitespace-nowrap">{money(r.amount)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_PILL[r.status] || 'bg-slate-100'}`}>{r.status}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => downloadVoucher(r)} disabled={downloading === r.id} title="Download voucher PDF"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-ink text-xs font-semibold hover:bg-surface-alt whitespace-nowrap disabled:opacity-60">
+                        {downloading === r.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button onClick={() => navigate(`${basePath}/bookings/${r.id}`)}

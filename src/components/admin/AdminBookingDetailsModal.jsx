@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  X, Printer, MapPin, Calendar, Users, Clock, CreditCard, FileText, User as UserIcon,
+  X, Printer, Download, MapPin, Calendar, Users, Clock, CreditCard, FileText, User as UserIcon,
   Mail, Phone, Loader2, CheckCircle2, AlertCircle, Hotel as HotelIcon, RefreshCcw,
   XCircle,
 } from 'lucide-react';
@@ -28,6 +28,22 @@ const REFUND_STATUS_BADGE = {
 export default function AdminBookingDetailsModal({ booking, open, onClose, onChanged }) {
   const [marking, setMarking] = useState(false);
   const [reconciling, setReconciling] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  // Download the exact guest voucher PDF (same one emailed on confirmation).
+  const downloadVoucher = async () => {
+    if (!booking?.bookingCode) return;
+    setDownloading(true);
+    try {
+      const res = await api.get(`/admin/bookings/${booking.bookingCode}/voucher.pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = `voucher-${booking.bookingCode}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not download voucher');
+    } finally { setDownloading(false); }
+  };
 
   // POST /admin/refund-policy/reconcile — ping Cashfree to refresh the refund
   // status when it's stuck on processing. Admin-only "Refresh" button next to
@@ -83,6 +99,15 @@ export default function AdminBookingDetailsModal({ booking, open, onClose, onCha
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute top-3 right-3 z-10 flex gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={downloadVoucher}
+            disabled={downloading}
+            className="p-2 rounded-full bg-white/90 hover:bg-white text-ink shadow border border-gray-200 disabled:opacity-60"
+            title="Download voucher PDF"
+          >
+            {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          </button>
           <button
             type="button"
             onClick={() => window.print()}
