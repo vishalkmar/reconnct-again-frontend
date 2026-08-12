@@ -26,6 +26,9 @@ export default function BookingVoucherPage() {
   const [b, setB] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dl, setDl] = useState(false);
+  const [marking, setMarking] = useState(false);
+
+  const load = () => api.get(`/admin/bookings/${code}`).then((res) => setB(res.data?.data?.booking || null));
 
   useEffect(() => {
     let alive = true;
@@ -35,6 +38,17 @@ export default function BookingVoucherPage() {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [code]);
+
+  const markCompleted = async () => {
+    setMarking(true);
+    try {
+      await api.post(`/admin/bookings/${code}/mark-completed`);
+      toast.success('Marked as completed');
+      await load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not mark completed');
+    } finally { setMarking(false); }
+  };
 
   const downloadPdf = async () => {
     setDl(true);
@@ -70,6 +84,11 @@ export default function BookingVoucherPage() {
       <div className="no-print flex items-center justify-between flex-wrap gap-3 mb-4">
         <Link to="/admin/bookings" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-brand"><ArrowLeft size={15} /> Bookings</Link>
         <div className="flex items-center gap-2">
+          {b.status === 'confirmed' && (
+            <button onClick={markCompleted} disabled={marking} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60">
+              {marking ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} Mark completed
+            </button>
+          )}
           <button onClick={downloadPdf} disabled={dl} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white shadow-soft text-sm font-semibold hover:text-brand disabled:opacity-60">
             {dl ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Download PDF
           </button>

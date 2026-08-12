@@ -5,6 +5,7 @@ import {
   Wallet, Mail, Settings, BadgeCheck, Power, ExternalLink, Copy, Gift,
   TrendingUp, CheckCircle2, Hourglass, XCircle, ChevronRight, Send,
   Tag, Phone, MapPin, RefreshCcw, Sparkles, Users as UsersIcon, Heart, MapPin as MapPinIcon,
+  Download, Eye,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -488,30 +489,26 @@ function VouchersTab({ vouchers = [] }) {
       </div>
     );
   }
-  const adminToken = localStorage.getItem('admin_token');
-  const baseUrl = import.meta.env.VITE_API_URL || '/api';
-  const openVoucher = async (voucher) => {
-    // The voucher endpoint is auth-protected, so we fetch it as a blob (the
-    // token rides the header), then open it in a new tab as an object URL.
+  const navigate = useNavigate();
+  const [dl, setDl] = useState(null);
+  // Download the new premium PDF voucher (same one emailed / shown on the
+  // full-page voucher), auth token rides the api client's header.
+  const downloadPdf = async (code) => {
+    setDl(code);
     try {
-      const res = await fetch(`${baseUrl}${voucher.voucherUrl.replace(/^\/api/, '')}`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const html = await res.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener');
-      // Free the blob URL once the new tab has a chance to load it.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      const res = await api.get(`/admin/bookings/${code}/voucher.pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = `voucher-${code}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(`Could not open voucher: ${err.message}`);
-    }
+      toast.error(err.response?.data?.message || 'Could not download voucher');
+    } finally { setDl(null); }
   };
   return (
     <div className="space-y-2">
       <p className="text-xs text-ink-muted mb-3">
-        Voucher opens in a new tab with a "Save / Print PDF" button — the browser's print dialog handles PDF export.
+        Download the premium PDF voucher, or open the full-page voucher to print.
       </p>
       {vouchers.map((v) => (
         <div key={v.bookingCode} className="bg-surface-alt/30 hover:bg-surface-alt/60 rounded-xl p-3 flex items-center gap-3 transition">
@@ -523,15 +520,23 @@ function VouchersTab({ vouchers = [] }) {
             <div className="font-semibold text-ink text-sm truncate">{v.itemName}</div>
             <div className="text-[11px] text-ink-muted">{TYPE_LABEL[v.itemType] || v.itemType} · {v.scheduledFor ? fmtDate(v.scheduledFor) : '—'}</div>
           </div>
-          <div className="text-right shrink-0 mr-3">
+          <div className="text-right shrink-0 mr-2">
             <div className="font-bold text-brand text-sm">{fmtMoney(v.total)}</div>
           </div>
           <button
             type="button"
-            onClick={() => openVoucher(v)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition"
+            onClick={() => downloadPdf(v.bookingCode)}
+            disabled={dl === v.bookingCode}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition disabled:opacity-60"
           >
-            <ExternalLink size={12} /> Open
+            {dl === v.bookingCode ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/bookings/${v.bookingCode}/voucher`)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white shadow-soft text-ink text-xs font-semibold hover:text-brand transition"
+          >
+            <Eye size={12} /> View
           </button>
         </div>
       ))}

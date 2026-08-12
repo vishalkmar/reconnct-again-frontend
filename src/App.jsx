@@ -65,6 +65,7 @@ import RevenueAnalysisPage from './pages/admin/RevenueAnalysisPage.jsx';
 import RevenueComparePage from './pages/admin/RevenueComparePage.jsx';
 import B2BManagementPage from './pages/admin/B2BManagementPage.jsx';
 import B2BExperiencePage from './pages/admin/B2BExperiencePage.jsx';
+import B2BActivityBookingsPage from './pages/admin/B2BActivityBookingsPage.jsx';
 import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
 import TeamManagementPage from './pages/admin/TeamManagementPage.jsx';
 import AdminReviewsPage from './pages/admin/AdminReviewsPage.jsx';
@@ -211,6 +212,7 @@ export default function App() {
           <Route path="revenue/analysis" element={<RevenueAnalysisPage />} />
           <Route path="revenue/compare" element={<RevenueComparePage />} />
           <Route path="b2b" element={<B2BManagementPage />} />
+          <Route path="b2b/activity/:name" element={<B2BActivityBookingsPage />} />
           <Route path="b2b/:id" element={<B2BExperiencePage />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="reviews/analytics" element={<AdminReviewAnalyticsPage />} />

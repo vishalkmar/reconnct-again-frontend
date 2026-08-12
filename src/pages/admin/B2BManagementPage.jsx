@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Loader2, RotateCcw, IndianRupee, TrendingUp, ArrowLeftRight, Users,
-  Search, ChevronRight, ChevronLeft, Layers, CalendarDays, X, Printer,
+  Search, ChevronRight, ChevronLeft, Layers, CalendarDays, X, Printer, Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -259,7 +259,7 @@ function PaymentTally() {
       ) : view === 'bookings' ? (
         <TallyBookings rows={data?.rows || []} onOpen={setVoucher} />
       ) : view === 'activity' ? (
-        <GroupTable rows={data?.byActivity || []} keyLabel="Activity" keyField="experience" />
+        <GroupTable rows={data?.byActivity || []} keyLabel="Activity" keyField="experience" linkActivity filters={f} />
       ) : (
         <GroupTable rows={data?.byDate || []} keyLabel="Date" keyField="date" isDate />
       )}
@@ -313,8 +313,15 @@ function TallyBookings({ rows, onOpen }) {
   );
 }
 
-function GroupTable({ rows, keyLabel, keyField, isDate }) {
+function GroupTable({ rows, keyLabel, keyField, isDate, linkActivity, filters }) {
   const paged = usePaged(rows);
+  const navigate = useNavigate();
+  const goActivity = (nm) => {
+    const qs = new URLSearchParams();
+    Object.entries(filters || {}).forEach(([k, v]) => { if (v) qs.set(k, v); });
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    navigate(`/admin/b2b/activity/${encodeURIComponent(nm)}${suffix}`);
+  };
   if (rows.length === 0) return <Center><span className="text-ink-muted text-sm">Nothing to show.</span></Center>;
   return (
     <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
@@ -333,7 +340,20 @@ function GroupTable({ rows, keyLabel, keyField, isDate }) {
             {paged.slice.map((r, i) => (
               <tr key={i} className="hover:bg-slate-50/70">
                 <td className="px-4 py-3 font-medium text-ink">{isDate ? fmtDate(r[keyField]) : r[keyField]}</td>
-                <td className="px-4 py-3 text-right text-ink-muted">{r.bookings}</td>
+                <td className="px-4 py-3 text-right">
+                  {linkActivity ? (
+                    <button
+                      type="button"
+                      onClick={() => goActivity(r[keyField])}
+                      className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+                      title="View these bookings"
+                    >
+                      {r.bookings} <ChevronRight size={13} />
+                    </button>
+                  ) : (
+                    <span className="text-ink-muted">{r.bookings}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right text-ink whitespace-nowrap">{rupee(r.b2b)}</td>
                 <td className="px-4 py-3 text-right text-ink whitespace-nowrap">{rupee(r.b2c)}</td>
                 <td className="px-4 py-3 text-right font-semibold whitespace-nowrap"><Diff v={r.difference} /></td>
@@ -350,6 +370,21 @@ function GroupTable({ rows, keyLabel, keyField, isDate }) {
 /* ── Payment voucher (contract-style) ──────────────────────────────────── */
 function VoucherModal({ row, onClose }) {
   const paid = row.paymentStatus === 'paid';
+  const [dl, setDl] = useState(false);
+  // Download the premium booking voucher PDF (same one emailed / on the
+  // full-page voucher) for this specific booking.
+  const downloadPdf = async () => {
+    setDl(true);
+    try {
+      const res = await api.get(`/admin/bookings/${row.code}/voucher.pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = `voucher-${row.code}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not download voucher');
+    } finally { setDl(false); }
+  };
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/50 p-4 overflow-y-auto" onClick={onClose}>
       {/* Print rules: on print, show only the voucher document. */}
@@ -357,6 +392,7 @@ function VoucherModal({ row, onClose }) {
       <div className="my-6 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Action bar (not printed) */}
         <div className="no-print flex items-center justify-end gap-2 mb-2">
+          <button onClick={downloadPdf} disabled={dl} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand/90 disabled:opacity-60">{dl ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Download voucher</button>
           <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-ink/90"><Printer size={15} /> Print / Save PDF</button>
           <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink text-sm font-semibold shadow-soft"><X size={15} /> Close</button>
         </div>

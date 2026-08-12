@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, Loader2, ChevronLeft, ChevronRight, Filter, Calendar as CalendarIcon,
   TrendingUp, CheckCircle2, XCircle, Hash, Clock, BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
-import AdminBookingDetailsModal from '../../components/admin/AdminBookingDetailsModal.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
 import { PERIOD_OPTIONS, rangeForPeriod } from '../../utils/datePresets.js';
 import {
@@ -40,7 +39,7 @@ export default function AdminBookingsPage() {
   const [limit, setLimit] = useState(25);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
   const [uni, setUni] = useState({ categories: [], experiences: [] });
 
   // Category + activity universes for the dropdowns.
@@ -92,25 +91,10 @@ export default function AdminBookingsPage() {
     setPage(1);
   };
 
-  // Open the detail modal but always re-fetch the freshest copy so any status
-  // changes since the list was loaded show up immediately.
-  const openDetails = async (bookingCode) => {
-    try {
-      const res = await api.get(`/admin/bookings/${bookingCode}`);
-      setSelected(res.data?.data?.booking || null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not load booking');
-    }
-  };
-
-  const handleChanged = async () => {
-    await load();
-    if (selected?.bookingCode) {
-      try {
-        const res = await api.get(`/admin/bookings/${selected.bookingCode}`);
-        setSelected(res.data?.data?.booking || null);
-      } catch { setSelected(null); }
-    }
+  // Open the full-page voucher directly (no popup) — it carries the download,
+  // print and admin actions in one place.
+  const openDetails = (bookingCode) => {
+    navigate(`/admin/bookings/${bookingCode}/voucher`);
   };
 
   return (
@@ -255,13 +239,6 @@ export default function AdminBookingsPage() {
           </div>
         )}
       </div>
-
-      <AdminBookingDetailsModal
-        booking={selected}
-        open={!!selected}
-        onClose={() => setSelected(null)}
-        onChanged={handleChanged}
-      />
     </div>
   );
 }
