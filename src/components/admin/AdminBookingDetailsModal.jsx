@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   X, Printer, Download, MapPin, Calendar, Users, Clock, CreditCard, FileText, User as UserIcon,
   Mail, Phone, Loader2, CheckCircle2, AlertCircle, Hotel as HotelIcon, RefreshCcw,
-  XCircle,
+  XCircle, ExternalLink,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
@@ -99,6 +100,13 @@ export default function AdminBookingDetailsModal({ booking, open, onClose, onCha
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute top-3 right-3 z-10 flex gap-2 print:hidden">
+          <Link
+            to={`/admin/bookings/${booking.bookingCode}/voucher`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 hover:bg-white text-ink shadow border border-gray-200 text-xs font-semibold"
+            title="Open full voucher page"
+          >
+            <ExternalLink size={14} /> Full page
+          </Link>
           <button
             type="button"
             onClick={downloadVoucher}

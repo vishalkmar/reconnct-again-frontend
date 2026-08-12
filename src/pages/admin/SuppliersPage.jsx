@@ -158,7 +158,8 @@ function SupplierListPanel() {
           </div>
           <ul className="divide-y divide-slate-100">
             {filtered.map((s) => (
-              <li key={s.id} className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center">
+              <li key={s.id} onClick={() => navigate(`/admin/suppliers/${s.id}/revenue`)}
+                className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center cursor-pointer hover:bg-surface-alt/50 transition">
                 <div className="col-span-12 md:col-span-4 min-w-0 flex items-center gap-3">
                   {s.image ? (
                     <img src={fileUrl(s.image)} alt="" className="w-10 h-10 rounded-lg object-cover border" />
@@ -187,9 +188,9 @@ function SupplierListPanel() {
                     className="font-semibold text-emerald-700 hover:underline">{inr(rev[s.id]?.b2c)}</button>
                 </div>
                 <div className="col-span-4 md:col-span-2 flex items-center justify-end gap-1">
-                  <IconBtn title="Edit" onClick={() => navigate(`/admin/suppliers/${s.id}/edit`)}><Pencil size={15} /></IconBtn>
-                  <IconBtn title={s.isActive ? 'Disable' : 'Enable'} onClick={() => toggle(s.id)}>{s.isActive ? <EyeOff size={15} /> : <Eye size={15} />}</IconBtn>
-                  <IconBtn title="Delete" danger onClick={() => remove(s.id, s.companyName)}><Trash2 size={15} /></IconBtn>
+                  <IconBtn title="Edit" onClick={(e) => { e.stopPropagation(); navigate(`/admin/suppliers/${s.id}/edit`); }}><Pencil size={15} /></IconBtn>
+                  <IconBtn title={s.isActive ? 'Disable' : 'Enable'} onClick={(e) => { e.stopPropagation(); toggle(s.id); }}>{s.isActive ? <EyeOff size={15} /> : <Eye size={15} />}</IconBtn>
+                  <IconBtn title="Delete" danger onClick={(e) => { e.stopPropagation(); remove(s.id, s.companyName); }}><Trash2 size={15} /></IconBtn>
                 </div>
               </li>
             ))}
