@@ -2,18 +2,24 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Download, Printer, Loader2, MapPin, Calendar, Users, Clock, CreditCard,
-  User as UserIcon, Mail, Phone, CheckCircle2, ExternalLink,
+  User as UserIcon, Mail, Phone, CheckCircle2, ExternalLink, Ticket, Hash, Wallet, Receipt,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
-import {
-  TYPE_LABEL, STATUS_BADGE, fmtMoney, fmtDate, fmtDateTime,
-} from '../../components/user/bookingFormatters.js';
+import { TYPE_LABEL, fmtMoney, fmtDate } from '../../components/user/bookingFormatters.js';
+
+const RECONNCT_LOGO = '/reconnct-logo-white.png';
+const fmtFull = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
 
 /*
-  Full-page, contract-style booking voucher — every detail of a booking laid out
-  cleanly, with Download PDF + Print. Opened from the admin bookings / supplier
-  revenue split, replacing the cramped popup for the "voucher" view.
+  Full-page, contract-style booking voucher — premium layout matching the PDF:
+  reconnct logo, hero + gallery, experience + about, detail cells, full payment,
+  clean price breakdown and a CTA footer. Download PDF + Print.
 */
 export default function BookingVoucherPage() {
   const { code } = useParams();
@@ -51,8 +57,10 @@ export default function BookingVoucherPage() {
   const p = b.pricing || {};
   const pay = b.payment || {};
   const paid = !!pay.paidAt;
-  const badge = STATUS_BADGE[b.status] || { label: b.status, cls: 'bg-slate-100 text-slate-700' };
   const cover = fileUrl(item.image || exp.gallery?.[0]);
+  const gallery = (exp.gallery || []).map(fileUrl).filter((g) => g && g !== cover).slice(0, 4);
+  const slotMatch = String(b.specialRequests || '').match(/Preferred time:\s*(.+)/i);
+  const slot = slotMatch ? slotMatch[1].trim() : '—';
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -72,93 +80,108 @@ export default function BookingVoucherPage() {
       {/* Document */}
       <div id="voucher-doc" className="bg-white rounded-2xl shadow-soft overflow-hidden border border-slate-100">
         {/* Letterhead */}
-        <div className="flex items-start justify-between gap-4 px-8 py-6 bg-ink text-white">
+        <div className="flex items-center justify-between gap-4 px-8 py-6" style={{ background: 'linear-gradient(90deg,#F9B402,#f0a800)' }}>
           <div>
-            <div className="font-display text-2xl font-bold tracking-tight">reconn<span className="text-brand">ct</span></div>
-            <div className="text-xs text-white/60 mt-0.5">Booking Voucher</div>
+            <img src={RECONNCT_LOGO} alt="reconnct" className="h-7 w-auto" onError={(e) => { e.target.replaceWith(Object.assign(document.createElement('span'), { className: 'font-display text-2xl font-bold text-white', textContent: 'reconnct' })); }} />
+            <div className="text-xs text-white/80 mt-1">Booking Voucher</div>
           </div>
-          <div className="text-right">
-            <div className="text-[11px] uppercase tracking-wide text-white/60">Booking code</div>
+          <div className="text-right text-white">
             <div className="font-mono font-bold text-lg">{b.bookingCode}</div>
-            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold capitalize ${paid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{String(b.status).replace('_', ' ')}</span>
+            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold capitalize bg-white/25">{String(b.status).replace('_', ' ')}</span>
           </div>
         </div>
 
-        {cover && <img src={cover} alt="" className="w-full h-56 object-cover" onError={(e) => { e.target.style.display = 'none'; }} />}
+        {/* Hero + gallery (2-col) */}
+        {cover && (
+          gallery.length ? (
+            <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50">
+              <img src={cover} alt="" className="w-full object-cover rounded-xl" style={{ height: 232 }} onError={(e) => { e.target.style.visibility = 'hidden'; }} />
+              <div className="grid grid-cols-2 gap-2">
+                {gallery.map((g, i) => <img key={i} src={g} alt="" className="w-full object-cover rounded-lg" style={{ height: 112 }} onError={(e) => { e.target.style.visibility = 'hidden'; }} />)}
+              </div>
+            </div>
+          ) : (
+            <img src={cover} alt="" className="w-full object-cover" style={{ height: 240 }} onError={(e) => { e.target.style.display = 'none'; }} />
+          )
+        )}
 
         <div className="p-8 space-y-6">
-          {/* Experience */}
-          <div>
+          {/* Experience card */}
+          <div className="rounded-xl bg-slate-50 border-l-4 border-brand p-5">
             <div className="text-[11px] font-bold uppercase tracking-widest text-brand-dark">{TYPE_LABEL[item.type] || 'Experience'}</div>
             <h1 className="text-2xl font-display font-bold text-ink mt-1">{item.name}</h1>
             {(item.location || exp.city) && <div className="text-sm text-ink-muted mt-1 inline-flex items-center gap-1.5"><MapPin size={13} /> {item.location || exp.city}</div>}
+            {exp.about && <p className="text-sm text-ink-muted leading-relaxed mt-3">{exp.about}</p>}
           </div>
 
-          {/* Trip grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-y border-slate-100 py-5">
+          {/* Detail cells */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 border-y border-slate-100 py-5">
             <Cell icon={Calendar} label="When" value={fmtDate(b.scheduledFor)} />
+            <Cell icon={Clock} label="Time slot" value={slot} />
             <Cell icon={Users} label="Guests" value={b.guest?.count ?? '—'} />
-            <Cell icon={Clock} label="Duration" value={exp.durationLabel || `${b.units || 1} day(s)`} />
+            <Cell icon={Ticket} label="Duration" value={exp.durationLabel || `${b.units || 1} day(s)`} />
             <Cell icon={CreditCard} label="Payment" value={paid ? 'Paid' : (b.status === 'cancelled' ? 'Cancelled' : 'Pending')} />
           </div>
 
-          {b.specialRequests && (
-            <Block label="Special requests"><p className="text-sm text-ink whitespace-pre-line">{b.specialRequests}</p></Block>
-          )}
-
-          {exp.about && (
-            <Block label="About this experience"><p className="text-sm text-ink-muted leading-relaxed">{exp.about}</p></Block>
-          )}
-
           {exp.inclusions?.length > 0 && (
-            <Block label="What's included">
+            <Block icon={CheckCircle2} label="What's included">
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {exp.inclusions.map((i, k) => <li key={k} className="flex items-start gap-2 text-sm text-ink"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> {i}</li>)}
               </ul>
             </Block>
           )}
 
-          {/* Two columns: customer + payment */}
+          {/* Lead traveller + Payment */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Block label="Lead traveller">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink"><UserIcon size={14} className="text-ink-muted" /> {b.guest?.name || b.user?.name || '—'}</div>
+            <Block icon={UserIcon} label="Lead traveller">
+              <div className="text-sm font-semibold text-ink">{b.guest?.name || b.user?.name || '—'}</div>
               <div className="text-sm text-ink-muted mt-1.5 flex items-center gap-1.5"><Mail size={12} /> {b.guest?.email || b.user?.email || '—'}</div>
               <div className="text-sm text-ink-muted mt-1 flex items-center gap-1.5"><Phone size={12} /> {b.guest?.phone || b.user?.phone || '—'}</div>
+              {b.specialRequests && <div className="text-xs text-ink-muted mt-2">Note: {b.specialRequests}</div>}
               {b.user?.id && (
                 <Link to={`/admin/users/${b.user.id}`} className="no-print inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline mt-2">
                   View customer profile <ExternalLink size={12} />
                 </Link>
               )}
             </Block>
-            <Block label="Payment">
-              <Row k="Order ID" v={pay.orderId} mono />
-              <Row k="Payment ID" v={pay.paymentId} mono />
-              <Row k="Method" v={pay.method} />
-              <Row k="Paid at" v={pay.paidAt ? fmtDateTime(pay.paidAt) : '—'} />
+            <Block icon={Receipt} label="Payment details">
+              <PRow icon={Hash} k="Order ID" v={pay.orderId} mono />
+              <PRow icon={Hash} k="Payment ID" v={pay.paymentId} mono />
+              <PRow icon={CreditCard} k="Method" v={pay.method} />
+              <PRow icon={Wallet} k="Currency" v={b.currency} />
+              <PRow icon={Clock} k="Paid at" v={pay.paidAt ? fmtFull(pay.paidAt) : '—'} />
+              <PRow icon={Clock} k="Booked at" v={fmtFull(b.createdAt)} />
             </Block>
           </div>
 
           {/* Price breakdown */}
-          <Block label="Price breakdown">
+          <Block icon={Receipt} label="Price breakdown">
             <div className="rounded-xl border border-slate-100 overflow-hidden">
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-slate-50">
                   <PriceRow k={`Subtotal${p.unitPrice ? ` (${fmtMoney(p.unitPrice, b.currency)} × ${b.guest?.count || 1})` : ''}`} v={fmtMoney(p.subtotal, b.currency)} />
                   {p.couponDiscount > 0 && <PriceRow k={`Coupon ${p.couponCode || ''}`} v={`− ${fmtMoney(p.couponDiscount, b.currency)}`} green />}
                   {p.walletDiscount > 0 && <PriceRow k="Wallet credit" v={`− ${fmtMoney(p.walletDiscount, b.currency)}`} green />}
-                  {p.gst > 0 && <PriceRow k="GST / Taxes" v={fmtMoney(p.tax || p.gst, b.currency)} />}
+                  {(p.tax > 0 || p.gst > 0) && <PriceRow k="Taxes (GST)" v={fmtMoney(p.tax || p.gst, b.currency)} />}
                 </tbody>
                 <tfoot>
                   <tr className="bg-ink/[0.03]">
                     <td className="px-4 py-3 font-bold text-ink">{paid ? 'Total paid' : 'Total payable'}</td>
-                    <td className="px-4 py-3 text-right font-bold text-lg text-brand-dark">{fmtMoney(p.total, b.currency)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-lg text-emerald-700">{fmtMoney(p.total, b.currency)}</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </Block>
+        </div>
 
-          <p className="text-[11px] text-ink-muted text-center pt-2 border-t border-slate-100">Show the booking code at check-in · reconnct — Experiences that connect</p>
+        {/* Footer CTA band */}
+        <div className="flex items-center justify-between gap-4 px-8 py-5 bg-ink">
+          <img src={RECONNCT_LOGO} alt="reconnct" className="h-6 w-auto" onError={(e) => { e.target.replaceWith(Object.assign(document.createElement('span'), { className: 'font-display text-lg font-bold text-white', textContent: 'reconnct' })); }} />
+          <div className="text-right">
+            <div className="text-sm font-bold text-brand">Experiences that connect</div>
+            <div className="text-[11px] text-white/60">Show this booking code at check-in — keep this voucher handy.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -168,24 +191,24 @@ export default function BookingVoucherPage() {
 function Cell({ icon: Icon, label, value }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-ink-muted inline-flex items-center gap-1"><Icon size={12} /> {label}</div>
+      <div className="text-[11px] uppercase tracking-wide text-ink-muted inline-flex items-center gap-1"><Icon size={12} className="text-slate-400" /> {label}</div>
       <div className="text-sm font-semibold text-ink mt-0.5">{value}</div>
     </div>
   );
 }
-function Block({ label, children }) {
+function Block({ icon: Icon, label, children }) {
   return (
     <div>
-      <div className="text-[11px] font-bold uppercase tracking-widest text-ink-muted mb-2">{label}</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-ink-muted mb-2 inline-flex items-center gap-1.5">{Icon && <Icon size={12} className="text-slate-400" />} {label}</div>
       {children}
     </div>
   );
 }
-function Row({ k, v, mono }) {
+function PRow({ icon: Icon, k, v, mono }) {
   return (
     <div className="flex items-start justify-between gap-3 py-1.5 text-sm">
-      <span className="text-ink-muted">{k}</span>
-      <span className={`text-ink text-right ${mono ? 'font-mono text-xs' : ''}`}>{v || '—'}</span>
+      <span className="text-ink-muted inline-flex items-center gap-1.5">{Icon && <Icon size={12} className="text-slate-400" />} {k}</span>
+      <span className={`text-ink text-right ${mono ? 'font-mono text-xs' : 'font-medium'}`}>{v || '—'}</span>
     </div>
   );
 }
