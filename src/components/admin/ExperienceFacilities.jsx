@@ -1,65 +1,106 @@
-import { useEffect, useState } from 'react';
-import { Plus, Check, X } from 'lucide-react';
-import toast from 'react-hot-toast';
+import {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
+import { Check, X, Search, ChevronDown, Plus } from 'lucide-react';
 import api from '../../services/api';
+import { FACILITY_OPTIONS } from '../../constants/facilities.js';
 
 /**
- * Facilities picker — toggle chips sourced from the shared Facility taxonomy
- * (same list retreats/hotels use, GET /facilities) plus inline custom add.
- * Stored as a flat array of facility names. Controlled via value + onChange.
+ * Facilities picker — a searchable multi-select dropdown over a large curated
+ * list (constants/facilities.js) merged with the shared Facility taxonomy
+ * (GET /facilities) and any custom names already chosen. Stored as a flat array
+ * of names. Controlled via value + onChange.
  */
 export default function ExperienceFacilities({ value = [], onChange }) {
   const selected = Array.isArray(value) ? value : [];
-  const [suggestions, setSuggestions] = useState([]);
-  const [adding, setAdding] = useState(false);
-  const [custom, setCustom] = useState('');
+  const [tax, setTax] = useState([]);
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
   useEffect(() => {
     api.get('/facilities')
-      .then((res) => setSuggestions((res.data?.data?.items || []).map((f) => f.name).filter(Boolean)))
+      .then((res) => setTax((res.data?.data?.items || []).map((f) => f.name).filter(Boolean)))
       .catch(() => {});
   }, []);
 
-  const toggle = (name) => {
-    onChange(selected.includes(name) ? selected.filter((x) => x !== name) : [...selected, name]);
-  };
+  useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
 
+  const allOptions = useMemo(
+    () => Array.from(new Set([...FACILITY_OPTIONS, ...tax, ...selected])).sort((a, b) => a.localeCompare(b)),
+    [tax, selected],
+  );
+  const term = q.trim().toLowerCase();
+  const filtered = useMemo(() => (term ? allOptions.filter((o) => o.toLowerCase().includes(term)) : allOptions), [allOptions, term]);
+  const exactExists = allOptions.some((o) => o.toLowerCase() === term);
+
+  const toggle = (name) => onChange(selected.includes(name) ? selected.filter((x) => x !== name) : [...selected, name]);
   const addCustom = () => {
-    const n = custom.trim();
+    const n = q.trim();
     if (!n) return;
-    if (selected.some((x) => x.toLowerCase() === n.toLowerCase())) { toast('Already added'); setCustom(''); setAdding(false); return; }
-    onChange([...selected, n]);
-    setCustom(''); setAdding(false);
+    if (!allOptions.some((o) => o.toLowerCase() === n.toLowerCase())) onChange([...selected, n]);
+    setQ('');
   };
-
-  // Merge suggestions + any already-selected custom names not in suggestions.
-  const chips = Array.from(new Set([...suggestions, ...selected]));
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {chips.map((name) => (
-        <button key={name} type="button" onClick={() => toggle(name)}
-          className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-sm font-medium border transition ${
-            selected.includes(name) ? 'bg-brand text-ink border-brand shadow-soft' : 'bg-white text-ink border-gray-200 hover:border-brand/50 hover:text-brand'
-          }`}>
-          {name}{selected.includes(name) && <Check size={13} className="ml-1" />}
-        </button>
-      ))}
-
-      {!adding ? (
-        <button type="button" onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-brand/50 text-brand hover:bg-brand/10 transition">
-          <Plus size={14} /> Add custom
-        </button>
-      ) : (
-        <span className="inline-flex items-center gap-1 rounded-full border border-brand bg-white pl-3 pr-1 py-1">
-          <input autoFocus value={custom} onChange={(e) => setCustom(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } if (e.key === 'Escape') setAdding(false); }}
-            placeholder="Facility name" className="text-sm outline-none w-32" />
-          <button type="button" onClick={addCustom} className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-full"><Check size={15} /></button>
-          <button type="button" onClick={() => { setAdding(false); setCustom(''); }} className="p-1 text-gray-400 hover:bg-gray-100 rounded-full"><X size={15} /></button>
-        </span>
+    <div ref={ref} className="relative">
+      {/* Selected chips */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selected.map((name) => (
+            <span key={name} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full bg-brand/10 text-ink text-sm font-medium border border-brand/30">
+              {name}
+              <button type="button" onClick={() => toggle(name)} className="p-0.5 text-ink-muted hover:text-rose-600"><X size={13} /></button>
+            </span>
+          ))}
+        </div>
       )}
+
+      {/* Search control */}
+      <div className="relative">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!exactExists) addCustom(); } }}
+          placeholder={`Search ${FACILITY_OPTIONS.length}+ facilities, or type to add your own…`}
+          className="input pl-9 pr-9"
+        />
+        <ChevronDown size={16} className={`absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} onClick={() => setOpen((o) => !o)} />
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
+          {term && !exactExists && (
+            <button type="button" onClick={addCustom} className="w-full text-left px-4 py-2.5 text-sm text-brand font-semibold hover:bg-brand/5 inline-flex items-center gap-1.5">
+              <Plus size={14} /> Add “{q.trim()}”
+            </button>
+          )}
+          {filtered.length === 0 && !term ? (
+            <div className="px-4 py-3 text-sm text-ink-muted">Start typing to search…</div>
+          ) : filtered.map((name) => {
+            const on = selected.includes(name);
+            return (
+              <button key={name} type="button" onClick={() => toggle(name)}
+                className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left hover:bg-surface-alt ${on ? 'text-ink font-semibold' : 'text-ink'}`}>
+                {name}
+                {on && <Check size={15} className="text-brand shrink-0" />}
+              </button>
+            );
+          })}
+          {filtered.length === 0 && term && exactExists && (
+            <div className="px-4 py-3 text-sm text-ink-muted">Already listed.</div>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-ink-muted mt-1.5">{selected.length} selected · search the list or type a new facility and press Enter.</p>
     </div>
   );
 }

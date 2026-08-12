@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Trash2, Plus, MapPin, Truck } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Plus, MapPin, Truck, Rocket, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import ExperienceTaxPricing from '../../components/admin/ExperienceTaxPricing.jsx';
 import usePersistedForm from '../../hooks/usePersistedForm.js';
 import ExperienceTaxonomyPicker from '../../components/admin/ExperienceTaxonomyPicker.jsx';
 import StarRatingInput from '../../components/admin/StarRatingInput.jsx';
@@ -209,11 +210,70 @@ export default function ExperienceFormPage() {
     }
   };
 
+  // ── BD "Direct listing" add-on — publish straight to live from here ──────
+  const [dlIds, setDlIds] = useState([]);      // created experience ids to publish
+  const [dlOpen, setDlOpen] = useState(false); // go-live pricing modal open
+  const [goLive, setGoLive] = useState({ gstRate: 0, markup: null, discount: null, convenienceFee: null });
+  const [publishing, setPublishing] = useState(false);
+
+  const startDirectListing = async () => {
+    const acts = value.activities || [];
+    for (let i = 0; i < acts.length; i++) {
+      const err = validateExperience(acts[i], { forReview: true });
+      if (err) return toast.error(`${err}${acts.length > 1 ? ` (activity ${i + 1})` : ''}`);
+    }
+    setSaving(true);
+    try {
+      const shared = { supplierId: value.supplierId || null, showSupplierPublic: value.showSupplierPublic !== false, status: value.status };
+      let ids = [];
+      if (editing) {
+        await api.put(`/experiences/${id}`, { ...acts[0], ...shared });
+        ids = [id];
+      } else {
+        for (const a of acts) {
+          // eslint-disable-next-line no-await-in-loop
+          const res = await api.post('/experiences', { ...a, ...shared });
+          const nid = res.data?.data?.item?.id;
+          if (nid) ids.push(nid);
+        }
+      }
+      setDlIds(ids);
+      setGoLive({ gstRate: 0, markup: null, discount: null, convenienceFee: null });
+      setDlOpen(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+    return undefined;
+  };
+
+  const publishDirect = async () => {
+    if (!dlIds.length) return;
+    setPublishing(true);
+    try {
+      for (const eid of dlIds) {
+        // eslint-disable-next-line no-await-in-loop
+        await api.post(`/experiences/${eid}/direct-live`, {
+          gstRate: goLive.gstRate, markup: goLive.markup, discount: goLive.discount, convenienceFee: goLive.convenienceFee,
+        });
+      }
+      toast.success(dlIds.length > 1 ? `${dlIds.length} experiences are now live 🎉` : 'Experience is now live 🎉');
+      clearDraft();
+      navigate(listPath);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Publish failed');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-10 text-center text-ink-muted"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
   }
 
   const activities = value.activities || [];
+  const firstBase = Number(activities[0]?.pricing?.adultPrice) || 0;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -287,7 +347,7 @@ export default function ExperienceFormPage() {
           <div className="bg-white rounded-2xl shadow-soft p-5">
             <h3 className="font-semibold mb-3">{isTeamPath ? 'Save' : 'Publish'}</h3>
             {isTeamPath ? (
-              <p className="text-xs text-ink-muted mb-4">This goes to Center Ops for review — it can’t be published directly from here.</p>
+              <p className="text-xs text-ink-muted mb-4">“Save experience” sends it to Center Ops for review. Or use “Direct listing” to publish it live right now.</p>
             ) : (
               <>
                 <label className="label">Status</label>
@@ -305,6 +365,12 @@ export default function ExperienceFormPage() {
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {editing ? 'Update experience' : (activities.length > 1 ? `Save ${activities.length} activities` : 'Save experience')}
             </button>
+            {isTeamPath && (
+              <button onClick={startDirectListing} disabled={saving}
+                className="w-full mt-2 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60">
+                <Rocket size={16} /> Direct listing (live now)
+              </button>
+            )}
             <button onClick={() => navigate(listPath)} className="w-full mt-2 px-5 py-2.5 rounded-lg border border-gray-200 font-medium hover:bg-surface-alt">Cancel</button>
             {hasDraft && (
               <button onClick={discardDraft} className="w-full mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-rose-600 hover:underline">
@@ -315,6 +381,42 @@ export default function ExperienceFormPage() {
           </div>
         </aside>
       </div>{/* /grid */}
+
+      {/* Direct-listing go-live pricing modal (BD add-on) */}
+      {dlOpen && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={() => !publishing && setDlOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-display font-bold text-lg">Set go-live pricing</h3>
+                <p className="text-xs text-ink-muted">Publishing {dlIds.length} {dlIds.length > 1 ? 'experiences' : 'experience'} straight to live. These extras apply on the B2B base.</p>
+              </div>
+              <button onClick={() => !publishing && setDlOpen(false)} className="p-1.5 rounded-lg hover:bg-surface-alt text-ink-muted"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-5">
+              <div className="rounded-xl bg-surface-alt/60 px-4 py-3 mb-4 text-sm">
+                <span className="font-semibold text-ink">B2B base (per adult): ₹{firstBase.toLocaleString('en-IN')}</span>
+                {dlIds.length > 1 && <span className="text-ink-muted"> · each activity keeps its own base; the extras below apply to all.</span>}
+              </div>
+              <ExperienceTaxPricing
+                gstRate={goLive.gstRate}
+                markup={goLive.markup}
+                discount={goLive.discount}
+                convenienceFee={goLive.convenienceFee}
+                basePrice={firstBase}
+                onChange={(p) => setGoLive((g) => ({ ...g, ...p }))}
+              />
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+              <button onClick={() => setDlOpen(false)} disabled={publishing} className="px-4 py-2 rounded-lg text-sm font-semibold text-ink-muted hover:bg-surface-alt">Cancel</button>
+              <button onClick={publishDirect} disabled={publishing}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-60">
+                {publishing ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />} Publish live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
