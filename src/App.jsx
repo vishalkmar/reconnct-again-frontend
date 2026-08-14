@@ -54,6 +54,11 @@ import ExperienceViewPage from './pages/admin/ExperienceViewPage.jsx';
 import AdminAllListedPage from './pages/admin/AdminAllListedPage.jsx';
 import AdminDelistedPage from './pages/admin/AdminDelistedPage.jsx';
 import ExperienceSetupPage from './pages/admin/ExperienceSetupPage.jsx';
+import MarkupManagementPage from './pages/admin/pricing-setup/MarkupManagementPage.jsx';
+import MarkupAnalyticsPage from './pages/admin/pricing-setup/MarkupAnalyticsPage.jsx';
+import DiscountManagementPage from './pages/admin/pricing-setup/DiscountManagementPage.jsx';
+import GstTaxesManagementPage from './pages/admin/pricing-setup/GstTaxesManagementPage.jsx';
+import ConvenienceManagementPage from './pages/admin/pricing-setup/ConvenienceManagementPage.jsx';
 import SuppliersPage from './pages/admin/SuppliersPage.jsx';
 import SupplierRevenuePage from './pages/admin/SupplierRevenuePage.jsx';
 import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
@@ -233,6 +238,13 @@ export default function App() {
           <Route path="app-screens" element={<AppScreensControlPage />} />
           <Route path="chat-support" element={<ChatSupportPage />} />
           <Route path="team" element={<TeamManagementPage />} />
+          {/* Pricing Setup Management — markup / discount / GST / convenience */}
+          <Route path="pricing-setup" element={<Navigate to="/admin/pricing-setup/markup" replace />} />
+          <Route path="pricing-setup/markup" element={<MarkupManagementPage />} />
+          <Route path="pricing-setup/markup/analysis" element={<MarkupAnalyticsPage />} />
+          <Route path="pricing-setup/discount" element={<DiscountManagementPage />} />
+          <Route path="pricing-setup/gst" element={<GstTaxesManagementPage />} />
+          <Route path="pricing-setup/convenience" element={<ConvenienceManagementPage />} />
         </Route>
 
         {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}

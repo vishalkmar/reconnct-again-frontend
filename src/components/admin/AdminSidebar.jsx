@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Handshake,
+  IndianRupee,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -44,6 +45,16 @@ const mainItems = [
   { to: '/admin/app-screens', label: 'App Screens Control', icon: Smartphone },
   { to: '/admin/chat-support', label: 'Chat Support', icon: MessageCircle, badgeKey: 'support' },
   { to: '/admin/team', label: 'Team Management', icon: ShieldCheck },
+  {
+    label: 'Pricing Setup Management',
+    icon: IndianRupee,
+    children: [
+      { to: '/admin/pricing-setup/markup', label: 'Markup Management' },
+      { to: '/admin/pricing-setup/discount', label: 'Discount Management' },
+      { to: '/admin/pricing-setup/gst', label: 'GST & Taxes Management' },
+      { to: '/admin/pricing-setup/convenience', label: 'Convenience Management' },
+    ],
+  },
 ];
 
 export default function AdminSidebar({ open, onClose }) {

@@ -404,6 +404,7 @@ export default function ExperienceFormPage() {
                 discount={goLive.discount}
                 convenienceFee={goLive.convenienceFee}
                 basePrice={firstBase}
+                experienceIds={dlIds}
                 onChange={(p) => setGoLive((g) => ({ ...g, ...p }))}
               />
             </div>

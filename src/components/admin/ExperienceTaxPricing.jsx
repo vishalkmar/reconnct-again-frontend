@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
-import { IndianRupee, Percent, Tag, Sparkles, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { IndianRupee, Percent, Tag, Sparkles, TrendingUp, Lock, Pencil, Loader2, Check, X as XIcon, RotateCcw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from '../../services/api';
 
 /**
  * GST + discount + convenience fee with a LIVE breakdown.
@@ -17,6 +19,13 @@ import { IndianRupee, Percent, Tag, Sparkles, TrendingUp } from 'lucide-react';
  *       fixed      : a flat ₹ amount added on top
  *       percentage : a % of the final amount added on top
  *
+ * MARKUP is NOT edited here any more. It comes from the admin's global
+ * Pricing Setup → Markup Management rules and is shown read-only. The Edit
+ * button writes a one-off override for THIS experience (which is stored as
+ * another markup rule, so the same "latest wins" logic decides the outcome).
+ * Pass `experienceIds` (one or many — a direct listing publishes several
+ * activities together) to enable that button.
+ *
  * `basePrice` (the adult price from Pricing) drives the live preview.
  * Controlled via gstRate / discount / convenienceFee + onChange(patch).
  */
@@ -24,7 +33,7 @@ const GST_OPTS = [0, 5, 12, 18, 28];
 const rupee = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 export default function ExperienceTaxPricing({
-  gstRate = 0, markup, discount, convenienceFee, basePrice = 0, onChange,
+  gstRate = 0, markup, discount, convenienceFee, basePrice = 0, onChange, experienceIds,
 }) {
   const mk = markup || { type: 'percentage', value: 0 };
   const disc = discount || { type: 'percentage', value: 0 };
@@ -53,24 +62,8 @@ export default function ExperienceTaxPricing({
     <div className="grid md:grid-cols-2 gap-6">
       {/* Controls */}
       <div className="space-y-4">
-        {/* Markup — a margin added on the base, before discount/GST */}
-        <div>
-          <label className="label inline-flex items-center gap-1.5"><TrendingUp size={14} /> Markup</label>
-          <div className="flex gap-2">
-            <select className="input w-40" value={mk.type} onChange={(e) => onChange({ markup: { ...mk, type: e.target.value } })}>
-              <option value="percentage">Percentage %</option>
-              <option value="fixed">Fixed amount ₹</option>
-            </select>
-            <div className="relative flex-1">
-              {mk.type === 'fixed'
-                ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
-              <input type="number" min={0} className="input pl-8" placeholder="0" value={mk.value || ''}
-                onChange={(e) => onChange({ markup: { ...mk, value: e.target.value === '' ? 0 : Number(e.target.value) } })} />
-            </div>
-          </div>
-          <p className="text-[11px] text-ink-muted mt-1">Added on the B2B base first — increases the price the customer pays.</p>
-        </div>
+        {/* Markup — set globally in Markup Management, read-only here */}
+        <MarkupPanel markup={markup} experienceIds={experienceIds} onChange={onChange} />
 
         {/* Discount — applied on the marked-up base, before GST */}
         <div>
@@ -186,6 +179,162 @@ export default function ExperienceTaxPricing({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/*
+  Markup — read-only. The value shown is whatever the admin's global Markup
+  Management rules resolve to for this experience; the go-live screen only
+  reports it. "Edit" opens a one-off override for this experience only, saved
+  straight away (it becomes the newest rule, so it wins), and "Reset" drops that
+  override so the broader category/audience/all rule takes over again.
+*/
+const SCOPE_LABEL = {
+  all: 'All experiences',
+  category: 'Broad category',
+  audience: 'Who is this for',
+  experience: 'This experience only',
+};
+
+function MarkupPanel({ markup, experienceIds, onChange }) {
+  const ids = (Array.isArray(experienceIds) ? experienceIds : [experienceIds]).filter(Boolean);
+  const canEdit = ids.length > 0;
+
+  const [info, setInfo] = useState(null);      // { markup, rule, otherRules }
+  const [loading, setLoading] = useState(canEdit);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState({ type: 'percentage', value: 0 });
+
+  // Pull the resolved markup for the first id — a multi-activity direct listing
+  // publishes identical activities, so the first one represents the batch.
+  const load = async () => {
+    if (!canEdit) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/admin/pricing-setup/markup/experience/${ids[0]}`);
+      const d = data?.data || {};
+      setInfo(d);
+      onChange({ markup: d.markup || null });
+      setDraft({ type: d.markup?.type || 'percentage', value: Number(d.markup?.value) || 0 });
+    } catch {
+      setInfo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ids[0]]);
+
+  const eff = info ? info.markup : markup;
+  const hasMarkup = eff && Number(eff.value) > 0;
+  const isOverride = eff?.scope === 'experience';
+
+  const save = async () => {
+    if (!Number(draft.value)) return toast.error('Enter a markup value');
+    setSaving(true);
+    try {
+      await api.put(`/admin/pricing-setup/markup/experience/${ids[0]}`, {
+        type: draft.type, value: Number(draft.value), experienceIds: ids,
+      });
+      toast.success('Markup set for this experience');
+      setEditing(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not set markup');
+    } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    try {
+      for (const id of ids) {
+        // eslint-disable-next-line no-await-in-loop
+        await api.delete(`/admin/pricing-setup/markup/experience/${id}`);
+      }
+      toast.success('Back to the global markup');
+      setEditing(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not reset');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="label mb-0 inline-flex items-center gap-1.5"><TrendingUp size={14} /> Markup</span>
+        {canEdit && !editing && (
+          <button type="button" onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
+            <Pencil size={12} /> Edit
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="rounded-xl border border-brand/40 bg-brand/5 p-3">
+          <div className="flex gap-2">
+            <select className="input w-40" value={draft.type} onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}>
+              <option value="percentage">Percentage %</option>
+              <option value="fixed">Fixed amount ₹</option>
+            </select>
+            <div className="relative flex-1">
+              {draft.type === 'fixed'
+                ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={draft.value || ''}
+                onChange={(e) => setDraft((d) => ({ ...d, value: e.target.value === '' ? 0 : Number(e.target.value) }))} />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button type="button" onClick={save} disabled={saving}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-ink text-xs font-bold disabled:opacity-60">
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save for this listing
+            </button>
+            <button type="button" onClick={() => { setEditing(false); setDraft({ type: eff?.type || 'percentage', value: Number(eff?.value) || 0 }); }}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:bg-surface-alt">
+              <XIcon size={12} /> Cancel
+            </button>
+            {isOverride && (
+              <button type="button" onClick={reset} disabled={saving}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 ml-auto">
+                <RotateCcw size={12} /> Use global
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-ink-muted mt-2">
+            Saved immediately{ids.length > 1 ? ` for all ${ids.length} activities` : ''} — it becomes the newest markup rule, so it overrides the global one.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-surface-alt/60 px-3.5 py-2.5">
+          {loading ? (
+            <span className="inline-flex items-center gap-2 text-sm text-ink-muted"><Loader2 size={14} className="animate-spin" /> Loading markup…</span>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-base font-bold text-ink">
+                  {hasMarkup
+                    ? (eff.type === 'fixed' ? rupee(eff.value) : `${Number(eff.value)}%`)
+                    : <span className="text-ink-muted font-medium text-sm">No markup set</span>}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                  <Lock size={11} /> {hasMarkup ? (SCOPE_LABEL[eff.scope] || 'Global') : 'Global'}
+                </span>
+              </div>
+              {info?.rule?.targetNames?.length > 0 && (
+                <p className="text-[11px] text-ink-muted mt-0.5 truncate">From: {info.rule.targetNames.join(', ')}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-ink-muted mt-1">
+        Set globally in <strong>Pricing Setup → Markup Management</strong>. Added on the B2B base first — it increases the price the customer pays.
+        {info?.otherRules?.length > 0 && ` ${info.otherRules.length} other rule(s) also match; the most recently applied one wins.`}
+      </p>
     </div>
   );
 }
