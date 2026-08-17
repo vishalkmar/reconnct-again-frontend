@@ -58,6 +58,7 @@ import MarkupManagementPage from './pages/admin/pricing-setup/MarkupManagementPa
 import MarkupAnalyticsPage from './pages/admin/pricing-setup/MarkupAnalyticsPage.jsx';
 import GstAnalyticsPage from './pages/admin/pricing-setup/GstAnalyticsPage.jsx';
 import ConvenienceAnalyticsPage from './pages/admin/pricing-setup/ConvenienceAnalyticsPage.jsx';
+import DiscountAnalyticsPage from './pages/admin/pricing-setup/DiscountAnalyticsPage.jsx';
 import DiscountManagementPage from './pages/admin/pricing-setup/DiscountManagementPage.jsx';
 import GstTaxesManagementPage from './pages/admin/pricing-setup/GstTaxesManagementPage.jsx';
 import ConvenienceManagementPage from './pages/admin/pricing-setup/ConvenienceManagementPage.jsx';
@@ -245,6 +246,7 @@ export default function App() {
           <Route path="pricing-setup/markup" element={<MarkupManagementPage />} />
           <Route path="pricing-setup/markup/analysis" element={<MarkupAnalyticsPage />} />
           <Route path="pricing-setup/discount" element={<DiscountManagementPage />} />
+          <Route path="pricing-setup/discount/analysis" element={<DiscountAnalyticsPage />} />
           <Route path="pricing-setup/gst" element={<GstTaxesManagementPage />} />
           <Route path="pricing-setup/gst/analysis" element={<GstAnalyticsPage />} />
           <Route path="pricing-setup/convenience" element={<ConvenienceManagementPage />} />

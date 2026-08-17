@@ -71,24 +71,9 @@ export default function ExperienceTaxPricing({
         {/* Markup — set globally in Markup Management, read-only here */}
         <MarkupPanel markup={markup} experienceIds={experienceIds} onChange={onChange} />
 
-        {/* Discount — applied on the marked-up base, before GST */}
-        <div>
-          <label className="label inline-flex items-center gap-1.5"><Tag size={14} /> Discount</label>
-          <div className="flex gap-2">
-            <select className="input w-40" value={disc.type} onChange={(e) => onChange({ discount: { ...disc, type: e.target.value } })}>
-              <option value="percentage">Percentage %</option>
-              <option value="fixed">Fixed amount ₹</option>
-            </select>
-            <div className="relative flex-1">
-              {disc.type === 'fixed'
-                ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
-              <input type="number" min={0} className="input pl-8" placeholder="0" value={disc.value || ''}
-                onChange={(e) => onChange({ discount: { ...disc, value: e.target.value === '' ? 0 : Number(e.target.value) } })} />
-            </div>
-          </div>
-          <p className="text-[11px] text-ink-muted mt-1">Always applied on the base price, before GST.</p>
-        </div>
+        {/* Discount is no longer set per listing — it reaches the customer as a
+            coupon they redeem at booking (Pricing Setup → Discount Management),
+            so there is deliberately nothing to edit here. */}
 
         {/* GST — set globally in GST & Taxes Management, read-only here */}
         <GstPanel gstRate={gstRate} experienceIds={experienceIds} onChange={onChange} onResolved={setGstInfo} />
