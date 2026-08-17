@@ -42,20 +42,31 @@ export default function MarkupManagementPage() {
   const [editRule, setEditRule] = useState(null);
   const [resyncing, setResyncing] = useState(false);
 
+  const [apiMissing, setApiMissing] = useState(false);
+
+  // Each endpoint is loaded independently — one failing must not blank the
+  // whole page, and a 404 means the API this build needs isn't live yet
+  // (backend not deployed), which is worth saying plainly instead of a
+  // generic "could not load".
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [r, t, e] = await Promise.all([
-        api.get('/admin/pricing-setup/markup/rules'),
-        api.get('/admin/pricing-setup/markup/targets'),
-        api.get('/admin/pricing-setup/markup/effective'),
-      ]);
-      setRules(r.data?.data?.items || []);
-      setTargets(t.data?.data || { categories: [], audiences: [], experiences: [] });
-      setEffective(e.data?.data?.items || []);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not load markup rules');
-    } finally { setLoading(false); }
+    const results = await Promise.allSettled([
+      api.get('/admin/pricing-setup/markup/rules'),
+      api.get('/admin/pricing-setup/markup/targets'),
+      api.get('/admin/pricing-setup/markup/effective'),
+    ]);
+    const [r, t, e] = results;
+    if (r.status === 'fulfilled') setRules(r.value.data?.data?.items || []);
+    if (t.status === 'fulfilled') setTargets(t.value.data?.data || { categories: [], audiences: [], experiences: [] });
+    if (e.status === 'fulfilled') setEffective(e.value.data?.data?.items || []);
+
+    const failed = results.filter((x) => x.status === 'rejected');
+    const missing = failed.some((x) => x.reason?.response?.status === 404);
+    setApiMissing(missing);
+    if (failed.length && !missing) {
+      toast.error(failed[0].reason?.response?.data?.message || 'Could not load markup rules');
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -109,6 +120,16 @@ export default function MarkupManagementPage() {
           {resyncing ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />} Re-apply everywhere
         </button>
       </div>
+
+      {apiMissing && (
+        <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800 mb-5">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>
+            The markup API isn’t responding on this server yet (<code>/api/admin/pricing-setup/markup/*</code> returns 404).
+            This screen works once the backend carrying Markup Management is deployed — until then the page stays empty.
+          </span>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-3 gap-3 mb-6">
         <Stat label="Active rules" value={rules.filter((r) => r.isActive).length} icon={TrendingUp} tint="text-brand bg-brand/10" />

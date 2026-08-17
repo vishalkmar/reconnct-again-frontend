@@ -93,7 +93,9 @@ export default function MarkupAnalyticsPage() {
       const res = await api.get('/admin/pricing-setup/markup/analytics', { params });
       setData(res.data?.data || null);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not load markup analytics');
+      toast.error(err.response?.status === 404
+        ? 'Markup analytics isn’t live on this server yet — deploy the backend carrying Markup Management.'
+        : (err.response?.data?.message || 'Could not load markup analytics'));
     } finally { setLoading(false); }
   }, [mode, custom, grouping, f]);
 
