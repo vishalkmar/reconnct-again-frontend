@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sparkles, Plus, Search, Loader2, Check, X, Pencil, Trash2, Pause, Play,
-  Globe, Layers, Users, BarChart3, RotateCcw, IndianRupee, Percent, ChevronRight, AlertTriangle, Gift,
+  Globe, Layers, Users, BarChart3, IndianRupee, Percent, ChevronRight, AlertTriangle, Gift,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -40,7 +40,6 @@ export default function ConvenienceManagementPage() {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editRule, setEditRule] = useState(null);
-  const [resyncing, setResyncing] = useState(false);
   const [apiMissing, setApiMissing] = useState(false);
 
   const load = useCallback(async () => {
@@ -64,15 +63,6 @@ export default function ConvenienceManagementPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const resync = async () => {
-    setResyncing(true);
-    try {
-      const { data } = await api.post('/admin/pricing-setup/convenience/resync');
-      toast.success(data.message || 'Re-applied');
-      load();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
-    finally { setResyncing(false); }
-  };
 
   const toggle = async (rule) => {
     try { await api.patch(`/admin/pricing-setup/convenience/rules/${rule.id}/toggle`); load(); }
@@ -105,10 +95,6 @@ export default function ConvenienceManagementPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-ink hover:border-brand/50">
           <BarChart3 size={15} /> Analysis
         </Link>
-        <button onClick={resync} disabled={resyncing}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-ink-muted hover:text-brand disabled:opacity-60">
-          {resyncing ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />} Re-apply everywhere
-        </button>
       </div>
 
       {apiMissing && (
