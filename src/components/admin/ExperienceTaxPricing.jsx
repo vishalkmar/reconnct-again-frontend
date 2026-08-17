@@ -39,8 +39,6 @@ export default function ExperienceTaxPricing({
   const disc = discount || { type: 'percentage', value: 0 };
   const cf = { type: 'free', value: 0, months: 0, cutThrough: 0, ...(convenienceFee || {}) };
 
-  const setCf = (patch) => onChange({ convenienceFee: { ...cf, ...patch } });
-
   // The GST panel reports back what it resolved so the breakdown can show the
   // 'pure' de-grossed base rather than the quoted (GST-inclusive) one.
   const [gstInfo, setGstInfo] = useState(null);
@@ -95,58 +93,8 @@ export default function ExperienceTaxPricing({
         {/* GST — set globally in GST & Taxes Management, read-only here */}
         <GstPanel gstRate={gstRate} experienceIds={experienceIds} onChange={onChange} onResolved={setGstInfo} />
 
-        {/* Convenience fee */}
-        <div>
-          <label className="label inline-flex items-center gap-1.5"><Sparkles size={14} /> Convenience fee</label>
-          <select className="input" value={cf.type} onChange={(e) => setCf({ type: e.target.value })}>
-            <option value="free">Free</option>
-            <option value="fixed">Fixed amount</option>
-            <option value="percentage">Percentage</option>
-          </select>
-
-          {cf.type === 'free' && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <div>
-                <span className="block text-[11px] text-ink-muted mb-1">Free for (months)</span>
-                <div className="relative">
-                  <input type="number" min={0} className="input pr-12" placeholder="0" value={cf.months || ''}
-                    onChange={(e) => setCf({ months: e.target.value === '' ? 0 : Number(e.target.value) })} />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">mo</span>
-                </div>
-              </div>
-              <div>
-                <span className="block text-[11px] text-ink-muted mb-1">Cut-through amount</span>
-                <div className="relative">
-                  <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                  <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.cutThrough || ''}
-                    onChange={(e) => setCf({ cutThrough: e.target.value === '' ? 0 : Number(e.target.value) })} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {cf.type === 'fixed' && (
-            <div className="relative mt-2">
-              <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-              <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.value || ''}
-                onChange={(e) => setCf({ value: e.target.value === '' ? 0 : Number(e.target.value) })} />
-            </div>
-          )}
-
-          {cf.type === 'percentage' && (
-            <div className="relative mt-2">
-              <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-              <input type="number" min={0} className="input pl-8" placeholder="0" value={cf.value || ''}
-                onChange={(e) => setCf({ value: e.target.value === '' ? 0 : Number(e.target.value) })} />
-            </div>
-          )}
-
-          <p className="text-[11px] text-ink-muted mt-1">
-            {cf.type === 'free' && 'Free for the chosen number of months. The cut-through amount is shown struck-through in place of the fee.'}
-            {cf.type === 'fixed' && 'A flat amount added on top of the final payable.'}
-            {cf.type === 'percentage' && 'A % of the final amount (price − discount + GST) added on top.'}
-          </p>
-        </div>
+        {/* Convenience fee — set globally in Convenience Management, read-only here */}
+        <ConveniencePanel fee={convenienceFee} experienceIds={experienceIds} onChange={onChange} />
       </div>
 
       {/* Live breakdown */}
@@ -569,6 +517,184 @@ function GstEnableDialog({ info, busy, onClose, onChoose }) {
           You can also set a different percentage for this listing afterwards with Edit.
         </p>
       </div>
+    </div>
+  );
+}
+
+/*
+  Convenience fee — read-only, same pattern as markup and GST. The config comes
+  from the admin's global Convenience Management rules; Edit writes a one-off
+  override for this listing (stored as another rule, so latest-wins still
+  decides). Charged LAST, on the amount that already includes GST.
+*/
+const CF_SCOPE_LABEL = {
+  all: 'All experiences',
+  category: 'Broad category',
+  audience: 'Who is this for',
+  experience: 'This experience only',
+};
+
+const describeFee = (f) => {
+  if (!f || f.type === 'free' || !Number(f.value)) return 'Free';
+  return f.type === 'percentage' ? `${Number(f.value)}%` : rupee(f.value);
+};
+
+function ConveniencePanel({ fee, experienceIds, onChange }) {
+  const ids = (Array.isArray(experienceIds) ? experienceIds : [experienceIds]).filter(Boolean);
+  const canEdit = ids.length > 0;
+
+  const [info, setInfo] = useState(null);
+  const [loading, setLoading] = useState(canEdit);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState({ type: 'free', value: 0, months: 0, cutThrough: 0 });
+
+  const load = async () => {
+    if (!canEdit) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/admin/pricing-setup/convenience/experience/${ids[0]}`);
+      const d = data?.data || {};
+      setInfo(d);
+      onChange({ convenienceFee: d.fee || null });
+      setDraft({
+        type: d.fee?.type || 'free',
+        value: Number(d.fee?.value) || 0,
+        months: Number(d.fee?.months) || 0,
+        cutThrough: Number(d.fee?.cutThrough) || 0,
+      });
+    } catch {
+      setInfo(null);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ids[0]]);
+
+  const eff = info ? info.fee : fee;
+  const isOverride = eff?.scope === 'experience';
+
+  const save = async () => {
+    if (draft.type !== 'free' && !Number(draft.value)) return toast.error('Enter a fee value');
+    setSaving(true);
+    try {
+      await api.put(`/admin/pricing-setup/convenience/experience/${ids[0]}`, { ...draft, experienceIds: ids });
+      toast.success('Convenience fee set for this experience');
+      setEditing(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not set the fee');
+    } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    try {
+      for (const id of ids) {
+        // eslint-disable-next-line no-await-in-loop
+        await api.delete(`/admin/pricing-setup/convenience/experience/${id}`);
+      }
+      toast.success('Back to the global convenience fee');
+      setEditing(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not reset');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="label mb-0 inline-flex items-center gap-1.5"><Sparkles size={14} /> Convenience fee</span>
+        {canEdit && !editing && (
+          <button type="button" onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
+            <Pencil size={12} /> Edit
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="rounded-xl border border-brand/40 bg-brand/5 p-3">
+          <select className="input" value={draft.type} onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}>
+            <option value="free">Free</option>
+            <option value="fixed">Fixed amount ₹</option>
+            <option value="percentage">Percentage %</option>
+          </select>
+
+          {draft.type === 'free' ? (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <span className="block text-[11px] text-ink-muted mb-1">Free for (months)</span>
+                <div className="relative">
+                  <input type="number" min={0} className="input pr-12" placeholder="0" value={draft.months || ''}
+                    onChange={(e) => setDraft((d) => ({ ...d, months: e.target.value === '' ? 0 : Number(e.target.value) }))} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">mo</span>
+                </div>
+              </div>
+              <div>
+                <span className="block text-[11px] text-ink-muted mb-1">Cut-through amount</span>
+                <div className="relative">
+                  <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                  <input type="number" min={0} className="input pl-8" placeholder="0" value={draft.cutThrough || ''}
+                    onChange={(e) => setDraft((d) => ({ ...d, cutThrough: e.target.value === '' ? 0 : Number(e.target.value) }))} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="relative mt-2">
+              {draft.type === 'fixed'
+                ? <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                : <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />}
+              <input type="number" min={0} className="input pl-8" placeholder="0" value={draft.value || ''}
+                onChange={(e) => setDraft((d) => ({ ...d, value: e.target.value === '' ? 0 : Number(e.target.value) }))} />
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 mt-2">
+            <button type="button" onClick={save} disabled={saving}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-ink text-xs font-bold disabled:opacity-60">
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save for this listing
+            </button>
+            <button type="button" onClick={() => setEditing(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:bg-surface-alt">
+              <XIcon size={12} /> Cancel
+            </button>
+            {isOverride && (
+              <button type="button" onClick={reset} disabled={saving}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 ml-auto">
+                <RotateCcw size={12} /> Use global
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-surface-alt/60 px-3.5 py-2.5">
+          {loading ? (
+            <span className="inline-flex items-center gap-2 text-sm text-ink-muted"><Loader2 size={14} className="animate-spin" /> Loading fee…</span>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-base font-bold text-ink">{describeFee(eff)}</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                  <Lock size={11} /> {eff ? (CF_SCOPE_LABEL[eff.scope] || 'Global') : 'Global'}
+                </span>
+              </div>
+              {eff?.type === 'free' && (Number(eff.months) > 0 || Number(eff.cutThrough) > 0) && (
+                <p className="text-[11px] text-emerald-600 font-medium mt-0.5">
+                  {Number(eff.months) > 0 ? `Free for ${eff.months} month${eff.months > 1 ? 's' : ''}` : 'Free'}
+                  {Number(eff.cutThrough) > 0 && <span className="ml-2 line-through text-ink-muted">{rupee(eff.cutThrough)}</span>}
+                </p>
+              )}
+              {info?.rule?.targetNames?.length > 0 && (
+                <p className="text-[11px] text-ink-muted mt-0.5 truncate">From: {info.rule.targetNames.join(', ')}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-ink-muted mt-1">
+        Set globally in <strong>Pricing Setup → Convenience Management</strong>. Charged last, on the amount that already includes GST.
+      </p>
     </div>
   );
 }
