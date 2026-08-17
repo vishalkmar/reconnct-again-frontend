@@ -18,7 +18,7 @@ import PricingSetupShell from './PricingSetupShell.jsx';
 */
 
 const SCOPES = [
-  { key: 'all', label: 'To All', icon: Globe, hint: 'Every experience on the platform — now and in future.' },
+  { key: 'all', label: 'To All', icon: Globe, hint: 'Every experience — now and in future. There is only ever one of these; saving replaces it.' },
   { key: 'category', label: 'Broad Category wise', icon: Layers, hint: 'Pick one or more broad categories.' },
   { key: 'audience', label: 'Based on "Who is this for"', icon: Users, hint: 'Pick one or more audience tags.' },
   { key: 'experience', label: 'Specific experiences', icon: Sparkles, hint: 'Pick individual live listings.' },
@@ -148,6 +148,7 @@ export default function GstTaxesManagementPage() {
       {formOpen && (
         <GstForm
           targets={targets}
+          rules={rules}
           rule={editRule}
           onClose={() => { setFormOpen(false); setEditRule(null); }}
           onSaved={() => { setFormOpen(false); setEditRule(null); load(); }}
@@ -180,7 +181,7 @@ function Stat({ label, value, icon: Icon, tint }) {
 }
 
 // ─── Add / edit a rule ──────────────────────────────────────────────────────
-function GstForm({ targets, rule, onClose, onSaved }) {
+function GstForm({ targets, rules, rule, onClose, onSaved }) {
   const editing = !!rule;
   const [scope, setScope] = useState(rule?.scope || '');
   const [picked, setPicked] = useState(rule?.targetIds?.map(Number) || []);
@@ -198,6 +199,9 @@ function GstForm({ targets, rule, onClose, onSaved }) {
     const needle = q.trim().toLowerCase();
     return list.filter((o) => o.name.toLowerCase().includes(needle) || (o.city || '').toLowerCase().includes(needle));
   }, [scope, targets, q]);
+
+  // The one existing platform-wide rule, if any — a new "To All" replaces it.
+  const currentGlobal = (rules || []).find((r) => r.scope === 'all');
 
   const chooseScope = (key) => { setScope(key); setPicked([]); setApplied(key === 'all'); };
   const togglePick = (id) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -241,6 +245,17 @@ function GstForm({ targets, rule, onClose, onSaved }) {
           ))}
         </div>
       </div>
+
+      {/* "To All" is a single platform-wide default — say what it will overwrite. */}
+      {scope === 'all' && currentGlobal && (!editing || currentGlobal.id !== rule.id) && (
+        <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800 mb-5">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>
+            There is already a platform-wide GST of <strong>{Number(currentGlobal.rate) > 0 ? `${Number(currentGlobal.rate)}%` : 'Off'}</strong>. Saving
+            <strong> replaces</strong> it — there is only ever one “To All” rule, never two.
+          </span>
+        </div>
+      )}
 
       {scope && scope !== 'all' && (
         <div className="mb-5">
