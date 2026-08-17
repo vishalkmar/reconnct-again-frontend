@@ -80,7 +80,7 @@ function Editor({ sectionKey: key, draft, patch, exp }) {
           )}
           <div>
             <h3 className="font-semibold mb-2">B2B pricing</h3>
-            <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+            <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} gstIncluded />
           </div>
           <div className="pt-4 border-t border-gray-100">
             <h3 className="font-semibold mb-2">GST, discount &amp; convenience fee</h3>

@@ -402,7 +402,7 @@ function GoLivePricingModal({ item, busy, onSubmit, onClose }) {
                   )}
                 </div>
                 {bEdit ? (
-                  <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} />
+                  <ExperiencePricing priceMethod={draft.priceMethod} pricing={draft.pricing} onChange={patch} gstIncluded />
                 ) : (
                   <B2bSummary priceMethod={draft.priceMethod} pricing={draft.pricing} />
                 )}

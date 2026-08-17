@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { IndianRupee, Percent, Tag, Sparkles, TrendingUp, Lock, Pencil, Loader2, Check, X as XIcon, RotateCcw } from 'lucide-react';
+import { IndianRupee, Percent, Tag, Sparkles, TrendingUp, Lock, Pencil, Loader2, Check, X as XIcon, RotateCcw, AlertTriangle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -41,8 +41,16 @@ export default function ExperienceTaxPricing({
 
   const setCf = (patch) => onChange({ convenienceFee: { ...cf, ...patch } });
 
+  // The GST panel reports back what it resolved so the breakdown can show the
+  // 'pure' de-grossed base rather than the quoted (GST-inclusive) one.
+  const [gstInfo, setGstInfo] = useState(null);
+  const pureFactor = gstInfo?.mode === 'pure' && Number(gstInfo.submittedRate) > 0
+    ? 1 + Number(gstInfo.submittedRate) / 100
+    : 1;
+
   const calc = useMemo(() => {
-    const raw = Number(basePrice) || 0;
+    const quoted = Number(basePrice) || 0;
+    const raw = quoted / pureFactor; // 'pure' strips the supplier's own GST first
     const mv = Number(mk.value) || 0;
     const markupAmt = mk.type === 'fixed' ? mv : (raw * mv) / 100;
     const base = raw + markupAmt; // markup applies first, on the base
@@ -55,8 +63,8 @@ export default function ExperienceTaxPricing({
     if (cf.type === 'fixed') convFee = Number(cf.value) || 0;
     else if (cf.type === 'percentage') convFee = (subtotal * (Number(cf.value) || 0)) / 100;
     const total = subtotal + convFee;
-    return { raw, markupAmt, base, discountAmt, net, gst, subtotal, convFee, total };
-  }, [basePrice, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
+    return { quoted, raw, markupAmt, base, discountAmt, net, gst, subtotal, convFee, total };
+  }, [basePrice, pureFactor, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -84,12 +92,8 @@ export default function ExperienceTaxPricing({
           <p className="text-[11px] text-ink-muted mt-1">Always applied on the base price, before GST.</p>
         </div>
 
-        <div>
-          <label className="label inline-flex items-center gap-1.5"><Percent size={14} /> GST</label>
-          <select className="input" value={gstRate} onChange={(e) => onChange({ gstRate: Number(e.target.value) })}>
-            {GST_OPTS.map((g) => <option key={g} value={g}>{g === 0 ? 'Off' : `${g}%`}</option>)}
-          </select>
-        </div>
+        {/* GST — set globally in GST & Taxes Management, read-only here */}
+        <GstPanel gstRate={gstRate} experienceIds={experienceIds} onChange={onChange} onResolved={setGstInfo} />
 
         {/* Convenience fee */}
         <div>
@@ -152,7 +156,15 @@ export default function ExperienceTaxPricing({
           <p className="text-sm text-ink-muted italic">Set an adult price in Pricing to preview the totals.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            <Row label="Base price (B2B)" value={rupee(calc.raw)} />
+            {pureFactor > 1 ? (
+              <>
+                <Row label="Quoted price (GST-inclusive)" value={rupee(calc.quoted)} />
+                <Row label={`Supplier GST removed (${gstInfo.submittedRate}%)`} value={`− ${rupee(calc.quoted - calc.raw)}`} accent="text-rose-600" />
+                <Row label="Base price (B2B, net)" value={rupee(calc.raw)} />
+              </>
+            ) : (
+              <Row label="Base price (B2B)" value={rupee(calc.raw)} />
+            )}
             {calc.markupAmt > 0 && (
               <Row label={`Markup${mk.type === 'percentage' ? ` (${mk.value}%)` : ''}`} value={`+ ${rupee(calc.markupAmt)}`} />
             )}
@@ -335,6 +347,228 @@ function MarkupPanel({ markup, experienceIds, onChange }) {
         Set globally in <strong>Pricing Setup → Markup Management</strong>. Added on the B2B base first — it increases the price the customer pays.
         {info?.otherRules?.length > 0 && ` ${info.otherRules.length} other rule(s) also match; the most recently applied one wins.`}
       </p>
+    </div>
+  );
+}
+
+/*
+  GST — read-only, same idea as markup: the rate comes from the admin's global
+  GST & Taxes Management rules.
+
+  The extra wrinkle is the adder's "Included GST" switch. When the submitted
+  B2B price ALREADY carries GST, the global rate is switched off and a red
+  reminder says so. "Enable" then asks the one question that matters: do we add
+  ours ON TOP of their tax (double), or strip theirs out and charge only ours
+  (pure)? Both options show the real per-adult numbers before anything is saved.
+*/
+const GST_MODE_LABEL = {
+  global: 'Platform GST',
+  included: 'Already included by the supplier',
+  double: 'Supplier GST + ours (double)',
+  pure: 'Supplier GST stripped — only ours',
+};
+
+function GstPanel({ gstRate, experienceIds, onChange, onResolved }) {
+  const ids = (Array.isArray(experienceIds) ? experienceIds : [experienceIds]).filter(Boolean);
+  const canEdit = ids.length > 0;
+
+  const [info, setInfo] = useState(null);   // { gst, rule, otherRules, preview }
+  const [loading, setLoading] = useState(canEdit);
+  const [dialog, setDialog] = useState(false);
+  const [editRate, setEditRate] = useState(false);
+  const [draftRate, setDraftRate] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    if (!canEdit) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/admin/pricing-setup/gst/experience/${ids[0]}`);
+      const d = data?.data || {};
+      setInfo(d);
+      onChange({ gstRate: Number(d.gst?.rate) || 0 });
+      onResolved && onResolved(d.gst || null);
+      setDraftRate(Number(d.gst?.ruleRate) || 0);
+    } catch {
+      setInfo(null);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ids[0]]);
+
+  const gst = info?.gst;
+  const included = !!gst?.submittedIncluded;
+  const mode = gst?.mode || 'global';
+  const rate = gst ? Number(gst.rate) : Number(gstRate) || 0;
+
+  const save = async (patch) => {
+    setSaving(true);
+    try {
+      await api.put(`/admin/pricing-setup/gst/experience/${ids[0]}`, { ...patch, experienceIds: ids });
+      toast.success('GST set for this experience');
+      setDialog(false); setEditRate(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not set GST');
+    } finally { setSaving(false); }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    try {
+      for (const id of ids) {
+        // eslint-disable-next-line no-await-in-loop
+        await api.delete(`/admin/pricing-setup/gst/experience/${id}`);
+      }
+      toast.success('Back to the global GST');
+      setDialog(false); setEditRate(false);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not reset');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="label mb-0 inline-flex items-center gap-1.5"><Percent size={14} /> GST</span>
+        {canEdit && !loading && (
+          included && mode === 'included' ? (
+            <button type="button" onClick={() => setDialog(true)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
+              <Plus size={12} /> Enable
+            </button>
+          ) : (
+            <button type="button" onClick={() => { setEditRate(true); setDraftRate(Number(gst?.ruleRate) || 0); }}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
+              <Pencil size={12} /> Edit
+            </button>
+          )
+        )}
+      </div>
+
+      {/* The adder already priced GST in — say so loudly. */}
+      {included && (
+        <div className="flex items-start gap-1.5 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 mb-2 text-[11px] text-rose-700 font-medium">
+          <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+          <span>
+            This price already includes {gst.submittedRate}% GST from the supplier, so the global GST is switched off.
+            {mode === 'included' && ' If you still want to add ours, use Enable.'}
+          </span>
+        </div>
+      )}
+
+      {editRate ? (
+        <div className="rounded-xl border border-brand/40 bg-brand/5 p-3">
+          <span className="block text-[11px] text-ink-muted mb-1">GST for this listing only</span>
+          <select className="input" value={draftRate} onChange={(e) => setDraftRate(Number(e.target.value))}>
+            {GST_OPTS.map((g) => <option key={g} value={g}>{g === 0 ? 'Off' : `${g}%`}</option>)}
+          </select>
+          <div className="flex items-center gap-2 mt-2">
+            <button type="button" onClick={() => save({ rate: draftRate })} disabled={saving}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-ink text-xs font-bold disabled:opacity-60">
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save for this listing
+            </button>
+            <button type="button" onClick={() => setEditRate(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:bg-surface-alt">
+              <XIcon size={12} /> Cancel
+            </button>
+            <button type="button" onClick={reset} disabled={saving}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 ml-auto">
+              <RotateCcw size={12} /> Use global
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-surface-alt/60 px-3.5 py-2.5">
+          {loading ? (
+            <span className="inline-flex items-center gap-2 text-sm text-ink-muted"><Loader2 size={14} className="animate-spin" /> Loading GST…</span>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-base font-bold text-ink">
+                  {rate > 0 ? `${rate}%` : <span className="text-ink-muted font-medium text-sm">Off — no GST added</span>}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                  <Lock size={11} /> {GST_MODE_LABEL[mode] || 'Global'}
+                </span>
+              </div>
+              {info?.rule?.targetNames?.length > 0 && rate > 0 && (
+                <p className="text-[11px] text-ink-muted mt-0.5 truncate">From: {info.rule.targetNames.join(', ')}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-ink-muted mt-1">
+        Set globally in <strong>Pricing Setup → GST &amp; Taxes Management</strong>. Applied on the price after markup and discount.
+      </p>
+
+      {dialog && info && (
+        <GstEnableDialog
+          info={info}
+          busy={saving}
+          onClose={() => setDialog(false)}
+          onChoose={(m) => save({ mode: m })}
+        />
+      )}
+    </div>
+  );
+}
+
+/*
+  The one question worth a dialog: their GST stays and ours goes on top, or
+  theirs comes out and only ours applies. Real per-adult numbers on both cards,
+  so the choice is made on money rather than on wording.
+*/
+function GstEnableDialog({ info, busy, onClose, onChoose }) {
+  const g = info.gst;
+  const pv = info.preview || {};
+  const card = (mode, title, blurb) => {
+    const p = pv[mode] || {};
+    return (
+      <button type="button" key={mode} onClick={() => !busy && onChoose(mode)} disabled={busy}
+        className="text-left rounded-xl border border-gray-200 p-4 hover:border-brand hover:bg-brand/5 transition disabled:opacity-60">
+        <div className="font-semibold text-ink text-sm mb-0.5">{title}</div>
+        <p className="text-[11px] text-ink-muted mb-3 leading-snug">{blurb}</p>
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between"><span className="text-ink-muted">Taxable base</span><span>{rupee(p.taxableBase)}</span></div>
+          <div className="flex justify-between"><span className="text-ink-muted">After markup</span><span>{rupee(p.afterMarkup)}</span></div>
+          <div className="flex justify-between"><span className="text-ink-muted">GST ({p.rate || 0}%)</span><span>+ {rupee(p.gstAmount)}</span></div>
+          <div className="flex justify-between font-bold text-ink border-t border-gray-100 pt-1 mt-1">
+            <span>Payable</span><span>{rupee(p.payableBeforeExtras)}</span>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display font-bold text-lg mb-1">This price already includes GST</h3>
+        <p className="text-sm text-ink-muted mb-5">
+          The supplier quoted <strong>{rupee(pv.included?.quotedBase)}</strong> with <strong>{g.submittedRate}% GST</strong> already inside it.
+          Our global rate is <strong>{g.ruleRate}%</strong>. How should they combine?
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {card('double', 'Double GST', 'Leave their GST in the price and add ours on top of it. The customer pays tax on a taxed amount.')}
+          {card('pure', 'Pure GST', 'Strip their GST out of the base first, then apply only ours. The customer is taxed once.')}
+        </div>
+        <div className="flex items-center justify-between mt-5">
+          <button type="button" onClick={() => onChoose('included')} disabled={busy}
+            className="text-xs font-semibold text-ink-muted hover:text-ink">
+            Keep it as it is — add no GST
+          </button>
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-ink-muted hover:bg-surface-alt">
+            Cancel
+          </button>
+        </div>
+        <p className="text-[11px] text-ink-muted mt-3">
+          Whichever you pick applies to <strong>this experience only</strong> — the global GST default is untouched.
+          You can also set a different percentage for this listing afterwards with Edit.
+        </p>
+      </div>
     </div>
   );
 }

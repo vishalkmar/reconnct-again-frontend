@@ -516,7 +516,7 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       <div className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">B2B pricing <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">The working price. Center Ops adds GST/discount/convenience fee on this at go-live — the result is what customers pay in the app.</p>
-        <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} />
+        <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} gstIncluded />
       </div>
 
       {/* B2C pricing — reference only. Shown to Center Ops at go-live and saved

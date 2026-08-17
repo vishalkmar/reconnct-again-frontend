@@ -1,4 +1,6 @@
-import { Plus, Trash2, IndianRupee, Baby, User } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, IndianRupee, Baby, User, Percent, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 /**
  * Dynamic pricing block (Task 4 #9).
@@ -17,6 +19,11 @@ import { Plus, Trash2, IndianRupee, Baby, User } from 'lucide-react';
  * - per_hours  : duration (hrs/min) → then adult + children
  *
  * Controlled via `priceMethod`, `pricing` and `onChange({ priceMethod?, pricing? })`.
+ *
+ * `gstIncluded` (prop) turns on the "Included GST" switch — only meaningful on
+ * the B2B block, so the B2C reference block leaves it off. It writes
+ * pricing.gstIncluded / pricing.gstIncludedRate, which ride along inside the
+ * pricing JSON every upload surface already sends.
  */
 const METHODS = [
   { value: 'per_person', label: 'Per person' },
@@ -27,7 +34,7 @@ const METHODS = [
 
 const UNIT = { per_person: '/ person', per_day: '/ day', days: '/ day', per_hours: '/ session' };
 
-export default function ExperiencePricing({ priceMethod = 'per_person', pricing = {}, onChange }) {
+export default function ExperiencePricing({ priceMethod = 'per_person', pricing = {}, onChange, gstIncluded = false }) {
   const p = {
     adultPrice: 0,
     childrenEnabled: false,
@@ -90,6 +97,9 @@ export default function ExperiencePricing({ priceMethod = 'per_person', pricing 
         <label className="label inline-flex items-center gap-1.5"><User size={14} /> Adult price</label>
         <Money value={p.adultPrice} onChange={(v) => setPricing({ adultPrice: v })} suffix={UNIT[priceMethod]} />
       </div>
+
+      {/* Included GST — B2B block only */}
+      {gstIncluded && <IncludedGst pricing={p} setPricing={setPricing} />}
 
       {/* Children */}
       <div className="rounded-xl border border-gray-200 p-4">
@@ -166,6 +176,136 @@ export default function ExperiencePricing({ priceMethod = 'per_person', pricing 
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/*
+  "Included GST" — the adder tells us their quoted B2B price already carries GST.
+
+  18% is the platform default and the only one that saves silently. 5% and 28%
+  are shown in red and, if picked, have to survive TWO deliberate steps: a
+  warning toast, then a confirm dialog whose "No, keep 18%" button pulses while
+  "Apply anyway" stays a muted grey — the attention deliberately sits on backing
+  out, because the wrong slab here is expensive to unwind once bookings exist.
+*/
+const GST_SLABS = [
+  { value: 18, label: '18% (default)', risky: false },
+  { value: 5, label: '5%', risky: true },
+  { value: 28, label: '28%', risky: true },
+];
+const DEFAULT_SLAB = 18;
+
+function IncludedGst({ pricing, setPricing }) {
+  const on = !!pricing.gstIncluded;
+  const rate = Number(pricing.gstIncludedRate) || DEFAULT_SLAB;
+  const [pending, setPending] = useState(null); // the risky slab awaiting confirmation
+
+  const toggle = (checked) => setPricing({
+    gstIncluded: checked,
+    // Turning it on lands on the safe default; turning it off clears the rate.
+    gstIncludedRate: checked ? (Number(pricing.gstIncludedRate) || DEFAULT_SLAB) : 0,
+  });
+
+  const pick = (value) => {
+    const slab = GST_SLABS.find((s) => s.value === value);
+    if (!slab || !slab.risky) return setPricing({ gstIncludedRate: value });
+    // Step 1 — a warning at the top of the screen.
+    toast(
+      `You're moving off the standard 18% GST to ${value}%. Please double-check this is really the slab for this experience.`,
+      { icon: '⚠️', duration: 6000, position: 'top-center' },
+    );
+    // Step 2 — the confirm dialog.
+    setPending(value);
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 p-4">
+      <label className="flex items-center justify-between cursor-pointer">
+        <span className="inline-flex items-center gap-2 font-medium text-ink">
+          <Percent size={16} className="text-brand" /> Included GST
+          <span className="block text-[11px] text-ink-muted font-normal">
+            Is GST already included in the price above?
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-[rgb(var(--brand))]"
+          checked={on}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+      </label>
+
+      {on && (
+        <div className="mt-3">
+          <span className="block text-[11px] text-ink-muted mb-1">GST rate included in this price</span>
+          <select
+            className="input w-56"
+            value={rate}
+            onChange={(e) => pick(Number(e.target.value))}
+          >
+            {GST_SLABS.map((s) => (
+              // The non-default slabs stay red in the list so an accidental
+              // pick is visible before it's made, not only after.
+              <option key={s.value} value={s.value} style={s.risky ? { color: '#dc2626' } : undefined}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-ink-muted mt-1">
+            Center Ops sees this at go-live and decides whether the platform GST applies on top.
+          </p>
+        </div>
+      )}
+
+      {pending != null && (
+        <ConfirmRiskySlab
+          value={pending}
+          onDeny={() => setPending(null)}
+          onApply={() => { setPricing({ gstIncludedRate: pending }); setPending(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmRiskySlab({ value, onDeny, onApply }) {
+  return (
+    <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={onDeny}>
+      {/* Local keyframes — the deny button pulses to pull the eye to it. */}
+      <style>{`
+        @keyframes gstDenyPulse {
+          0%,100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(220,38,38,.55); }
+          50%     { transform: scale(1.045); box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+        }
+        .gst-deny-blink { animation: gstDenyPulse 1s ease-in-out infinite; }
+      `}</style>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
+          <AlertTriangle size={22} />
+        </div>
+        <h3 className="font-display font-bold text-lg mb-1">Change GST from 18% to {value}%?</h3>
+        <p className="text-sm text-ink-muted mb-6">
+          18% is the standard slab. {value}% applies only to specific categories — picking it by mistake means
+          every booking on this experience is taxed wrongly. Are you certain?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onDeny}
+            className="gst-deny-blink w-full px-5 py-2.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700"
+          >
+            No, keep it at 18%
+          </button>
+          <button
+            type="button"
+            onClick={onApply}
+            className="w-full px-5 py-2 rounded-lg bg-gray-100 text-gray-400 text-sm font-medium hover:bg-gray-200 hover:text-gray-600"
+          >
+            Apply {value}% anyway
+          </button>
+        </div>
       </div>
     </div>
   );
