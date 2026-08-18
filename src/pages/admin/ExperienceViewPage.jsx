@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Pencil, Loader2, Star, MapPin, IndianRupee, Truck } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
@@ -161,7 +162,7 @@ export default function ExperienceViewPage() {
       {e.about && (
         <div className="bg-white rounded-2xl shadow-soft p-6 mb-5">
           <h2 className="font-semibold text-lg mb-3">About</h2>
-          <div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.about }} />
+          <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.about) }} />
         </div>
       )}
 
@@ -212,7 +213,7 @@ export default function ExperienceViewPage() {
                   <div className="font-medium text-ink">{it.title}</div>
                 </div>
               ) : (
-                <div key={i} className="rich-prose" dangerouslySetInnerHTML={{ __html: it.text || '' }} />
+                <div key={i} className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(it.text || '') }} />
               )
             ))}
           </div>
@@ -298,7 +299,7 @@ export default function ExperienceViewPage() {
           {policies.filter(([, html]) => html).map(([label, html]) => (
             <details key={label} className="border border-gray-100 rounded-lg p-3">
               <summary className="cursor-pointer font-medium text-ink">{label}</summary>
-              <div className="rich-prose mt-2" dangerouslySetInnerHTML={{ __html: html }} />
+              <div className="rich-prose mt-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
             </details>
           ))}
         </div>

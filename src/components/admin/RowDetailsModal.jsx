@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { X } from 'lucide-react';
 import { fileUrl } from '../../services/api';
 
@@ -71,7 +72,7 @@ function FieldValue({ keyName, value }) {
   }
   // Rich-text / HTML → render as actual formatted content.
   if (isHtmlField(keyName, value)) {
-    return <div className="rich-prose max-h-72 overflow-auto rounded-lg border bg-slate-50 p-3 text-sm" dangerouslySetInnerHTML={{ __html: value }} />;
+    return <div className="rich-prose max-h-72 overflow-auto rounded-lg border bg-slate-50 p-3 text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />;
   }
   if (Array.isArray(value)) {
     if (value.length === 0) return <span className="text-slate-400">—</span>;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin, Bed, Maximize2, Users, ArrowLeft, Share2,
@@ -343,20 +344,20 @@ export default function RoomDetailPage() {
 
         {/* Short description */}
         {room.shortDescription && (
-          <div className="rich-prose text-ink-muted" dangerouslySetInnerHTML={{ __html: room.shortDescription }} />
+          <div className="rich-prose text-ink-muted" dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.shortDescription) }} />
         )}
 
         {/* Highlights */}
         {room.highlightsRich && (
           <Section title="Highlights">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: room.highlightsRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.highlightsRich) }} />
           </Section>
         )}
 
         {/* Description */}
         {room.descriptionRich && (
           <Section title="About this room">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: room.descriptionRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.descriptionRich) }} />
           </Section>
         )}
 
@@ -365,12 +366,12 @@ export default function RoomDetailPage() {
           <div className="grid md:grid-cols-2 gap-5">
             {room.inclusionsRich && (
               <Section title="Inclusions">
-                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: room.inclusionsRich }} />
+                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.inclusionsRich) }} />
               </Section>
             )}
             {room.exclusionsRich && (
               <Section title="Exclusions">
-                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: room.exclusionsRich }} />
+                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.exclusionsRich) }} />
               </Section>
             )}
           </div>

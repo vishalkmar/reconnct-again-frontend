@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link } from 'react-router-dom';
 import {
   Calendar, Clock, Tag, Share2, ArrowLeft,
@@ -108,7 +109,7 @@ export default function BlogDetailPage() {
           {blog.content ? (
             <div
               className="blog-prose"
-              dangerouslySetInnerHTML={{ __html: blog.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(blog.content) }}
             />
           ) : !blog.scenes?.length ? (
             <p className="text-ink-muted italic">No content yet.</p>
@@ -214,7 +215,7 @@ function BlogScene({ scene, index }) {
       {scene.content && (
         <div
           className="blog-prose"
-          dangerouslySetInnerHTML={{ __html: scene.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(scene.content) }}
         />
       )}
     </div>

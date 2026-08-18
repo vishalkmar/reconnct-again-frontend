@@ -1,6 +1,7 @@
 import {
   Star, MapPin, Truck,
 } from 'lucide-react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { fileUrl } from '../../services/api';
 
 /* Shared per-section content renderers — used by the COPS review detail page
@@ -87,7 +88,7 @@ export const RENDERERS = {
       </div>
     </div>
   ),
-  about: (e) => <div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.about || '' }} />,
+  about: (e) => <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.about || '') }} />,
   media: (e) => (
     <div className="space-y-4">
       {e.mainImage && <img src={fileUrl(e.mainImage)} alt="" className="w-full h-56 object-cover rounded-xl" />}
@@ -196,7 +197,7 @@ export const RENDERERS = {
             {it.image && <img src={fileUrl(it.image)} alt="" className="w-20 h-20 rounded-lg object-cover border" />}
             <div className="font-medium text-ink">{it.title}</div>
           </div>
-        ) : <div key={i} className="rich-prose" dangerouslySetInnerHTML={{ __html: it.text || '' }} />
+        ) : <div key={i} className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(it.text || '') }} />
       ))}
     </div>
   ),
@@ -242,7 +243,7 @@ export const RENDERERS = {
         {policies.map(([label, html]) => (
           <details key={label} className="border border-gray-100 rounded-lg p-3">
             <summary className="cursor-pointer font-medium text-ink">{label}</summary>
-            <div className="rich-prose mt-2" dangerouslySetInnerHTML={{ __html: html }} />
+            <div className="rich-prose mt-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
           </details>
         ))}
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Users, Ticket, Star, ArrowLeft, Route, Car, ChevronDown } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
@@ -69,9 +70,9 @@ export default function EventActivityDetailPage() {
           <QuickDetails schedule={e.schedule} />
 
           {e.shortDescription && <p className="text-ink-muted">{e.shortDescription}</p>}
-          {e.longDescription && <Block title="About"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.longDescription }} /></Block>}
-          {e.highlights && <Block title="Highlights"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.highlights }} /></Block>}
-          {e.whatMakesSpecial && <Block title="What makes it special"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.whatMakesSpecial }} /></Block>}
+          {e.longDescription && <Block title="About"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.longDescription) }} /></Block>}
+          {e.highlights && <Block title="Highlights"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.highlights) }} /></Block>}
+          {e.whatMakesSpecial && <Block title="What makes it special"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.whatMakesSpecial) }} /></Block>}
 
           {/* Category-specific */}
           {catSchema.some((f) => catData[f.key] !== undefined && catData[f.key] !== '' && catData[f.key] !== null) && (
@@ -82,8 +83,8 @@ export default function EventActivityDetailPage() {
 
           {(e.inclusions || e.exclusions) && (
             <div className="grid sm:grid-cols-2 gap-4">
-              {e.inclusions && <Block title="Inclusions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.inclusions }} /></Block>}
-              {e.exclusions && <Block title="Exclusions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.exclusions }} /></Block>}
+              {e.inclusions && <Block title="Inclusions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.inclusions) }} /></Block>}
+              {e.exclusions && <Block title="Exclusions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.exclusions) }} /></Block>}
             </div>
           )}
 
@@ -125,9 +126,9 @@ export default function EventActivityDetailPage() {
           )}
 
           {/* Policies */}
-          {e.refundPolicy && <Block title="Refund policy"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.refundPolicy }} /></Block>}
-          {e.cancellationPolicy && <Block title="Cancellation policy"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.cancellationPolicy }} /></Block>}
-          {e.termsConditions && <Block title="Terms & conditions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: e.termsConditions }} /></Block>}
+          {e.refundPolicy && <Block title="Refund policy"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.refundPolicy) }} /></Block>}
+          {e.cancellationPolicy && <Block title="Cancellation policy"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.cancellationPolicy) }} /></Block>}
+          {e.termsConditions && <Block title="Terms & conditions"><div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(e.termsConditions) }} /></Block>}
         </div>
 
         {/* Sidebar: pricing + tickets + addons */}

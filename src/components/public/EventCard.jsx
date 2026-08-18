@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { MapPin, Calendar, Clock, Trophy } from 'lucide-react';
 import { fileUrl } from '../../services/api';
 import WishlistButton from './WishlistButton.jsx';
@@ -134,7 +135,7 @@ function Body({ event, isSport, detailHref, expanded }) {
       {expanded && event.highlightsRich && (
         <div
           className="text-sm text-ink-muted mt-2 line-clamp-2 rich-prose"
-          dangerouslySetInnerHTML={{ __html: event.highlightsRich }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.highlightsRich) }}
         />
       )}
 

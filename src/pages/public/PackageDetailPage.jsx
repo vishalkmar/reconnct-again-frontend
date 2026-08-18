@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star, MapPin, Calendar, Users, Heart, Share2, Check, X as XIcon,
@@ -901,7 +902,7 @@ function RichHtml({ html, className = '' }) {
   return (
     <div
       className={`rich-prose ${className}`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
     />
   );
 }
@@ -1050,7 +1051,7 @@ function TrainerProfileModal({ trainer: t, onClose }) {
               <h4 className="text-sm font-semibold uppercase tracking-wide text-ink-muted mb-2">About</h4>
               <div
                 className="rich-prose text-sm"
-                dangerouslySetInnerHTML={{ __html: t.bioRich }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(t.bioRich) }}
               />
             </div>
           )}

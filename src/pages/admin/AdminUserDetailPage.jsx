@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, User as UserIcon, Calendar, CreditCard, FileText,
@@ -778,7 +779,7 @@ function EmailTab({ user }) {
           <div className="p-4 bg-white max-h-[520px] overflow-y-auto">
             <div
               className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: preview }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(preview) }}
             />
           </div>
         </div>

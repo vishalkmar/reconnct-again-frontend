@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin, Calendar, Clock, Share2, Trophy,
@@ -336,14 +337,14 @@ export default function EventDetailPage() {
         {/* Highlights */}
         {event.highlightsRich && (
           <Section title="Highlights">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: event.highlightsRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.highlightsRich) }} />
           </Section>
         )}
 
         {/* About */}
         {event.aboutRich && (
           <Section title="About this event">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: event.aboutRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.aboutRich) }} />
           </Section>
         )}
 
@@ -512,12 +513,12 @@ export default function EventDetailPage() {
           <div className="grid md:grid-cols-2 gap-5">
             {event.termsConditions && (
               <Section icon={Shield} title="Terms & conditions" compact>
-                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: event.termsConditions }} />
+                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.termsConditions) }} />
               </Section>
             )}
             {event.privacyPolicy && (
               <Section icon={ShieldCheck} title="Privacy policy" compact>
-                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: event.privacyPolicy }} />
+                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.privacyPolicy) }} />
               </Section>
             )}
           </div>

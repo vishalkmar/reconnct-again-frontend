@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin, Share2, Sparkles, ArrowLeft, Users, ChevronDown,
@@ -213,13 +214,13 @@ export default function AddOnDetailPage() {
       <div className="container-app py-8 space-y-6">
         {activity.highlightsRich && (
           <Section title="Highlights">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: activity.highlightsRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity.highlightsRich) }} />
           </Section>
         )}
 
         {activity.descriptionRich && (
           <Section title="About this activity">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: activity.descriptionRich }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity.descriptionRich) }} />
           </Section>
         )}
 
@@ -259,7 +260,7 @@ function FaqItem({ q, a }) {
         <ChevronDown size={16} className={`text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="px-3.5 pb-3.5 text-sm text-ink-muted rich-prose" dangerouslySetInnerHTML={{ __html: a }} />
+        <div className="px-3.5 pb-3.5 text-sm text-ink-muted rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(a) }} />
       )}
     </div>
   );

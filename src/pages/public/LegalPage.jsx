@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { ShieldCheck, FileText } from 'lucide-react';
 import api from '../../services/api';
 
@@ -64,7 +65,7 @@ export default function LegalPage({ type }) {
               ))}
             </div>
           ) : (
-            <div className="rich-prose max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
+            <div className="rich-prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
           )}
         </div>
       </div>

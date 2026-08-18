@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { Link, useParams } from 'react-router-dom';
 import {
   Loader2, ArrowLeft, Building2, UserCog, Info, Tags, CalendarCheck, IndianRupee,
@@ -147,7 +148,7 @@ function DetailsTab({ exp }) {
         <Row label="Source" value={exp.sourceName} />
         <div className="py-3 border-t border-slate-50">
           <div className="text-xs text-ink-muted mb-1">About</div>
-          {exp.about ? <div className="rich-prose text-sm text-ink" dangerouslySetInnerHTML={{ __html: exp.about }} /> : <span className="text-sm text-ink">—</span>}
+          {exp.about ? <div className="rich-prose text-sm text-ink" dangerouslySetInnerHTML={{ __html: sanitizeHtml(exp.about) }} /> : <span className="text-sm text-ink">—</span>}
         </div>
       </Card>
 
@@ -162,7 +163,7 @@ function DetailsTab({ exp }) {
                   {it.image && <img src={fileUrl(it.image)} alt="" className="w-16 h-16 rounded-lg object-cover border border-slate-100 shrink-0" />}
                   <div className="min-w-0">
                     {it.title && <div className="text-sm font-semibold text-ink">{it.title}</div>}
-                    {it.text && <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: it.text }} />}
+                    {it.text && <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: sanitizeHtml(it.text) }} />}
                   </div>
                 </div>
               );
@@ -206,7 +207,7 @@ function DetailsTab({ exp }) {
             {policies.map(([label, html]) => (
               <div key={label}>
                 <div className="text-sm font-semibold text-ink mb-1">{label}</div>
-                <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: html }} />
+                <div className="rich-prose text-sm text-ink-muted" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
               </div>
             ))}
           </div>

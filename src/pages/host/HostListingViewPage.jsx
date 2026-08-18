@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { Link, useParams } from 'react-router-dom';
 import {
   Loader2, ChevronLeft, MapPin, Clock, Pencil, CalendarCheck, Star, Users,
@@ -156,7 +157,7 @@ export default function HostListingViewPage({ basePath = '/host' }) {
 
         {form.about && (
           <Card title="About">
-            <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: form.about }} />
+            <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(form.about) }} />
           </Card>
         )}
 
@@ -219,7 +220,7 @@ export default function HostListingViewPage({ basePath = '/host' }) {
                     {it.image && <img src={fileUrl(it.image)} alt="" className="w-20 h-20 rounded-lg object-cover border" />}
                     <div className="font-medium text-ink">{it.title}</div>
                   </div>
-                ) : <div key={i} className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: it.text || '' }} />
+                ) : <div key={i} className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(it.text || '') }} />
               ))}
             </div>
           </Card>
@@ -276,7 +277,7 @@ export default function HostListingViewPage({ basePath = '/host' }) {
               ].filter(([, v]) => v).map(([label, html]) => (
                 <details key={label} className="group">
                   <summary className="cursor-pointer font-medium text-ink text-sm">{label}</summary>
-                  <div className="rich-prose text-sm mt-2" dangerouslySetInnerHTML={{ __html: html }} />
+                  <div className="rich-prose text-sm mt-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
                 </details>
               ))}
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star, MapPin, Heart, Share2, Play,
@@ -328,7 +329,7 @@ export default function HotelDetailPage() {
         {/* About */}
         {hotel.description && (
           <Section title="About this property">
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: hotel.description }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.description) }} />
           </Section>
         )}
 
@@ -353,17 +354,17 @@ export default function HotelDetailPage() {
           <div className="grid md:grid-cols-3 gap-5">
             {hotel.highlightsRich && (
               <Section title="Highlights" compact>
-                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: hotel.highlightsRich }} />
+                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.highlightsRich) }} />
               </Section>
             )}
             {hotel.inclusionsRich && (
               <Section title="Inclusions" compact>
-                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: hotel.inclusionsRich }} />
+                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.inclusionsRich) }} />
               </Section>
             )}
             {hotel.exclusionsRich && (
               <Section title="Exclusions" compact>
-                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: hotel.exclusionsRich }} />
+                <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.exclusionsRich) }} />
               </Section>
             )}
           </div>
@@ -546,12 +547,12 @@ export default function HotelDetailPage() {
           <div className="grid md:grid-cols-2 gap-5">
             {hotel.termsConditions && (
               <Section icon={Shield} title="Terms & conditions" compact>
-                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: hotel.termsConditions }} />
+                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.termsConditions) }} />
               </Section>
             )}
             {hotel.privacyPolicy && (
               <Section icon={ShieldCheck} title="Privacy policy" compact>
-                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: hotel.privacyPolicy }} />
+                <div className="rich-prose text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(hotel.privacyPolicy) }} />
               </Section>
             )}
           </div>
@@ -585,7 +586,7 @@ export function ExtraSections({ sections }) {
           {s.type === 'image' ? (
             <img src={fileUrl(s.value)} alt={s.name || ''} className="rounded-xl max-h-[28rem] w-full object-cover" />
           ) : (
-            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: s.value }} />
+            <div className="rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(s.value) }} />
           )}
         </Section>
       ))}
@@ -606,7 +607,7 @@ function FaqItem({ q, a }) {
         <ChevronDown size={16} className={`text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="px-3.5 pb-3.5 text-sm text-ink-muted rich-prose" dangerouslySetInnerHTML={{ __html: a }} />
+        <div className="px-3.5 pb-3.5 text-sm text-ink-muted rich-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(a) }} />
       )}
     </div>
   );
@@ -812,7 +813,7 @@ function RoomRow({ hotel, room, stay, nights }) {
         {room.highlightsRich && (
           <div
             className="rich-prose text-xs text-ink-muted line-clamp-3 mt-2"
-            dangerouslySetInnerHTML={{ __html: room.highlightsRich }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(room.highlightsRich) }}
           />
         )}
 

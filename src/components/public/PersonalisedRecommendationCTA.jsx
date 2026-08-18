@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -200,7 +201,7 @@ export default function PersonalisedRecommendationCTA() {
               <div className="text-3xl font-black">{cfg.ringBadgeText}</div>
               <div
                 className="text-xs font-semibold leading-tight"
-                dangerouslySetInnerHTML={{ __html: (cfg.ringBadgeLabel || '').replace(' ', '<br />') }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml((cfg.ringBadgeLabel || '').replace(' ', '<br />')) }}
               />
             </div>
           </div>
