@@ -58,6 +58,7 @@ import MarkupManagementPage from './pages/admin/pricing-setup/MarkupManagementPa
 import MarkupAnalyticsPage from './pages/admin/pricing-setup/MarkupAnalyticsPage.jsx';
 import GstAnalyticsPage from './pages/admin/pricing-setup/GstAnalyticsPage.jsx';
 import ConvenienceAnalyticsPage from './pages/admin/pricing-setup/ConvenienceAnalyticsPage.jsx';
+import SecurityFraudPage from './pages/admin/SecurityFraudPage.jsx';
 import DiscountAnalyticsPage from './pages/admin/pricing-setup/DiscountAnalyticsPage.jsx';
 import DiscountManagementPage from './pages/admin/pricing-setup/DiscountManagementPage.jsx';
 import GstTaxesManagementPage from './pages/admin/pricing-setup/GstTaxesManagementPage.jsx';
@@ -251,6 +252,9 @@ export default function App() {
           <Route path="pricing-setup/gst/analysis" element={<GstAnalyticsPage />} />
           <Route path="pricing-setup/convenience" element={<ConvenienceManagementPage />} />
           <Route path="pricing-setup/convenience/analysis" element={<ConvenienceAnalyticsPage />} />
+          {/* Security — payment fraud detection */}
+          <Route path="security" element={<Navigate to="/admin/security/fraud" replace />} />
+          <Route path="security/fraud" element={<SecurityFraudPage />} />
         </Route>
 
         {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}

@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Handshake,
   IndianRupee,
+  ShieldAlert,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -53,6 +54,13 @@ const mainItems = [
       { to: '/admin/pricing-setup/discount', label: 'Discount Management' },
       { to: '/admin/pricing-setup/gst', label: 'GST & Taxes Management' },
       { to: '/admin/pricing-setup/convenience', label: 'Convenience Management' },
+    ],
+  },
+  {
+    label: 'Security',
+    icon: ShieldAlert,
+    children: [
+      { to: '/admin/security/fraud', label: 'Payment Fraud Detection' },
     ],
   },
 ];
