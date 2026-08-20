@@ -10,6 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@microsoft/clarity": "^1.0.2",
     "axios": "^1.7.9",
     "dompurify": "^3.4.13",
     "framer-motion": "^11.15.0",

@@ -6,6 +6,7 @@ import ProtectedRoute from './components/admin/ProtectedRoute.jsx';
 import UserProtectedRoute from './components/public/UserProtectedRoute.jsx';
 import UserLoginModal from './components/public/UserLoginModal.jsx';
 import ScrollToTop from './components/public/ScrollToTop.jsx';
+import ClarityTracker from './components/ClarityTracker.jsx';
 
 import LandingPage from './pages/LandingPage.jsx';
 
@@ -126,6 +127,8 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      {/* Clarity analytics — public + user pages only; never admin/team/supplier. */}
+      <ClarityTracker />
       <Routes>
         {/* Public entry — branded sign-in landing */}
         <Route path="/" element={<LandingPage />} />
