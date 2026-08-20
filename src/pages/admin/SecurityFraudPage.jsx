@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ShieldAlert, Loader2, Search, RefreshCw, X, AlertTriangle, Snowflake, Unlock,
   IndianRupee, Ban, CheckCircle2, MapPin, Smartphone, Wifi, Globe, CreditCard, Calendar, User as UserIcon,
+  FlaskConical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -34,7 +35,14 @@ export default function SecurityFraudPage() {
   const [q, setQ] = useState('');
   const [detailId, setDetailId] = useState(null);
   const [apiMissing, setApiMissing] = useState(false);
+  const [testEnabled, setTestEnabled] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
   const seen = useRef(new Set());
+
+  // Is the (env-gated) test simulation available on this server?
+  useEffect(() => {
+    api.get('/admin/security/config').then((r) => setTestEnabled(!!r.data?.data?.testEnabled)).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,7 +122,15 @@ export default function SecurityFraudPage() {
         <button onClick={load} className="p-2 rounded-lg border border-gray-200 bg-white text-ink-muted hover:text-brand" title="Refresh">
           <RefreshCw size={15} />
         </button>
+        {testEnabled && (
+          <button onClick={() => setTestOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-300 bg-violet-50 text-violet-700 text-xs font-semibold hover:bg-violet-100" title="Run a safe end-to-end test">
+            <FlaskConical size={14} /> Run a test
+          </button>
+        )}
       </div>
+
+      {testOpen && <SimulateModal onClose={() => setTestOpen(false)} onDone={load} />}
 
       <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
         <div className="overflow-x-auto">
@@ -156,6 +172,72 @@ export default function SecurityFraudPage() {
       </div>
 
       {detailId && <FraudDetailModal id={detailId} onClose={() => setDetailId(null)} onChanged={load} />}
+    </div>
+  );
+}
+
+/*
+  Safe end-to-end test — fires the REAL pipeline (event → freeze → admin+user
+  email → real-time toast) against a TEST email you control, so nothing touches
+  a real customer. Only shown when FRAUD_TEST_ENABLED=true on the server.
+*/
+function SimulateModal({ onClose, onDone }) {
+  const [email, setEmail] = useState('');
+  const [expected, setExpected] = useState(2500);
+  const [paid, setPaid] = useState(1000);
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    if (!email.trim()) return toast.error('Enter a test email you can check');
+    if (Number(paid) >= Number(expected)) return toast.error('Paid must be LESS than expected');
+    setBusy(true);
+    try {
+      const { data } = await api.post('/admin/security/simulate', {
+        email: email.trim(), expected: Number(expected), paid: Number(paid),
+      });
+      toast.success(data.message || 'Simulated');
+      onDone && onDone();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Simulation failed');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display font-bold text-lg inline-flex items-center gap-2 mb-1">
+          <FlaskConical className="text-violet-600" size={20} /> Run a fraud test
+        </h3>
+        <p className="text-xs text-ink-muted mb-4">
+          Fires the whole pipeline on a <strong>test email you control</strong> — you’ll see the real-time alert here,
+          an email in the admin inbox, and a “fraud” email in the test inbox; the test account gets frozen (unfreeze it
+          from the case afterwards). No real customer is touched.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="label">Test email</label>
+            <input className="input" type="email" placeholder="you+test@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Expected (₹)</label>
+              <input className="input" type="number" min={1} value={expected} onChange={(e) => setExpected(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Paid (₹) — lower</label>
+              <input className="input" type="number" min={0} value={paid} onChange={(e) => setPaid(e.target.value)} />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-ink-muted hover:bg-surface-alt">Cancel</button>
+          <button onClick={run} disabled={busy}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 disabled:opacity-60">
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <FlaskConical size={15} />} Simulate fraud
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
