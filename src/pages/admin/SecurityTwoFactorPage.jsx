@@ -91,12 +91,17 @@ function EmailFactor({ status, onChanged }) {
   const [step, setStep] = useState('idle'); // idle | confirming | disabling
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
+  const [deliveryEmail, setDeliveryEmail] = useState(status.twoFactorEmail || status.email);
   const [busy, setBusy] = useState(false);
 
   const enable = async () => {
+    if (!deliveryEmail.trim()) return toast.error('Enter the email to receive codes');
     setBusy(true);
-    try { await api.post('/admin/security/2fa/email/enable'); setStep('confirming'); toast.success('Code emailed to you'); }
-    catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    try {
+      const { data } = await api.post('/admin/security/2fa/email/enable', { email: deliveryEmail.trim() });
+      setStep('confirming');
+      toast.success(data.message || 'Code emailed to you');
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
     finally { setBusy(false); }
   };
   const confirm = async () => {
@@ -113,7 +118,7 @@ function EmailFactor({ status, onChanged }) {
   };
 
   return (
-    <Card icon={Mail} title="Email verification" sub={`A code is emailed to ${status.email} each time you sign in.`} enabled={status.emailEnabled}>
+    <Card icon={Mail} title="Email verification" sub={status.emailEnabled ? `Codes are emailed to ${status.twoFactorEmail} at each sign-in.` : 'A code is emailed at each sign-in — choose which inbox receives it.'} enabled={status.emailEnabled}>
       {status.emailEnabled ? (
         step === 'disabling' ? (
           <div className="flex flex-wrap items-end gap-2">
@@ -142,9 +147,16 @@ function EmailFactor({ status, onChanged }) {
           <button onClick={() => { setStep('idle'); setCode(''); }} className="px-3 py-2 rounded-lg text-sm text-ink-muted hover:bg-surface-alt">Cancel</button>
         </div>
       ) : (
-        <button onClick={enable} disabled={busy} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-bold disabled:opacity-60">
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />} Turn on
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          <div>
+            <label className="label">Email to receive codes</label>
+            <input type="email" className="input w-64" value={deliveryEmail}
+              onChange={(e) => setDeliveryEmail(e.target.value)} placeholder="you@gmail.com" />
+          </div>
+          <button onClick={enable} disabled={busy} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-bold disabled:opacity-60">
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />} Turn on
+          </button>
+        </div>
       )}
     </Card>
   );
