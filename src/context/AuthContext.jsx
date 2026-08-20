@@ -28,13 +28,29 @@ export const AuthProvider = ({ children }) => {
     fetchMe();
   }, [fetchMe]);
 
+  // Password step. If the admin has 2FA on, the server returns a challenge
+  // instead of a token — we surface that so the login page shows the code step.
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    const d = res.data.data;
+    if (d.requires2fa) {
+      return { requires2fa: true, factors: d.factors, challengeToken: d.challengeToken, emailHint: d.emailHint };
+    }
+    localStorage.setItem('admin_token', d.token);
+    setAdmin(d.admin);
+    return d.admin;
+  };
+
+  // Second step — submit the code(s) for every enabled factor.
+  const verify2fa = async ({ challengeToken, emailCode, totpCode }) => {
+    const res = await api.post('/auth/login/2fa', { challengeToken, emailCode, totpCode });
     const { token, admin: a } = res.data.data;
     localStorage.setItem('admin_token', token);
     setAdmin(a);
     return a;
   };
+
+  const resend2faEmail = (challengeToken) => api.post('/auth/login/2fa/resend-email', { challengeToken });
 
   const logout = () => {
     localStorage.removeItem('admin_token');
@@ -42,7 +58,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ admin, loading, login, logout, refresh: fetchMe }}>
+    <AuthContext.Provider value={{
+      admin, loading, login, verify2fa, resend2faEmail, logout, refresh: fetchMe,
+    }}>
       {children}
     </AuthContext.Provider>
   );

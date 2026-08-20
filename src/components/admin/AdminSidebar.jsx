@@ -61,6 +61,7 @@ const mainItems = [
     icon: ShieldAlert,
     children: [
       { to: '/admin/security/fraud', label: 'Payment Fraud Detection' },
+      { to: '/admin/security/2fa', label: 'Two-Factor Authentication' },
     ],
   },
 ];
