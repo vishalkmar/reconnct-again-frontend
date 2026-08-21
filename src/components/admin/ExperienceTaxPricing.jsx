@@ -42,13 +42,15 @@ export default function ExperienceTaxPricing({
   // The GST panel reports back what it resolved so the breakdown can show the
   // 'pure' de-grossed base rather than the quoted (GST-inclusive) one.
   const [gstInfo, setGstInfo] = useState(null);
-  const pureFactor = gstInfo?.mode === 'pure' && Number(gstInfo.submittedRate) > 0
-    ? 1 + Number(gstInfo.submittedRate) / 100
+  // 'pure' strips the supplier's GST as a flat % OF the quoted price:
+  //   net = quoted × (1 − rate/100)   (e.g. ₹2000 @18% → ₹1640)
+  const pureNetFactor = gstInfo?.mode === 'pure' && Number(gstInfo.submittedRate) > 0
+    ? 1 - Number(gstInfo.submittedRate) / 100
     : 1;
 
   const calc = useMemo(() => {
     const quoted = Number(basePrice) || 0;
-    const raw = quoted / pureFactor; // 'pure' strips the supplier's own GST first
+    const raw = quoted * pureNetFactor; // 'pure' strips the supplier's own GST first
     const mv = Number(mk.value) || 0;
     const markupAmt = mk.type === 'fixed' ? mv : (raw * mv) / 100;
     const base = raw + markupAmt; // markup applies first, on the base
@@ -64,7 +66,7 @@ export default function ExperienceTaxPricing({
     const gst = (afterConv * (Number(gstRate) || 0)) / 100;
     const total = afterConv + gst;
     return { quoted, raw, markupAmt, base, discountAmt, net, convFee, afterConv, gst, total };
-  }, [basePrice, pureFactor, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
+  }, [basePrice, pureNetFactor, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -91,7 +93,7 @@ export default function ExperienceTaxPricing({
           <p className="text-sm text-ink-muted italic">Set an adult price in Pricing to preview the totals.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            {pureFactor > 1 ? (
+            {pureNetFactor < 1 ? (
               <>
                 <Row label="Quoted price (GST-inclusive)" value={rupee(calc.quoted)} />
                 <Row label={`Supplier GST removed (${gstInfo.submittedRate}%)`} value={`− ${rupee(calc.quoted - calc.raw)}`} accent="text-rose-600" />
