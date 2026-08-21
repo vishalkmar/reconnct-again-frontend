@@ -15,7 +15,7 @@ import PricingSetupShell from './PricingSetupShell.jsx';
   difference is where the money lands: this fee is charged LAST, on the amount
   that already includes GST.
 
-      base → +markup → −discount → +GST → +CONVENIENCE FEE → payable
+      base → +markup → −discount → +CONVENIENCE FEE → +GST → payable
 */
 
 const SCOPES = [
@@ -84,7 +84,7 @@ export default function ConvenienceManagementPage() {
   return (
     <PricingSetupShell
       title="Convenience Management"
-      subtitle="Set the convenience fee once here and every matching experience picks it up automatically — charged last, on the amount that already includes GST."
+      subtitle="Set the convenience fee once here and every matching experience picks it up automatically — charged before GST — the tax then applies on the amount that includes the fee."
     >
       <div className="flex flex-wrap items-center gap-2 mb-5">
         <button onClick={() => { setEditRule(null); setFormOpen(true); }}
@@ -432,7 +432,7 @@ function EffectiveTable({ items }) {
           <thead className="bg-surface-alt/60 text-[11px] uppercase tracking-wide text-ink-muted sticky top-0">
             <tr>
               <th className="text-left font-semibold px-5 py-2.5">Experience</th>
-              <th className="text-right font-semibold px-3 py-2.5">After GST</th>
+              <th className="text-right font-semibold px-3 py-2.5">Before GST</th>
               <th className="text-left font-semibold px-3 py-2.5">Fee</th>
               <th className="text-right font-semibold px-3 py-2.5">+ Amount</th>
               <th className="text-right font-semibold px-5 py-2.5">Final payable</th>
@@ -447,7 +447,7 @@ function EffectiveTable({ items }) {
                     {i.city}{!i.live && <span className="ml-2 text-amber-600 font-semibold">not live</span>}
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-right text-ink-muted whitespace-nowrap">{rupee(i.afterGst)}</td>
+                <td className="px-3 py-2.5 text-right text-ink-muted whitespace-nowrap">{rupee(i.beforeGst)}</td>
                 <td className="px-3 py-2.5">
                   <span className={`font-semibold ${i.fee && i.fee.type !== 'free' ? 'text-ink' : 'text-emerald-600'}`}>{describeFee(i.fee)}</span>
                   {i.ruleLabel && <div className="text-[11px] text-ink-muted truncate max-w-[14rem]">{i.ruleLabel}</div>}

@@ -55,13 +55,15 @@ export default function ExperienceTaxPricing({
     const dv = Number(disc.value) || 0;
     const discountAmt = disc.type === 'fixed' ? Math.min(dv, base) : (base * dv) / 100;
     const net = Math.max(0, base - discountAmt);
-    const gst = (net * (Number(gstRate) || 0)) / 100;
-    const subtotal = net + gst; // the "final amount at this time"
+    // ORDER: convenience fee FIRST (on the discounted, marked-up amount), then
+    // GST on top of (net + convenience).
     let convFee = 0;
     if (cf.type === 'fixed') convFee = Number(cf.value) || 0;
-    else if (cf.type === 'percentage') convFee = (subtotal * (Number(cf.value) || 0)) / 100;
-    const total = subtotal + convFee;
-    return { quoted, raw, markupAmt, base, discountAmt, net, gst, subtotal, convFee, total };
+    else if (cf.type === 'percentage') convFee = (net * (Number(cf.value) || 0)) / 100;
+    const afterConv = net + convFee;
+    const gst = (afterConv * (Number(gstRate) || 0)) / 100;
+    const total = afterConv + gst;
+    return { quoted, raw, markupAmt, base, discountAmt, net, convFee, afterConv, gst, total };
   }, [basePrice, pureFactor, mk.type, mk.value, disc.type, disc.value, gstRate, cf.type, cf.value]);
 
   return (
@@ -104,11 +106,14 @@ export default function ExperienceTaxPricing({
             {calc.discountAmt > 0 && (
               <Row label={`Discount${disc.type === 'percentage' ? ` (${disc.value}%)` : ''}`} value={`− ${rupee(calc.discountAmt)}`} accent="text-emerald-600" />
             )}
-            <Row label="Net (taxable)" value={rupee(calc.net)} />
-            {Number(gstRate) > 0 && <Row label={`GST (${gstRate}%)`} value={`+ ${rupee(calc.gst)}`} />}
+            <Row label="Net (after discount)" value={rupee(calc.net)} />
             {calc.convFee > 0 && (
               <Row label={`Convenience fee${cf.type === 'percentage' ? ` (${cf.value}%)` : ''}`} value={`+ ${rupee(calc.convFee)}`} />
             )}
+            {calc.convFee > 0 && Number(gstRate) > 0 && (
+              <Row label="Taxable (incl. fee)" value={rupee(calc.afterConv)} />
+            )}
+            {Number(gstRate) > 0 && <Row label={`GST (${gstRate}%)`} value={`+ ${rupee(calc.gst)}`} />}
             <div className="border-t border-gray-200 pt-2 mt-2 flex items-center justify-between font-bold text-ink text-base">
               <span>Total payable</span>
               <span>{rupee(calc.total)}</span>
