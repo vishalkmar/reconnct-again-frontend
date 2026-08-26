@@ -13,6 +13,15 @@ const STATUS_STYLE = {
   archived: 'bg-slate-100 text-slate-500',
 };
 const STATUS_LABEL = { pending_review: 'Pending Review', archived: 'Archived' };
+
+/*
+  One column template shared by the header and every row, so they can never
+  drift apart. Name / supplier / taxonomy flex; Status and Actions are FIXED —
+  they hold content of a known size (a chip, five icon buttons), and letting
+  them flex is what made "Pending Review" wrap onto two lines and pushed the
+  buttons into the edge of the card.
+*/
+const ROW_GRID = 'md:grid-cols-[minmax(0,2.4fr)_minmax(0,1.1fr)_minmax(0,1.7fr)_7.5rem_11rem]';
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 export default function ExperiencesPage() {
@@ -74,7 +83,9 @@ export default function ExperiencesPage() {
   const hasFilters = q.trim() || supplierId || typeId;
 
   return (
-    <div className="max-w-6xl">
+    // Wider than the usual max-w-6xl: this table has five columns, and the
+    // extra room is what stops the taxonomy chips and status from colliding.
+    <div className="max-w-7xl">
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold mb-1">Experiences</h1>
@@ -119,41 +130,68 @@ export default function ExperiencesPage() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-          <div className="hidden md:grid grid-cols-12 px-5 py-3 bg-surface-alt text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-            <div className="col-span-4">Name</div>
-            <div className="col-span-2">Supplier</div>
-            <div className="col-span-3">Category · Type</div>
-            <div className="col-span-1">Status</div>
-            <div className="col-span-2 text-right">Actions</div>
+          <div className={`hidden md:grid ${ROW_GRID} gap-4 px-5 py-3 bg-surface-alt text-[11px] font-bold uppercase tracking-wider text-ink-muted`}>
+            <div>Name</div>
+            <div>Supplier</div>
+            <div>Category · Type</div>
+            <div>Status</div>
+            <div className="text-right">Actions</div>
           </div>
           <ul className="divide-y divide-slate-100">
             {filtered.map((e) => (
-              <li key={e.id} className="grid grid-cols-12 gap-2 px-4 sm:px-5 py-3.5 items-center">
-                <div className="col-span-12 md:col-span-4 min-w-0">
-                  <div className="font-semibold text-ink flex items-start gap-2 flex-wrap">
-                    <span className="break-words">{e.name}</span>
-                    {!e.isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">Hidden</span>}
-                  </div>
-                  <div className="text-[11px] text-ink-muted">{e.location || '—'}</div>
-                </div>
-                <div className="col-span-6 md:col-span-2 text-sm text-ink-muted min-w-0">
-                  {e.supplier ? <span className="break-words">{e.supplier.companyName}</span> : <span className="text-slate-300">—</span>}
-                </div>
-                <div className="col-span-6 md:col-span-3 text-sm text-ink-muted break-words">
-                  {(e.categoryItems || []).map((c) => c.name).join(', ') || '—'}
-                  {(e.typeItems || []).length ? ` · ${e.typeItems.map((t) => t.name).join(', ')}` : ''}
-                </div>
-                <div className="col-span-3 md:col-span-1">
-                  {e.status === 'published' && e.isActive ? (
-                    <div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Live</span>
-                      {(e.data?.listedAt) && <div className="text-[10px] text-ink-muted mt-0.5">{fmtDate(e.data.listedAt)}</div>}
-                    </div>
+              <li
+                key={e.id}
+                className={`grid grid-cols-1 ${ROW_GRID} gap-3 md:gap-4 px-4 sm:px-5 py-3 items-center hover:bg-surface-alt/40 transition-colors`}
+              >
+                {/* Name — thumbnail keeps rows a fixed height and makes the
+                    list scannable by picture rather than by reading. */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {e.mainImage ? (
+                    <img src={e.mainImage} alt="" className="w-11 h-11 rounded-lg object-cover bg-surface-alt shrink-0" />
                   ) : (
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>{STATUS_LABEL[e.status] || e.status}</span>
+                    <div className="w-11 h-11 rounded-lg bg-brand/10 text-brand shrink-0 grid place-items-center">
+                      <Sparkles size={16} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-semibold text-ink truncate" title={e.name}>{e.name}</span>
+                      {!e.isActive && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">Hidden</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-ink-muted truncate" title={e.location || ''}>
+                      {e.location || '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-sm text-ink-muted min-w-0">
+                  {e.supplier
+                    ? <span className="block truncate" title={e.supplier.companyName}>{e.supplier.companyName}</span>
+                    : <span className="text-slate-300">—</span>}
+                </div>
+
+                {/* Category · Type — the old version printed every category and
+                    every type as one comma string, which stretched a single
+                    row to six lines and swamped the table. Chips, capped, with
+                    the full list on hover. */}
+                <TaxonomyCell categories={e.categoryItems} types={e.typeItems} />
+
+                <div className="min-w-0">
+                  {e.status === 'published' && e.isActive ? (
+                    <>
+                      <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 whitespace-nowrap">Live</span>
+                      {e.data?.listedAt && <div className="text-[10px] text-ink-muted mt-0.5">{fmtDate(e.data.listedAt)}</div>}
+                    </>
+                  ) : (
+                    <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize whitespace-nowrap ${STATUS_STYLE[e.status] || 'bg-slate-100'}`}>
+                      {STATUS_LABEL[e.status] || e.status}
+                    </span>
                   )}
                 </div>
-                <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-1">
+
+                <div className="flex items-center md:justify-end gap-0.5">
                   <IconBtn title="View" onClick={() => navigate(`/admin/experiences/${e.id}/view`)}><ScanEye size={15} /></IconBtn>
                   <IconBtn title="Edit" onClick={() => navigate(`/admin/experiences/${e.id}/edit`)}><Pencil size={15} /></IconBtn>
                   <IconBtn title="Duplicate" onClick={() => duplicate(e.id)}><Copy size={15} /></IconBtn>
@@ -169,10 +207,59 @@ export default function ExperiencesPage() {
   );
 }
 
+/*
+  An experience can carry a dozen categories and types. Printing them all is
+  unreadable and makes one row six times taller than its neighbours, so this
+  shows the two most specific labels (the TYPES — "Yoga Retreats" says more
+  than "Wellness & Healing") as chips, with a +N chip carrying the rest in its
+  tooltip, and the broad categories as one muted line underneath.
+*/
+const MAX_CHIPS = 2;
+
+function TaxonomyCell({ categories = [], types = [] }) {
+  const cats = (categories || []).map((c) => c.name).filter(Boolean);
+  const typeNames = (types || []).map((t) => t.name).filter(Boolean);
+  // Fall back to categories as the chips when nothing has a type yet.
+  const chips = typeNames.length ? typeNames : cats;
+  const subtitle = typeNames.length ? cats : [];
+  const extra = chips.length - MAX_CHIPS;
+
+  if (!chips.length) return <div className="text-sm text-slate-300">—</div>;
+
+  return (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-1">
+        {chips.slice(0, MAX_CHIPS).map((name) => (
+          <span
+            key={name}
+            title={name}
+            className="max-w-[11rem] truncate text-[11px] font-medium px-2 py-0.5 rounded-md bg-brand/10 text-amber-800"
+          >
+            {name}
+          </span>
+        ))}
+        {extra > 0 && (
+          <span
+            title={chips.join(', ')}
+            className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 cursor-help"
+          >
+            +{extra}
+          </span>
+        )}
+      </div>
+      {subtitle.length > 0 && (
+        <div className="text-[11px] text-ink-muted truncate mt-1" title={subtitle.join(', ')}>
+          {subtitle.join(' · ')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IconBtn({ title, onClick, children, danger }) {
   return (
     <button type="button" title={title} onClick={onClick}
-      className={`p-2 rounded-lg transition ${danger ? 'text-rose-500 hover:bg-rose-50' : 'text-ink-muted hover:bg-surface-alt hover:text-brand'}`}>
+      className={`p-2 rounded-lg shrink-0 transition ${danger ? 'text-rose-500 hover:bg-rose-50' : 'text-ink-muted hover:bg-surface-alt hover:text-brand'}`}>
       {children}
     </button>
   );

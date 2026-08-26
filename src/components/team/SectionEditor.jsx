@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import ExperienceTaxonomyPicker from '../admin/ExperienceTaxonomyPicker.jsx';
 import StarRatingInput from '../admin/StarRatingInput.jsx';
+import { FAMOUS_CITIES, INDIAN_STATES } from '../../constants/indiaGeo.js';
 import RichTextEditor from '../admin/RichTextEditor.jsx';
 import Dropzone from '../admin/Dropzone.jsx';
 import MediaVideosField from '../admin/MediaVideosField.jsx';
@@ -17,7 +18,7 @@ import { FaqEditor } from '../admin/KeyValueListEditor.jsx';
 // The slice of the experience each section edits (initial draft).
 const sliceFor = (key, e) => {
   switch (key) {
-    case 'basic': return { name: e.name || '', location: e.location || '', city: e.city || '', nearbyLocation: e.nearbyLocation || '', mode: e.mode || 'offline', rating: Number(e.rating) || 0 };
+    case 'basic': return { name: e.name || '', location: e.location || '', city: e.city || '', state: e.state || '', pincode: e.pincode || '', nearbyLocation: e.nearbyLocation || '', mode: e.mode || 'offline', rating: Number(e.rating) || 0 };
     case 'taxonomy': return { audiences: e.audiences || [], categoryIds: e.categoryIds || [], typeIds: e.typeIds || [] };
     case 'about': return { about: e.about || '' };
     case 'media': return { mainImage: e.mainImage || '', gallery: Array.isArray(e.gallery) ? e.gallery : [], videos: Array.isArray(e.videos) ? e.videos : [] };
@@ -41,9 +42,23 @@ function Editor({ sectionKey: key, draft, patch, exp }) {
       return (
         <div className="space-y-3">
           <div><label className="label">Name</label><input className="input" value={draft.name} onChange={(e) => patch({ name: e.target.value })} /></div>
-          <div><label className="label">Location</label><input className="input" value={draft.location} onChange={(e) => patch({ location: e.target.value })} /></div>
+          <div><label className="label">Experience address</label><input className="input" value={draft.location} onChange={(e) => patch({ location: e.target.value })} placeholder="e.g. D-Mall 128, Netaji Subhash Place" /></div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <div><label className="label">City</label><input className="input" value={draft.city} onChange={(e) => patch({ city: e.target.value })} /></div>
+            <div>
+              <label className="label">City</label>
+              <input className="input" list="team-famous-cities" value={draft.city} onChange={(e) => patch({ city: e.target.value })} placeholder="Start typing — e.g. Goa" autoComplete="off" />
+              <datalist id="team-famous-cities">{FAMOUS_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <label className="label">State</label>
+              <select className="input" value={draft.state} onChange={(e) => patch({ state: e.target.value })}>
+                <option value="">Select state…</option>
+                {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div><label className="label">Pincode</label><input className="input" value={draft.pincode} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 403516" inputMode="numeric" maxLength={6} /></div>
             <div><label className="label">Nearby location</label><input className="input" value={draft.nearbyLocation} onChange={(e) => patch({ nearbyLocation: e.target.value })} /></div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3 items-start">

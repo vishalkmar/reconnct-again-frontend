@@ -16,6 +16,7 @@ import ExperienceFacilities from '../../components/admin/ExperienceFacilities.js
 import ExperienceScheduling from '../../components/admin/ExperienceScheduling.jsx';
 import { FaqEditor } from '../../components/admin/KeyValueListEditor.jsx';
 import { validateExperience } from '../../utils/validateExperience.js';
+import { FAMOUS_CITIES, INDIAN_STATES } from '../../constants/indiaGeo.js';
 
 const blankPricing = {
   adultPrice: 0,
@@ -36,6 +37,7 @@ export const blankActivity = () => ({
   name: '',
   location: '',
   city: '',
+  state: '',
   pincode: '',
   nearbyLocation: '',
   rating: 0,
@@ -80,6 +82,7 @@ const toActivity = (e) => ({
   name: e.name || '',
   location: e.location || '',
   city: e.city || '',
+  state: e.state || '',
   pincode: e.pincode || '',
   nearbyLocation: e.nearbyLocation || '',
   rating: Number(e.rating) || 0,
@@ -458,12 +461,25 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
         <div className="grid sm:grid-cols-2 gap-4 items-start">
           <div>
             <label className="label">City <span className="text-rose-500">*</span></label>
-            <input className="input" value={value.city} onChange={(e) => patch({ city: e.target.value })} placeholder="e.g. Rishikesh" />
+            <input className="input" list="famous-cities" value={value.city} onChange={(e) => patch({ city: e.target.value })} placeholder="Start typing — e.g. Rishikesh" autoComplete="off" />
+            <datalist id="famous-cities">
+              {FAMOUS_CITIES.map((c) => <option key={c} value={c} />)}
+            </datalist>
+            <p className="text-xs text-ink-muted mt-1">Pick from the list to avoid typos, or type your own.</p>
           </div>
+          <div>
+            <label className="label">State <span className="text-rose-500">*</span></label>
+            <select className="input" value={value.state} onChange={(e) => patch({ state: e.target.value })}>
+              <option value="">Select state…</option>
+              {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4 items-start">
           <div>
             <label className="label">Pincode <span className="text-rose-500">*</span></label>
             <input className="input" value={value.pincode} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 249302" inputMode="numeric" maxLength={6} />
-            <p className="text-xs text-ink-muted mt-1">Helps place this experience precisely on the map for “near you”.</p>
+            <p className="text-xs text-ink-muted mt-1">City + State + Pincode together place this precisely on the map for “near you”.</p>
           </div>
         </div>
         <div>

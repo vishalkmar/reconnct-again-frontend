@@ -18,6 +18,7 @@ import {
   Handshake,
   IndianRupee,
   ShieldAlert,
+  CalendarHeart,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -46,6 +47,7 @@ const mainItems = [
   { to: '/admin/app-screens', label: 'App Screens Control', icon: Smartphone },
   { to: '/admin/chat-support', label: 'Chat Support', icon: MessageCircle, badgeKey: 'support' },
   { to: '/admin/team', label: 'Team Management', icon: ShieldCheck },
+  { to: '/admin/occasions', label: 'Occasion Marketing', icon: CalendarHeart },
   {
     label: 'Pricing Setup Management',
     icon: IndianRupee,

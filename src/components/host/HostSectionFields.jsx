@@ -8,6 +8,7 @@ import {
   L, Hint, Chip, AddCustom, Stepper,
   DURATIONS, FACILITIES, PRICE_METHODS, MODES, MAX_IMAGE_BYTES,
 } from '../../pages/host/HostListingFormPage.jsx';
+import { FAMOUS_CITIES, INDIAN_STATES } from '../../constants/indiaGeo.js';
 
 /*
   ONE review section's fields, in the host/supplier `form` shape.
@@ -30,7 +31,7 @@ import {
   supplier record.
 */
 export const SECTION_FORM_FIELDS = {
-  basic: ['name', 'location', 'city', 'pincode', 'nearbyLocation', 'mode'],
+  basic: ['name', 'location', 'city', 'state', 'pincode', 'nearbyLocation', 'mode'],
   taxonomy: ['audiences', 'categoryIds', 'typeIds'],
   about: ['about'],
   media: ['photos', 'videos'],
@@ -67,11 +68,22 @@ export default function HostSectionFields({ section, form, patch }) {
             <L>Experience title</L>
             <input className="win" value={form.name || ''} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. Sunrise Kayaking at Goa Beach" />
           </div>
-          <div><L>Location</L><input className="win" value={form.location || ''} onChange={(e) => patch({ location: e.target.value })} placeholder="City, State, Country" /></div>
+          <div><L>Experience address</L><input className="win" value={form.location || ''} onChange={(e) => patch({ location: e.target.value })} placeholder="e.g. D-Mall 128, Netaji Subhash Place" /></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><L>City</L><input className="win" value={form.city || ''} onChange={(e) => patch({ city: e.target.value })} placeholder="e.g. Goa" /></div>
-            <div><L>Pincode</L><input className="win" value={form.pincode || ''} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 403516" inputMode="numeric" maxLength={6} /></div>
+            <div>
+              <L>City</L>
+              <input className="win" list="host-famous-cities" value={form.city || ''} onChange={(e) => patch({ city: e.target.value })} placeholder="Start typing — e.g. Goa" autoComplete="off" />
+              <datalist id="host-famous-cities">{FAMOUS_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <L>State</L>
+              <select className="win" value={form.state || ''} onChange={(e) => patch({ state: e.target.value })}>
+                <option value="">Select state…</option>
+                {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
+          <div><L>Pincode</L><input className="win" value={form.pincode || ''} onChange={(e) => patch({ pincode: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} placeholder="e.g. 403516" inputMode="numeric" maxLength={6} /></div>
           <div>
             <L>Nearby location</L>
             <input className="win" value={form.nearbyLocation || ''} onChange={(e) => patch({ nearbyLocation: e.target.value })} placeholder="e.g. near Baga Beach" />

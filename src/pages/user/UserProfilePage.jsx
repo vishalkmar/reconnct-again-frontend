@@ -22,6 +22,7 @@ const initialForm = (user) => ({
   avatarUrl: user?.avatarUrl || '',
   gender: user?.gender || '',
   dob: user?.dob || '',
+  anniversary: user?.anniversary || '',
   addressLine: user?.addressLine || '',
   city: user?.city || '',
   state: user?.state || '',
@@ -191,6 +192,15 @@ export default function UserProfilePage() {
                 value={form.dob || ''}
                 onChange={(iso) => setForm((f) => ({ ...f, dob: iso }))}
                 placeholder="Pick your DOB"
+              />
+            </Field>
+            {/* Both dates feed the birthday/anniversary greetings — a blank
+                one simply means we never wish you on it. */}
+            <Field label="Anniversary">
+              <DatePicker
+                value={form.anniversary || ''}
+                onChange={(iso) => setForm((f) => ({ ...f, anniversary: iso }))}
+                placeholder="Pick your anniversary"
               />
             </Field>
           </div>

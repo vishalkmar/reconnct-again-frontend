@@ -9,6 +9,7 @@ import ScrollToTop from './components/public/ScrollToTop.jsx';
 import ClarityTracker from './components/ClarityTracker.jsx';
 
 import LandingPage from './pages/LandingPage.jsx';
+import UnsubscribePage from './pages/UnsubscribePage.jsx';
 
 // User dashboard
 import UserDashboardHomePage from './pages/user/UserDashboardHomePage.jsx';
@@ -79,6 +80,7 @@ import B2BExperiencePage from './pages/admin/B2BExperiencePage.jsx';
 import B2BActivityBookingsPage from './pages/admin/B2BActivityBookingsPage.jsx';
 import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
 import TeamManagementPage from './pages/admin/TeamManagementPage.jsx';
+import OccasionMarketingPage from './pages/admin/OccasionMarketingPage.jsx';
 import AdminReviewsPage from './pages/admin/AdminReviewsPage.jsx';
 import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx';
 
@@ -133,6 +135,9 @@ export default function App() {
       <Routes>
         {/* Public entry — branded sign-in landing */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* Opt-out target for occasion greeting emails — deliberately public. */}
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
         {/* Booking flow — requires a signed-in member. Full-bleed, no sidebar. */}
         <Route
@@ -246,6 +251,8 @@ export default function App() {
           <Route path="app-screens" element={<AppScreensControlPage />} />
           <Route path="chat-support" element={<ChatSupportPage />} />
           <Route path="team" element={<TeamManagementPage />} />
+          {/* Occasion Marketing — festival / weekend / birthday greetings */}
+          <Route path="occasions" element={<OccasionMarketingPage />} />
           {/* Pricing Setup Management — markup / discount / GST / convenience */}
           <Route path="pricing-setup" element={<Navigate to="/admin/pricing-setup/markup" replace />} />
           <Route path="pricing-setup/markup" element={<MarkupManagementPage />} />
