@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CalendarHeart, Loader2, Plus, X, Save, Trash2, Power, Send, Play, Sparkles,
   AlertTriangle, CheckCircle2, Mail, Smartphone, Bell, CalendarDays, BarChart3, Gift, Merge,
+  Timer, FlaskConical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext.jsx';
 import Dropzone from '../../components/admin/Dropzone.jsx';
 
 /*
@@ -123,6 +125,24 @@ const mergedWith = (row, rows = []) =>
   rows.filter((r) => r.groupKey === row.groupKey && r.campaignId !== row.campaignId)
     .map((r) => r.name);
 
+/*
+  The run-up beats. A big occasion no longer sends once: it sends a week out,
+  then at 3, 2 and 1 days, then the wish itself — so the admin needs to be
+  able to see, and test, each beat separately.
+*/
+const COUNTDOWN_OFFSETS = [-7, -3, -2, -1, 0];
+
+const STAGE_LABEL = {
+  '-7': '1 week to go',
+  '-3': '3 days to go',
+  '-2': '2 days to go',
+  '-1': 'Tomorrow',
+  0: 'On the day',
+};
+
+const stageLabel = (o) => STAGE_LABEL[String(Number(o))]
+  || (Number(o) < 0 ? `${Math.abs(Number(o))} days to go` : 'On the day');
+
 const describeOffsets = (offsets = []) =>
   offsets
     .slice()
@@ -131,6 +151,9 @@ const describeOffsets = (offsets = []) =>
     .join(' + ') || 'on the day';
 
 export default function OccasionMarketingPage() {
+  // The admin's own address is the sensible default for a test send — it is
+  // the inbox they are sitting in front of.
+  const { admin } = useAuth();
   const [tab, setTab] = useState('campaigns');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,6 +204,32 @@ export default function OccasionMarketingPage() {
     }
   };
 
+  /*
+    Puts existing occasions onto the seven-day run-up.
+
+    The seeder ships it, but seeding never overwrites a stored row (an admin
+    may have fixed its dates), so a calendar loaded before the countdown
+    existed needs this one-time upgrade. Passing `ids` upgrades exactly one
+    occasion regardless of whether it emails.
+  */
+  const applyCountdown = async ({ scope = 'emailing', ids = null, label } = {}) => {
+    if (!ids && !window.confirm(
+      scope === 'all'
+        ? 'Put EVERY festival, holiday and sale on the 7-day countdown? Occasions that email will send 5 emails per occasion instead of 2.'
+        : 'Put the big occasions (the ones that already email) on the 7-day countdown — a week before, then 3, 2, 1 days before, then the day itself?'
+    )) return;
+    setBusy(true);
+    try {
+      const res = await api.post('/admin/campaigns/apply-countdown', ids ? { ids } : { scope });
+      toast.success(label ? `${label} is on the countdown` : (res.data?.message || 'Countdown applied'));
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not apply the countdown');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggle = async (c) => {
     try {
       await api.patch(`/admin/campaigns/${c.id}/toggle`);
@@ -219,9 +268,14 @@ export default function OccasionMarketingPage() {
         </h1>
         <p className="text-ink-muted text-sm max-w-3xl">
           Festival, weekend and birthday greetings — sent automatically over
-          email, app push and the in-app bell. The engine works off the calendar
-          below: a campaign fires on its own date, and the day before it too,
-          whichever you tick. Nobody is ever greeted twice for the same occasion.
+          email, app push and the in-app bell. Big occasions run a{' '}
+          <strong>7-day countdown</strong>: a week before, then 3, 2 and 1 days
+          before, then the day itself — each beat with its own copy. The day-of
+          mail is the odd one out on purpose: the wish stands alone, and only
+          below a divider does it point at what is still bookable today.
+          Nobody is ever greeted
+          twice for the same occasion, and two occasions on one morning arrive
+          as a single message.
         </p>
       </div>
 
@@ -247,6 +301,14 @@ export default function OccasionMarketingPage() {
         <div className="flex-1" />
         {tab === 'campaigns' && (
           <>
+            <button
+              onClick={() => applyCountdown({ scope: 'emailing' })}
+              disabled={busy}
+              title="Send a week before, then 3, 2 and 1 days before, then on the day"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-ink hover:border-brand/50 disabled:opacity-50"
+            >
+              <Timer size={15} /> Apply 7-day countdown
+            </button>
             <button
               onClick={() => runNow(null)}
               disabled={busy}
@@ -301,6 +363,8 @@ export default function OccasionMarketingPage() {
                 onVerify={() => verifyDates(c)}
                 onDelete={() => remove(c)}
                 onRun={() => runNow(c.id)}
+                onCountdown={() => applyCountdown({ ids: [c.id], label: c.name })}
+                defaultEmail={admin?.email || ''}
               />
             ))}
           </div>
@@ -335,20 +399,48 @@ function EmptyCalendar({ onSeed, busy }) {
   );
 }
 
-function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun }) {
+function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun, onCountdown, defaultEmail }) {
   const [testing, setTesting] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(defaultEmail || '');
   const [offset, setOffset] = useState(0);
+  const [userId, setUserId] = useState('');
   const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
 
+  /*
+    The test button fires BOTH channels at once, on purpose.
+
+    Email and push fail in completely unrelated ways — SMTP on one side, FCM
+    credentials / a stale device token on the other — so a test that only
+    proves the email works tells you nothing about whether the phone will
+    buzz. Both go out, and both outcomes come back separately: the push
+    result carries the server's actual reason ("no device token registered")
+    rather than a generic failure, because that reason is the only thing that
+    makes an absent notification debuggable.
+
+    The push targets the app account signed in with this same email address —
+    i.e. the phone in the admin's hand — which the backend resolves.
+  */
   const sendTest = async () => {
-    if (!email.trim()) { toast.error('Enter an email address'); return; }
+    const to = email.trim();
+    if (!to) { toast.error('Enter an email address'); return; }
     setSending(true);
+    setResult(null);
     try {
-      const res = await api.post(`/admin/campaigns/${c.id}/test`, { email: email.trim(), offsetDay: Number(offset) });
-      const r = res.data?.data?.result?.email;
-      if (r === 'sent') toast.success(`Test sent to ${email}`);
-      else toast.error(r || 'Test failed');
+      const res = await api.post(`/admin/campaigns/${c.id}/test`, {
+        email: to,
+        offsetDay: Number(offset),
+        push: true,
+        // Only when the admin's inbox and the test phone are different
+        // accounts — otherwise the backend finds the app account itself.
+        userId: userId.trim() ? Number(userId.trim()) : undefined,
+      });
+      const r = res.data?.data?.result || {};
+      setResult(r);
+      if (r.email?.ok && r.push?.ok) toast.success(`Email + notification sent to ${to}`);
+      else if (r.email?.ok) toast.success(`Email sent — notification did not go (see below)`);
+      else if (r.push?.ok) toast.success('Notification sent — email failed (see below)');
+      else toast.error('Neither the email nor the notification went out');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Test failed');
     } finally {
@@ -376,6 +468,11 @@ function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun }) {
             {c.needsDateCheck && c.isActive && (
               <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
                 verify dates
+              </span>
+            )}
+            {c.onCountdown && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <Timer size={10} /> 7-day countdown
               </span>
             )}
             {!c.isActive && (
@@ -414,9 +511,17 @@ function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun }) {
               <CheckCircle2 size={15} />
             </button>
           )}
-          <button onClick={() => setTesting((v) => !v)} title="Send a test"
-            className="p-2 rounded-lg border border-gray-200 hover:border-brand/50 text-ink-muted">
-            <Send size={15} />
+          {c.canCountdown && !c.onCountdown && (
+            <button onClick={onCountdown} title="Send a week before, then 3, 2 and 1 days before, then on the day"
+              className="p-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+              <Timer size={15} />
+            </button>
+          )}
+          <button onClick={() => setTesting((v) => !v)} title="Send a test email + phone notification to yourself"
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold ${
+              testing ? 'border-brand bg-brand/10 text-ink' : 'border-gray-200 text-ink-muted hover:border-brand/50'
+            }`}>
+            <FlaskConical size={15} /> Test
           </button>
           <button onClick={onRun} title="Run this campaign now"
             className="p-2 rounded-lg border border-gray-200 hover:border-brand/50 text-ink-muted">
@@ -438,25 +543,67 @@ function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun }) {
       </div>
 
       {testing && (
-        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-2">
-          <div className="flex-1 min-w-[220px]">
-            <label className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">Send a real test to</label>
-            <input className="input mt-1" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex-1 min-w-[220px]">
+              <label className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">Send a real test to</label>
+              <input className="input mt-1" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="w-28">
+              <label className="text-[11px] font-bold uppercase tracking-wide text-ink-muted" title="Leave blank to use the app account with the email above">
+                App user ID
+              </label>
+              <input className="input mt-1" placeholder="auto" value={userId} onChange={(e) => setUserId(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">Which beat</label>
+              <select className="input mt-1" value={offset} onChange={(e) => setOffset(e.target.value)}>
+                {(c.sendOffsets || [0]).slice().sort((a, b) => a - b).map((o) => (
+                  <option key={o} value={o}>{stageLabel(o)}</option>
+                ))}
+              </select>
+            </div>
+            <button onClick={sendTest} disabled={sending}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-bold disabled:opacity-50">
+              {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              Send email + notification
+            </button>
           </div>
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">Which version</label>
-            <select className="input mt-1" value={offset} onChange={(e) => setOffset(e.target.value)}>
-              {(c.sendOffsets || [0]).map((o) => (
-                <option key={o} value={o}>{o === 0 ? 'On the day' : `${Math.abs(o)} day(s) before`}</option>
-              ))}
-            </select>
-          </div>
-          <button onClick={sendTest} disabled={sending}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-ink text-sm font-bold disabled:opacity-50">
-            {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Send test
-          </button>
-          <p className="text-[11px] text-ink-muted w-full">
-            A test never counts as a real greeting — the recipient still gets theirs on the day.
+
+          {/*
+            Both outcomes, separately. A push that did not go out reports the
+            server's own reason — "no device token", "FCM not configured" —
+            because that sentence is the difference between a five-minute fix
+            and an afternoon of guessing.
+          */}
+          {result && (
+            <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
+              {[
+                { key: 'email', icon: Mail, label: 'Email' },
+                { key: 'push', icon: Smartphone, label: 'Phone notification' },
+              ].map(({ key, icon: Icon, label }) => {
+                const r = result[key];
+                if (!r) return null;
+                return (
+                  <div key={key} className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${
+                    r.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700'
+                  }`}>
+                    <Icon size={14} className="mt-0.5 shrink-0" />
+                    <div>
+                      <strong>{label}: {r.ok ? 'sent' : 'not sent'}</strong>
+                      {r.ok && r.to ? <div className="opacity-80">to {r.to}</div> : null}
+                      {!r.ok && r.reason ? <div className="opacity-90">{r.reason}</div> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="text-[11px] text-ink-muted mt-2">
+            Sends the real thing — the “{stageLabel(offset)}” version — to that inbox and to the
+            phone signed into the app with the same address. A test never counts as
+            a real greeting: the recipient still gets theirs on the day.
           </p>
         </div>
       )}
@@ -919,7 +1066,13 @@ function ScheduleTab() {
                     <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${TYPE_CHIP[r.type] || TYPE_CHIP.sale}`}>
                       {r.type}
                     </span>
-                    <span className="text-xs text-ink-muted">{r.when}</span>
+                    {/* Which beat of the run-up — "1 week to go" reads far
+                        better in a timeline than "7 day(s) before". */}
+                    <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
+                      r.isRamp ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-surface-alt text-ink-muted border-gray-200'
+                    }`}>
+                      {r.stage || r.when}
+                    </span>
                     {r.offsetDay !== 0 && (
                       <span className="text-xs text-ink-muted">· occasion {r.occurrenceLabel}</span>
                     )}
@@ -927,6 +1080,13 @@ function ScheduleTab() {
                     {mergedWith(r, list).length > 0 && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
                         <Merge size={11} /> one message with {mergedWith(r, list).join(', ')}
+                      </span>
+                    )}
+                    {/* The Valentine-week chain: today's wish also previews
+                        tomorrow's occasion, with its own suggestions. */}
+                    {(r.previews || []).length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
+                        <Timer size={11} /> previews {r.previews.join(', ')} for tomorrow
                       </span>
                     )}
                     <div className="flex-1" />

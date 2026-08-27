@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Open in reconnct</title>
+<!--
+  The app-or-browser chooser.
+
+  Every experience link in a greeting email points here instead of straight at
+  the site, so someone tapping "Rishikesh Rafting" from their Diwali mail is
+  asked once whether they want it in the app or the browser.
+
+  Why this is a plain static file and not a route in the React app: it sits
+  between a tap and the thing the person actually wanted. Loading a SPA bundle
+  first would put a spinner in the middle of that, for a screen with two
+  buttons on it. This file is a few KB, has no build step, no dependencies and
+  no network calls — it renders on the first paint. It lives in public/ so
+  Vite ships it verbatim to /open.html.
+
+  ── How "open the app if it is installed" actually works ──────────────────
+
+  Android: the intent:// URL below. Chrome resolves it natively — if a package
+  matching `com.reconnct` handles the reconnct:// scheme it is launched, and
+  if nothing does, Chrome navigates to S.browser_fallback_url (the Play Store)
+  instead. No timers, no guessing whether the app opened, and no dead tab left
+  behind. This is the only reliable way to do it on Android; the old trick of
+  setting location to a custom scheme and racing a setTimeout against it
+  produces a browser error page on the devices where it fails.
+
+  iOS has no equivalent, so it does use the scheme-plus-timeout dance, with
+  pagehide cancelling the fallback when the app really did take over.
+
+  Desktop never asks. There is no app to open, so the question would be noise
+  — it redirects straight through.
+-->
+<style>
+  :root{
+    --bg:#fffdf7; --card:#ffffff; --ink:#101828; --muted:#667085;
+    --brand:#FFB900; --line:#eef1f5; --shadow:0 10px 30px rgba(16,24,40,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12100c; --card:#1b1815; --ink:#f5f3ef; --muted:#a8a29a;
+      --line:#2b2723; --shadow:0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    width:100%; max-width:380px; background:var(--card); border-radius:20px;
+    box-shadow:var(--shadow); padding:28px 24px 22px; text-align:center;
+  }
+  .mark{
+    width:56px; height:56px; margin:0 auto 16px; border-radius:16px;
+    background:var(--brand); color:#101828; display:flex; align-items:center;
+    justify-content:center; font-weight:800; font-size:22px; letter-spacing:-.5px;
+  }
+  h1{font-size:19px; line-height:1.35; margin:0 0 6px; font-weight:700}
+  p.sub{font-size:13.5px; line-height:1.55; color:var(--muted); margin:0 0 20px}
+  .dest{
+    font-size:12px; color:var(--muted); background:rgba(127,127,127,.08);
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px;
+    margin:0 0 18px; word-break:break-all; text-align:left;
+  }
+  a.btn{
+    display:block; width:100%; padding:14px 16px; border-radius:12px;
+    font-size:15px; font-weight:700; text-decoration:none; margin:0 0 10px;
+    border:1px solid transparent; cursor:pointer;
+  }
+  a.primary{background:var(--brand); color:#101828}
+  a.secondary{background:transparent; color:var(--ink); border-color:var(--line)}
+  a.btn small{display:block; font-size:11.5px; font-weight:600; opacity:.7; margin-top:3px}
+  .foot{font-size:11px; color:var(--muted); margin:14px 0 0}
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark" aria-hidden="true">re</div>
+    <h1 id="head">Open this in the reconnct app?</h1>
+    <p class="sub" id="sub">The app remembers your bookings and sends you slot reminders.</p>
+    <div class="dest" id="dest"></div>
+
+    <a class="btn primary" id="app" href="#">
+      Open in the app
+      <small id="appNote">Not installed? We&rsquo;ll take you to the Play Store</small>
+    </a>
+    <a class="btn secondary" id="web" href="#">Continue in the browser</a>
+
+    <p class="foot">You can always switch later.</p>
+
+    <noscript>
+      <p class="foot">
+        JavaScript is off, so we cannot open the app.
+        <a id="nojs" href="/experiences">Continue on the website</a>.
+      </p>
+    </noscript>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+
+  // Android package + custom scheme. These three must match the app's
+  // AndroidManifest.xml (applicationId, and the reconnct:// intent-filter).
+  var PACKAGE = 'com.reconnct';
+  var SCHEME  = 'reconnct';
+
+  /*
+    Where an Android phone WITHOUT the app goes.
+
+    This is the Play Store listing for the package. It is correct the moment
+    the app is published and a 404 until then — while the app is still being
+    handed out as an APK, swap the line below for the search URL:
+
+      var PLAY_URL = 'https://play.google.com/store/search?q=reconnct&c=apps';
+  */
+  var PLAY_URL = 'https://play.google.com/store/apps/details?id=' + PACKAGE;
+
+  /*
+    iOS equivalent. There is no published iOS build yet, so an iPhone without
+    the app falls through to the website rather than to a dead App Store page.
+    Set this to the listing URL once the app ships and iOS behaves like
+    Android does.
+  */
+  var IOS_STORE_URL = null;
+
+  var q = new URLSearchParams(window.location.search);
+
+  /*
+    `to` is a path on THIS site, and it arrives from a link in an email — so it
+    is treated as untrusted. Only a single-slash-prefixed relative path is
+    accepted: that rules out "//evil.com" (protocol-relative, which browsers
+    treat as absolute) and "https://evil.com", either of which would otherwise
+    turn every greeting email into an open redirect wearing our domain.
+  */
+  var to = q.get('to') || '/experiences';
+  if (to.charAt(0) !== '/' || to.charAt(1) === '/' || to.indexOf('\\') !== -1) {
+    to = '/experiences';
+  }
+
+  var webUrl = window.location.origin + to;
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+
+  var elDest = document.getElementById('dest');
+  var elApp = document.getElementById('app');
+  var elWeb = document.getElementById('web');
+  var elNote = document.getElementById('appNote');
+  var elNojs = document.getElementById('nojs');
+
+  elWeb.href = webUrl;
+  if (elNojs) elNojs.href = webUrl;
+
+  // Show where they are going — the whole point of an interstitial is that it
+  // must not feel like being hijacked.
+  elDest.textContent = decodeURIComponent(to.split('?')[0]);
+
+  // No app on a desktop, so no question worth asking.
+  if (!isAndroid && !isIOS) {
+    window.location.replace(webUrl);
+    return;
+  }
+
+  if (isAndroid) {
+    /*
+      One URL that does both halves. Chrome launches com.reconnct if it is
+      installed and handles reconnct://open, and navigates to
+      browser_fallback_url (the Play Store) if it is not.
+    */
+    elApp.href = 'intent://open?to=' + encodeURIComponent(to)
+      + '#Intent;scheme=' + SCHEME
+      + ';package=' + PACKAGE
+      + ';S.browser_fallback_url=' + encodeURIComponent(PLAY_URL)
+      + ';end';
+  } else {
+    if (!IOS_STORE_URL) elNote.textContent = 'Not installed? We’ll open the website instead';
+
+    elApp.href = SCHEME + '://open?to=' + encodeURIComponent(to);
+    elApp.addEventListener('click', function (e) {
+      e.preventDefault();
+      /*
+        iOS gives no signal for "did the app open", so: fire the scheme, and
+        race a timer against it. If the app DID take over, the page is
+        backgrounded and pagehide/visibilitychange fires first, cancelling the
+        fallback — otherwise the timer wins and sends them onward.
+      */
+      var fallback = IOS_STORE_URL || webUrl;
+      var timer = setTimeout(function () { window.location.href = fallback; }, 1400);
+      var cancel = function () { clearTimeout(timer); };
+      window.addEventListener('pagehide', cancel, { once: true });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) cancel();
+      }, { once: true });
+      window.location.href = elApp.href;
+    });
+  }
+})();
+</script>
+</body>
+</html>
