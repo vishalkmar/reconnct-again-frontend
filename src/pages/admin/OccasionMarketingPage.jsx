@@ -198,7 +198,6 @@ export default function OccasionMarketingPage() {
       if (q.recurrence && c.recurrence !== q.recurrence) return false;
       if (q.window !== '' && daysUntil(c.nextOccurrence, today) > q.window) return false;
       if (q.flag === 'needsCheck' && !(c.needsDateCheck && c.isActive)) return false;
-      if (q.flag === 'noCountdown' && (c.onCountdown || !c.canCountdown)) return false;
       if (q.flag === 'paused' && c.isActive) return false;
       if (q.flag === 'active' && !c.isActive) return false;
       return true;
@@ -236,32 +235,6 @@ export default function OccasionMarketingPage() {
       await load();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Run failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /*
-    Puts existing occasions onto the seven-day run-up.
-
-    The seeder ships it, but seeding never overwrites a stored row (an admin
-    may have fixed its dates), so a calendar loaded before the countdown
-    existed needs this one-time upgrade. Passing `ids` upgrades exactly one
-    occasion regardless of whether it emails.
-  */
-  const applyCountdown = async ({ scope = 'emailing', ids = null, label } = {}) => {
-    if (!ids && !window.confirm(
-      scope === 'all'
-        ? 'Put EVERY festival, holiday and sale on the 7-day countdown? Occasions that email will send 5 emails per occasion instead of 2.'
-        : 'Put the big occasions (the ones that already email) on the 7-day countdown — a week before, then 3, 2, 1 days before, then the day itself?'
-    )) return;
-    setBusy(true);
-    try {
-      const res = await api.post('/admin/campaigns/apply-countdown', ids ? { ids } : { scope });
-      toast.success(label ? `${label} is on the countdown` : (res.data?.message || 'Countdown applied'));
-      await load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not apply the countdown');
     } finally {
       setBusy(false);
     }
@@ -305,7 +278,8 @@ export default function OccasionMarketingPage() {
         </h1>
         <p className="text-ink-muted text-sm max-w-3xl">
           Festival, weekend and birthday greetings — sent automatically over
-          email, app push and the in-app bell. Big occasions run a{' '}
+          email, app push and the in-app bell. Every festival, holiday, sale,
+          birthday and anniversary <strong>automatically</strong> runs a{' '}
           <strong>7-day countdown</strong>: a week before, then 3, 2 and 1 days
           before, then the day itself — each beat with its own copy. The day-of
           mail is the odd one out on purpose: the wish stands alone, and only
@@ -338,14 +312,6 @@ export default function OccasionMarketingPage() {
         <div className="flex-1" />
         {tab === 'campaigns' && (
           <>
-            <button
-              onClick={() => applyCountdown({ scope: 'emailing' })}
-              disabled={busy}
-              title="Send a week before, then 3, 2 and 1 days before, then on the day"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-ink hover:border-brand/50 disabled:opacity-50"
-            >
-              <Timer size={15} /> Apply 7-day countdown
-            </button>
             <button
               onClick={() => runNow(null)}
               disabled={busy}
@@ -415,7 +381,6 @@ export default function OccasionMarketingPage() {
                 onVerify={() => verifyDates(c)}
                 onDelete={() => remove(c)}
                 onRun={() => runNow(c.id)}
-                onCountdown={() => applyCountdown({ ids: [c.id], label: c.name })}
                 defaultEmail={admin?.email || ''}
               />
             ))}
@@ -463,7 +428,6 @@ const WINDOWS = [
 const FLAGS = [
   { value: '', label: 'Everything' },
   { value: 'needsCheck', label: 'Dates need verifying' },
-  { value: 'noCountdown', label: 'Not on the countdown' },
   { value: 'paused', label: 'Paused' },
   { value: 'active', label: 'Active only' },
 ];
@@ -622,21 +586,13 @@ function CalendarSummary({ campaigns, today, onPick }) {
         </div>
       </button>
 
-      <button onClick={() => onPick({ flag: 'noCountdown' })}
-        className={`rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition ${
-          stats.onCountdown ? 'bg-white' : 'bg-indigo-50 border border-indigo-200'
-        }`}>
+      <div className="bg-white rounded-2xl shadow-soft p-4">
         <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">On the 7-day countdown</div>
-        <div className="text-2xl font-bold text-indigo-700 mt-1">
-          {stats.onCountdown}
-          <span className="text-sm font-semibold text-ink-muted"> / {stats.eligible}</span>
-        </div>
+        <div className="text-2xl font-bold text-indigo-700 mt-1">{stats.eligible}</div>
         <div className="text-[11px] text-ink-muted">
-          {stats.onCountdown === 0
-            ? 'none yet — hit “Apply 7-day countdown” above'
-            : `tap to see the ${Math.max(stats.eligible - stats.onCountdown, 0)} that are not`}
+          every festival, holiday, sale, birthday &amp; anniversary — automatic
         </div>
-      </button>
+      </div>
 
       <button onClick={() => onPick({ flag: 'needsCheck' })}
         className={`rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition ${
@@ -676,7 +632,7 @@ function EmptyCalendar({ onSeed, busy }) {
   );
 }
 
-function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun, onCountdown, defaultEmail }) {
+function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun, defaultEmail }) {
   const [testing, setTesting] = useState(false);
   const [email, setEmail] = useState(defaultEmail || '');
   const [offset, setOffset] = useState(0);
@@ -788,12 +744,6 @@ function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun, onCountdo
               <CheckCircle2 size={15} />
             </button>
           )}
-          {c.canCountdown && !c.onCountdown && (
-            <button onClick={onCountdown} title="Send a week before, then 3, 2 and 1 days before, then on the day"
-              className="p-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-              <Timer size={15} />
-            </button>
-          )}
           <button onClick={() => setTesting((v) => !v)} title="Send a test email + phone notification to yourself"
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold ${
               testing ? 'border-brand bg-brand/10 text-ink' : 'border-gray-200 text-ink-muted hover:border-brand/50'
@@ -870,6 +820,13 @@ function CampaignRow({ c, onEdit, onToggle, onVerify, onDelete, onRun, onCountdo
                       <strong>{label}: {r.ok ? 'sent' : 'not sent'}</strong>
                       {r.ok && r.to ? <div className="opacity-80">to {r.to}</div> : null}
                       {!r.ok && r.reason ? <div className="opacity-90">{r.reason}</div> : null}
+                      {/* Whether this mail's links can actually be measured —
+                          an untracked test looks identical to a tracked one. */}
+                      {r.ok && r.note ? (
+                        <div className={`mt-1 text-[11px] ${r.tracked === false ? 'text-amber-700' : 'opacity-80'}`}>
+                          {r.tracked === false ? '⚠ ' : '✓ '}{r.note}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -1486,7 +1443,9 @@ function Kpi({ label, value, sub, icon: Icon, tone = 'text-ink', soft }) {
 function AnalyticsTab({ campaigns }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [f, setF] = useState({ days: 90, type: '', campaignId: '', channel: '', offsetDay: '' });
+  const [f, setF] = useState({
+    days: 90, type: '', campaignId: '', channel: '', offsetDay: '', includeTests: '',
+  });
 
   const setFilter = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
@@ -1543,15 +1502,30 @@ function AnalyticsTab({ campaigns }) {
         summary={`${WINDOW_LABEL[f.days] || `${f.days} days`}${
           f.type ? ` · ${f.type}` : ''}${f.channel ? ` · ${f.channel}` : ''}${
           f.offsetDay !== '' ? ` · ${beatLabel(Number(f.offsetDay))}` : ''}`}
-        right={loading ? <Loader2 size={16} className="animate-spin text-brand" /> : (
+        right={(
+          <>
+            {/* Kept out of the collapsed fold on purpose: it changes every
+                number on the page, so it must be visible while they are. */}
+            <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted cursor-pointer mr-2">
+              <input
+                type="checkbox"
+                checked={f.includeTests === '1'}
+                onChange={(e) => setFilter('includeTests', e.target.checked ? '1' : '')}
+              />
+              Include test sends
+            </label>
+            {loading ? <Loader2 size={16} className="animate-spin text-brand" /> : (
           [f.type, f.campaignId, f.channel, f.offsetDay].some((v) => v !== '' && v != null) && (
             <button
-              onClick={() => setF({ days: f.days, type: '', campaignId: '', channel: '', offsetDay: '' })}
+              onClick={() => setF({
+                days: f.days, type: '', campaignId: '', channel: '', offsetDay: '', includeTests: f.includeTests,
+              })}
               className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink"
             >
               <X size={13} /> Clear
             </button>
-          )
+          ))}
+          </>
         )}
       >
         <Filter label="Window">
@@ -1782,8 +1756,11 @@ function AnalyticsTab({ campaigns }) {
           </div>
 
           <RecipientsTable filters={{
-            days: f.days, campaignId: f.campaignId, channel: f.channel, offsetDay: f.offsetDay,
+            days: f.days, campaignId: f.campaignId, channel: f.channel,
+            offsetDay: f.offsetDay, includeTests: f.includeTests,
           }} />
+
+          <TestSendsPanel days={f.days} />
 
           {/* ── Audience health ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -2013,7 +1990,14 @@ function RecipientsTable({ filters }) {
                 {data.items.map((r) => (
                   <tr key={r.id} className="border-b border-gray-50 hover:bg-surface-alt/50 align-top">
                     <td className="py-2">
-                      <div className="font-semibold text-ink">{r.user.name}</div>
+                      <div className="font-semibold text-ink">
+                        {r.user.name}
+                        {r.isTest && (
+                          <span className="ml-1.5 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                            test
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-ink-muted">{r.user.email}</div>
                     </td>
                     <td className="text-xs">
@@ -2078,6 +2062,143 @@ function RecipientsTable({ filters }) {
             of their click — influence, not proof.
           </p>
         </>
+      )}
+    </div>
+  );
+}
+
+/*
+  Test sends, kept in their own room.
+
+  Tests carry real tracking — that is the only way a test can prove tracking
+  works — which creates an obvious hazard: those opens and clicks would flatter
+  every rate on the page, and on a small base a few admin tests would dominate
+  them outright. So the live numbers exclude tests entirely, and everything an
+  admin fired lives here instead: when it went, which occasion and which beat,
+  to whom, and exactly what came back.
+
+  Both sides handled, and neither has to be traded for the other.
+*/
+function TestSendsPanel({ days }) {
+  const [data, setData] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api.get(`/admin/campaigns/recipients?tests=only&days=${days}&state=`)
+      .then((res) => setData(res.data?.data || null))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [days]);
+
+  useEffect(() => { if (open) load(); }, [open, load]);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-soft">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-5 py-3.5 text-left"
+      >
+        <FlaskConical size={16} className="text-violet-600" />
+        <span className="font-display font-bold text-base">Test sends</span>
+        <span className="text-[11px] text-ink-muted">
+          your own tests — tracked, and deliberately excluded from every number above
+        </span>
+        <div className="flex-1" />
+        {loading && <Loader2 size={15} className="animate-spin text-brand" />}
+        {open ? <ChevronUp size={16} className="text-ink-muted" /> : <ChevronDown size={16} className="text-ink-muted" />}
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5">
+          {!data || data.items.length === 0 ? (
+            <p className="text-sm text-ink-muted py-8 text-center">
+              No test sends in the last {days} days. Hit <strong>Test</strong> on any
+              occasion in the Campaigns tab — the mail it sends is fully tracked, and
+              it will show up here.
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[860px]">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-ink-muted border-b border-gray-100">
+                      <th className="py-2">Sent</th>
+                      <th>Occasion</th>
+                      <th>Beat</th>
+                      <th>To</th>
+                      <th>Opened</th>
+                      <th>Clicked</th>
+                      <th className="text-right">Time on page</th>
+                      <th className="text-right">Booked</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.items.map((r) => (
+                      <tr key={r.id} className="border-b border-gray-50 align-top">
+                        <td className="py-2 text-xs">
+                          <div className="text-ink font-semibold">
+                            {r.sentAt ? new Date(r.sentAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
+                          </div>
+                          <div className="text-[11px] text-ink-muted">
+                            {r.sentAt ? new Date(r.sentAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </div>
+                        </td>
+                        <td className="text-xs text-ink">{r.campaign}</td>
+                        <td className="text-xs">
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {beatLabel(r.offsetDay)}
+                          </span>
+                          <div className="text-[11px] text-ink-muted mt-0.5">{r.channel}</div>
+                        </td>
+                        <td className="text-xs">
+                          <div className="text-ink">{r.user.name}</div>
+                          <div className="text-[11px] text-ink-muted">{r.user.email}</div>
+                        </td>
+                        <td className="text-xs">
+                          {r.openedAt
+                            ? <span className="text-amber-700 font-semibold">{timeAgo(r.openedAt)}</span>
+                            : <span className="text-ink-muted">not yet</span>}
+                        </td>
+                        <td className="text-xs">
+                          {r.clickedAt ? (
+                            <>
+                              <span className="font-semibold" style={{ color: SERIES.clicked }}>
+                                {timeAgo(r.clickedAt)}
+                              </span>
+                              {r.clickCount > 1 && <span className="text-ink-muted"> ×{r.clickCount}</span>}
+                              <div className="text-[10px] text-ink-muted">
+                                {r.clickKind === 'experience' ? 'an experience' : 'browse'}
+                                {r.clickVia ? ` · ${r.clickVia}` : ''}
+                              </div>
+                            </>
+                          ) : <span className="text-ink-muted">not yet</span>}
+                        </td>
+                        <td className="text-right text-xs tabular-nums">
+                          {r.dwellSeconds ? mmss(r.dwellSeconds)
+                            : r.landedAt ? <span className="text-ink-muted">arrived</span>
+                            : <span className="text-ink-muted">—</span>}
+                        </td>
+                        <td className="text-right text-xs">
+                          {r.booking
+                            ? <span className="font-bold text-emerald-700">{rupees(r.booking.paise)}</span>
+                            : <span className="text-ink-muted">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[10px] text-ink-muted mt-3">
+                {data.total} test send{data.total === 1 ? '' : 's'} in this window. These
+                rows never appear in the funnel, the charts or the per-occasion table —
+                tick <strong>Include test sends</strong> above if you want them counted
+                there too.
+              </p>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
