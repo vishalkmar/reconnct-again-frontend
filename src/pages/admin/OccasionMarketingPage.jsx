@@ -1567,7 +1567,12 @@ function AnalyticsTab({ campaigns }) {
         <div className="py-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>
       ) : (
         <>
-          <TrackingNotice tracking={data.tracking} funnel={fn} />
+          <TrackingNotice
+            tracking={data.tracking}
+            funnel={fn}
+            tests={data.tests}
+            onIncludeTests={() => setFilter('includeTests', '1')}
+          />
 
           {/* ── The numbers worth knowing ────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
@@ -1760,7 +1765,7 @@ function AnalyticsTab({ campaigns }) {
             offsetDay: f.offsetDay, includeTests: f.includeTests,
           }} />
 
-          <TestSendsPanel days={f.days} />
+          <TestSendsPanel days={f.days} testCount={data.tests?.sent || 0} />
 
           {/* ── Audience health ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -1856,8 +1861,48 @@ function FilterShell({ activeCount, summary, children, right }) {
 
   Silence on the first two is how an admin concludes the feature is broken.
 */
-function TrackingNotice({ tracking, funnel }) {
+function TrackingNotice({ tracking, funnel, tests, onIncludeTests }) {
   if (!tracking) return null;
+
+  /*
+    Tests come FIRST, because whoever is reading this screen most likely just
+    pressed Test and is looking for the result. Reporting "nothing measured"
+    while their test sits tracked in the panel below is the single most
+    misleading thing this page could say.
+  */
+  if (tests && tests.sent > 0) {
+    const engaged = tests.opened > 0 || tests.clicked > 0;
+    return (
+      <div className={`flex items-start gap-2 rounded-xl px-4 py-3 text-xs border ${
+        engaged ? 'bg-violet-50 border-violet-200 text-violet-900' : 'bg-amber-50 border-amber-200 text-amber-800'
+      }`}>
+        <FlaskConical size={15} className="mt-0.5 shrink-0" />
+        <div>
+          {engaged ? (
+            <>
+              <strong>
+                Your test sends are being tracked — {tests.opened} opened,
+                {' '}{tests.clicked} clicked.
+              </strong>{' '}
+              They are left out of the numbers below on purpose, so a handful of
+              tests cannot move the real rates. Open <strong>Test sends</strong> at the
+              bottom of this page to see them in full, or{' '}
+              <button onClick={onIncludeTests} className="underline font-semibold">
+                count them in these numbers
+              </button>.
+            </>
+          ) : (
+            <>
+              <strong>{tests.sent} test send{tests.sent === 1 ? '' : 's'} tracked, no response yet.</strong>{' '}
+              The mail went out with a pixel and tracked links — open it and tap an
+              experience, then refresh. Gmail sometimes takes a minute to load the
+              pixel. Details are in <strong>Test sends</strong> at the bottom.
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!tracking.enabled) {
     return (
@@ -2079,10 +2124,15 @@ function RecipientsTable({ filters }) {
 
   Both sides handled, and neither has to be traded for the other.
 */
-function TestSendsPanel({ days }) {
+function TestSendsPanel({ days, testCount = 0 }) {
   const [data, setData] = useState(null);
-  const [open, setOpen] = useState(false);
+  // Open by default the moment tests exist. A collapsed panel is fine when it
+  // holds nothing; when it holds the answer somebody is actively looking for,
+  // hiding it behind a click is how they conclude the feature does not work.
+  const [open, setOpen] = useState(testCount > 0);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => { if (testCount > 0) setOpen(true); }, [testCount]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -2102,6 +2152,11 @@ function TestSendsPanel({ days }) {
       >
         <FlaskConical size={16} className="text-violet-600" />
         <span className="font-display font-bold text-base">Test sends</span>
+        {testCount > 0 && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+            {testCount}
+          </span>
+        )}
         <span className="text-[11px] text-ink-muted">
           your own tests — tracked, and deliberately excluded from every number above
         </span>
