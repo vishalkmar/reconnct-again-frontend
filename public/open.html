@@ -145,6 +145,23 @@
     to = '/experiences';
   }
 
+  /*
+    The click beacon, handed to this page fully-formed by the email (the API
+    lives on a different origin and a static file cannot know where). Fired as
+    an IMAGE on purpose: no CORS preflight, no credentials, no failure path to
+    handle on a page whose only job is to get out of the way.
+
+    Only http(s) is accepted — this param comes out of a mail client like `to`
+    does, and a javascript: URL here would be a self-inflicted XSS.
+  */
+  var trk = q.get('trk') || '';
+  if (!/^https?:\/\//i.test(trk)) trk = '';
+
+  function beacon(via) {
+    if (!trk) return;
+    try { new Image().src = trk + '&via=' + encodeURIComponent(via); } catch (e) { /* never block the click */ }
+  }
+
   var webUrl = window.location.origin + to;
   var ua = navigator.userAgent || '';
   var isAndroid = /Android/i.test(ua);
@@ -163,11 +180,19 @@
   // must not feel like being hijacked.
   elDest.textContent = decodeURIComponent(to.split('?')[0]);
 
-  // No app on a desktop, so no question worth asking.
+  // No app on a desktop, so no question worth asking — but it is still a
+  // click, and it still counts.
   if (!isAndroid && !isIOS) {
+    beacon('browser');
     window.location.replace(webUrl);
     return;
   }
+
+  // Record which way they went. On the browser button the navigation is the
+  // link's own, so the image request is already in flight by the time the page
+  // unloads; on the app button the beacon fires before the scheme does.
+  elWeb.addEventListener('click', function () { beacon('browser'); });
+  elApp.addEventListener('click', function () { beacon('app'); });
 
   if (isAndroid) {
     /*

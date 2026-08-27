@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ResponsiveContainer, AreaChart, Area, Line, BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, Tooltip, Legend,
+} from 'recharts';
+import {
   CalendarHeart, Loader2, Plus, X, Save, Trash2, Power, Send, Play, Sparkles,
   AlertTriangle, CheckCircle2, Mail, Smartphone, Bell, CalendarDays, BarChart3, Gift, Merge,
-  Timer, FlaskConical,
+  Timer, FlaskConical, Users, MousePointerClick, IndianRupee, Search, SlidersHorizontal,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -159,12 +163,17 @@ export default function OccasionMarketingPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // campaign object or 'new'
   const [busy, setBusy] = useState(false);
+  const [today, setToday] = useState('');
+  const [q, setQ] = useState({
+    text: '', type: '', recurrence: '', window: '', flag: '', sort: 'next',
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/admin/campaigns');
       setCampaigns(res.data?.data?.campaigns || []);
+      setToday(res.data?.data?.today || '');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not load campaigns');
     } finally {
@@ -175,6 +184,33 @@ export default function OccasionMarketingPage() {
   useEffect(() => { load(); }, [load]);
 
   const unverified = campaigns.filter((c) => c.needsDateCheck && c.isActive);
+
+  /*
+    One derivation for the whole list: filter, then sort. Kept in a useMemo
+    because it runs over every campaign on each keystroke of the search box.
+  */
+  const visible = useMemo(() => {
+    const text = q.text.trim().toLowerCase();
+    const out = campaigns.filter((c) => {
+      if (text && !`${c.name} ${c.slug || ''}`.toLowerCase().includes(text)) return false;
+      if (q.type && c.type !== q.type) return false;
+      if (q.recurrence && c.recurrence !== q.recurrence) return false;
+      if (q.window !== '' && daysUntil(c.nextOccurrence, today) > q.window) return false;
+      if (q.flag === 'needsCheck' && !(c.needsDateCheck && c.isActive)) return false;
+      if (q.flag === 'noCountdown' && (c.onCountdown || !c.canCountdown)) return false;
+      if (q.flag === 'paused' && c.isActive) return false;
+      if (q.flag === 'active' && !c.isActive) return false;
+      return true;
+    });
+
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    if (q.sort === 'name') return out.sort(byName);
+    if (q.sort === 'sent') return out.sort((a, b) => (b.stats?.sent || 0) - (a.stats?.sent || 0));
+    if (q.sort === 'type') return out.sort((a, b) => (a.type || '').localeCompare(b.type || '') || byName(a, b));
+    // 'next' — soonest first, and occasions with no next date sink rather than
+    // sorting as "very far away" at the top of a reversed list.
+    return out.sort((a, b) => daysUntil(a.nextOccurrence, today) - daysUntil(b.nextOccurrence, today) || byName(a, b));
+  }, [campaigns, q, today]);
 
   const seedCalendar = async () => {
     setBusy(true);
@@ -353,8 +389,23 @@ export default function OccasionMarketingPage() {
         ) : campaigns.length === 0 ? (
           <EmptyCalendar onSeed={seedCalendar} busy={busy} />
         ) : (
+          <>
+            <CalendarSummary
+              campaigns={campaigns}
+              today={today}
+              onPick={(patch) => setQ((p) => ({
+                ...p, text: '', type: '', recurrence: '', window: '', flag: '', ...patch,
+              }))}
+            />
+            <CampaignFilters q={q} setQ={setQ} count={visible.length} total={campaigns.length} />
+            {visible.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-soft p-10 text-center">
+                <Search size={26} className="mx-auto text-ink-muted mb-2" />
+                <p className="text-sm text-ink-muted">No occasion matches these filters.</p>
+              </div>
+            ) : (
           <div className="grid gap-3">
-            {campaigns.map((c) => (
+            {visible.map((c) => (
               <CampaignRow
                 key={c.id}
                 c={c}
@@ -368,11 +419,199 @@ export default function OccasionMarketingPage() {
               />
             ))}
           </div>
+            )}
+          </>
         )
       )}
 
       {tab === 'schedule' && <ScheduleTab />}
-      {tab === 'analytics' && <AnalyticsTab />}
+      {tab === 'analytics' && <AnalyticsTab campaigns={campaigns} />}
+    </div>
+  );
+}
+
+/*
+  The calendar is sixty occasions long, which is past the point where a flat
+  list is a list — it is a place to lose things. These are the four questions
+  an admin actually arrives with, and each one is a control:
+
+    "which Diwali row is it"      → search
+    "show me the fixed ones"      → how it repeats (fixed date / lunar / rule)
+    "what is coming up"           → a window on the next occurrence
+    "what still needs me"         → needs dates verified / paused / no countdown
+
+  All four narrow the same list, and the counter says how much of it is left,
+  so a filter can never silently hide everything.
+*/
+const RECURRENCE_FILTERS = [
+  { value: '', label: 'Any schedule' },
+  { value: 'yearly_fixed', label: 'Fixed date (26 Jan, 25 Dec)' },
+  { value: 'dates', label: 'Lunar / moves each year' },
+  { value: 'nth_weekday', label: 'Rule-based (2nd Sunday…)' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'user_field', label: "Each customer's own date" },
+];
+
+const WINDOWS = [
+  { value: '', label: 'Any time' },
+  { value: 30, label: 'Next 30 days' },
+  { value: 60, label: 'Next 60 days' },
+  { value: 90, label: 'Next 90 days' },
+];
+
+const FLAGS = [
+  { value: '', label: 'Everything' },
+  { value: 'needsCheck', label: 'Dates need verifying' },
+  { value: 'noCountdown', label: 'Not on the countdown' },
+  { value: 'paused', label: 'Paused' },
+  { value: 'active', label: 'Active only' },
+];
+
+const SORTS = [
+  { value: 'next', label: 'Next to send' },
+  { value: 'name', label: 'Name (A-Z)' },
+  { value: 'sent', label: 'Most sent' },
+  { value: 'type', label: 'Grouped by type' },
+];
+
+const daysUntil = (isoDate, today) => {
+  if (!isoDate) return Infinity;
+  const [ay, am, ad] = String(today).split('-').map(Number);
+  const [by, bm, bd] = String(isoDate).split('-').map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000);
+};
+
+function CampaignFilters({ q, setQ, count, total }) {
+  const set = (k, v) => setQ((p) => ({ ...p, [k]: v }));
+  const dirty = q.text || q.type || q.recurrence || q.window !== '' || q.flag;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-soft p-3 mb-4">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[190px]">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Find an occasion</span>
+          <div className="relative mt-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input
+              className="input pl-9"
+              placeholder="Diwali, birthday, Republic Day…"
+              value={q.text}
+              onChange={(e) => set('text', e.target.value)}
+            />
+          </div>
+        </div>
+
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Type</span>
+          <select className="input w-auto mt-1" value={q.type} onChange={(e) => set('type', e.target.value)}>
+            <option value="">All types</option>
+            {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">How it repeats</span>
+          <select className="input w-auto mt-1" value={q.recurrence} onChange={(e) => set('recurrence', e.target.value)}>
+            {RECURRENCE_FILTERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Coming up</span>
+          <select className="input w-auto mt-1" value={q.window} onChange={(e) => set('window', e.target.value === '' ? '' : Number(e.target.value))}>
+            {WINDOWS.map((w) => <option key={String(w.value)} value={w.value}>{w.label}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Needs attention</span>
+          <select className="input w-auto mt-1" value={q.flag} onChange={(e) => set('flag', e.target.value)}>
+            {FLAGS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Sort</span>
+          <select className="input w-auto mt-1" value={q.sort} onChange={(e) => set('sort', e.target.value)}>
+            {SORTS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-50">
+        <SlidersHorizontal size={13} className="text-ink-muted" />
+        <span className="text-xs text-ink-muted">
+          Showing <strong className="text-ink">{count}</strong> of {total} occasions
+        </span>
+        {dirty && (
+          <button
+            onClick={() => setQ({ text: '', type: '', recurrence: '', window: '', flag: '', sort: q.sort })}
+            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink"
+          >
+            <X size={13} /> Clear filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* The five things worth knowing before scrolling — each one a filter, so a
+   number that looks wrong is one click from the rows behind it. */
+function CalendarSummary({ campaigns, today, onPick }) {
+  const stats = useMemo(() => {
+    const active = campaigns.filter((c) => c.isActive);
+    const soon = active
+      .filter((c) => daysUntil(c.nextOccurrence, today) <= 30)
+      .sort((a, b) => daysUntil(a.nextOccurrence, today) - daysUntil(b.nextOccurrence, today));
+    return {
+      total: campaigns.length,
+      active: active.length,
+      onCountdown: campaigns.filter((c) => c.onCountdown).length,
+      needsCheck: campaigns.filter((c) => c.needsDateCheck && c.isActive).length,
+      soon,
+    };
+  }, [campaigns, today]);
+
+  const next = stats.soon[0];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <button onClick={() => onPick({ flag: 'active' })}
+        className="bg-white rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition">
+        <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Live occasions</div>
+        <div className="text-2xl font-bold text-ink mt-1">{stats.active}</div>
+        <div className="text-[11px] text-ink-muted">of {stats.total} in the calendar</div>
+      </button>
+
+      <button onClick={() => onPick({ window: 30 })}
+        className="bg-white rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition">
+        <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Coming in 30 days</div>
+        <div className="text-2xl font-bold text-ink mt-1">{stats.soon.length}</div>
+        <div className="text-[11px] text-ink-muted truncate">
+          {next ? `next: ${next.name}, ${next.nextOccurrenceLabel}` : 'nothing scheduled'}
+        </div>
+      </button>
+
+      <button onClick={() => onPick({ flag: 'noCountdown' })}
+        className="bg-white rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition">
+        <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">On the 7-day countdown</div>
+        <div className="text-2xl font-bold text-indigo-700 mt-1">{stats.onCountdown}</div>
+        <div className="text-[11px] text-ink-muted">tap to see the ones that are not</div>
+      </button>
+
+      <button onClick={() => onPick({ flag: 'needsCheck' })}
+        className={`rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition ${
+          stats.needsCheck ? 'bg-amber-50 border border-amber-200' : 'bg-white'
+        }`}>
+        <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Dates to verify</div>
+        <div className={`text-2xl font-bold mt-1 ${stats.needsCheck ? 'text-amber-700' : 'text-ink'}`}>
+          {stats.needsCheck}
+        </div>
+        <div className="text-[11px] text-ink-muted">
+          {stats.needsCheck ? 'lunar dates nobody has confirmed' : 'all confirmed'}
+        </div>
+      </button>
     </div>
   );
 }
@@ -1107,100 +1346,446 @@ function ScheduleTab() {
   );
 }
 
-function AnalyticsTab() {
+/*
+  ── Occasion Marketing → Analytics ────────────────────────────────────────
+
+  One question, asked five ways: did the wave do anything?
+
+      sent → opened → clicked → explored an experience → booked
+
+  The five steps are not equally trustworthy, and the page says so instead of
+  lining them up as peers. "Sent" is a row in a table. "Opened" is a tracking
+  pixel, which Gmail proxies and Apple Mail pre-fetches — it over-counts, and
+  it is drawn muted and captioned for that reason. "Clicked" and "Explored"
+  are real actions. "Influenced revenue" is last-touch attribution over a
+  7-day window: a claim, not a fact, labelled as such everywhere.
+
+  Everything on this page describes ONE slice — the filter row feeds a single
+  backend query, so no card can disagree with the table under it.
+*/
+
+// Four categorical hues, fixed order, never cycled. Validated for the light
+// admin surface: lightness band, chroma floor, CVD separation (worst adjacent
+// pair ΔE 10.2 deutan), normal-vision floor and 3:1 contrast all pass. The
+// admin panel has no dark mode, so there is no second set to keep in step.
+const SERIES = {
+  sent: '#4f46e5', // indigo
+  opened: '#d97706', // amber
+  clicked: '#0d9488', // teal
+  explored: '#e11d48', // rose
+};
+
+// The funnel is one measure across ordered stages, so it gets ONE hue getting
+// lighter as it narrows — not four categorical colours, which would imply the
+// stages are unrelated things.
+const FUNNEL_HUE = ['#3730a3', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc'];
+
+const INK = '#101828';
+const MUTED = '#667085';
+const GRID = '#eef1f5';
+
+const rupees = (paise) => {
+  const n = Math.round((paise || 0) / 100);
+  if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)}Cr`;
+  if (n >= 100000) return `₹${(n / 100000).toFixed(2)}L`;
+  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
+  return `₹${n}`;
+};
+
+const pct = (part, whole) => (whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—');
+
+const BEAT_LABEL = {
+  '-7': '1 week before',
+  '-3': '3 days before',
+  '-2': '2 days before',
+  '-1': 'Day before',
+  0: 'On the day',
+};
+const beatLabel = (o) => BEAT_LABEL[String(o)] || `${Math.abs(o)} days before`;
+
+/* Shared tooltip — same shell for every chart on the page, so a hover means
+   the same thing wherever it happens. */
+function ChartTip({ active, payload, label, suffix = '' }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs">
+      <div className="font-bold text-ink mb-1">{label}</div>
+      {payload.map((p) => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-sm" style={{ background: p.color }} />
+          <span className="text-ink-muted">{p.name}</span>
+          <span className="font-semibold text-ink ml-auto">{p.value}{suffix}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Kpi({ label, value, sub, icon: Icon, tone = 'text-ink', soft }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-soft p-4">
+      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+        {Icon && <Icon size={13} />} {label}
+        {soft && (
+          <span
+            title="Estimated — mail clients pre-fetch and proxy images, so opens over-count."
+            className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+          >
+            est.
+          </span>
+        )}
+      </div>
+      <div className={`text-2xl font-bold mt-2 ${tone}`}>{value}</div>
+      {sub && <div className="text-[11px] text-ink-muted mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function AnalyticsTab({ campaigns }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [f, setF] = useState({ days: 90, type: '', campaignId: '', channel: '', offsetDay: '' });
+
+  const setFilter = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
     let alive = true;
-    api.get('/admin/campaigns/analytics?days=90')
+    setLoading(true);
+    const q = new URLSearchParams(
+      Object.entries(f).filter(([, v]) => v !== '' && v !== null)
+    ).toString();
+    api.get(`/admin/campaigns/analytics?${q}`)
       .then((res) => { if (alive) setData(res.data?.data || null); })
       .catch((err) => toast.error(err.response?.data?.message || 'Could not load analytics'))
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, []);
+  }, [f]);
 
-  if (loading) return <div className="py-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
-  if (!data) return null;
+  const fn = data?.funnel || {};
+  const a = data?.audience || {};
 
-  const a = data.audience || {};
+  // The funnel, as one ordered list. Rendered as bars rather than a tapered
+  // polygon: a polygon encodes the drop-off in an area nobody can compare,
+  // while a bar's length is the number.
+  const funnelSteps = useMemo(() => ([
+    { key: 'sent', label: 'Delivered', value: fn.sent || 0, hard: true },
+    { key: 'opened', label: 'Opened (email)', value: fn.opened || 0, hard: false },
+    { key: 'clicked', label: 'Clicked through', value: fn.clicked || 0, hard: true },
+    { key: 'explored', label: 'Explored an experience', value: fn.explored || 0, hard: true },
+    { key: 'booked', label: 'Booked within 7 days', value: fn.bookings || 0, hard: false },
+  ]), [fn]);
+
+  const timeline = (data?.timeline || []).map((t) => ({
+    date: t.date?.slice(5) || '',
+    Delivered: t.sent,
+    Clicked: t.clicked,
+    Explored: t.explored,
+  }));
+
+  const beats = (data?.beats || []).map((b) => ({
+    beat: beatLabel(b.offsetDay),
+    offsetDay: b.offsetDay,
+    sent: b.sent,
+    clicked: b.clicked,
+    rate: b.sent ? Number(((b.clicked / b.sent) * 100).toFixed(1)) : 0,
+  }));
+
+  const top = fn.sent || 0;
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <Stat label="Reachable customers" value={a.optedIn ?? 0} tone="bg-emerald-50 text-emerald-700" />
-        <Stat label="Opted out" value={a.optedOut ?? 0} tone="bg-gray-100 text-gray-600" />
-        <Stat label="With a birthday on file" value={a.withDob ?? 0} tone="bg-pink-50 text-pink-700" />
-        <Stat label="With an anniversary" value={a.withAnniversary ?? 0} tone="bg-rose-50 text-rose-700" />
-        <Stat label="App push enabled" value={a.withPush ?? 0} tone="bg-blue-50 text-blue-700" />
+      {/* ── Filters. One row, above everything they affect. ─────────────── */}
+      <div className="bg-white rounded-2xl shadow-soft p-3 flex flex-wrap items-end gap-2">
+        <Filter label="Window">
+          <select className="input w-auto" value={f.days} onChange={(e) => setFilter('days', Number(e.target.value))}>
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={365}>Last year</option>
+            <option value={730}>Everything</option>
+          </select>
+        </Filter>
+        <Filter label="Occasion type">
+          <select className="input w-auto" value={f.type} onChange={(e) => setFilter('type', e.target.value)}>
+            <option value="">All types</option>
+            {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </Filter>
+        <Filter label="Occasion">
+          <select className="input w-auto max-w-[190px]" value={f.campaignId} onChange={(e) => setFilter('campaignId', e.target.value)}>
+            <option value="">All occasions</option>
+            {(campaigns || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Filter>
+        <Filter label="Channel">
+          <select className="input w-auto" value={f.channel} onChange={(e) => setFilter('channel', e.target.value)}>
+            <option value="">All channels</option>
+            {CHANNELS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </Filter>
+        <Filter label="Beat">
+          <select className="input w-auto" value={f.offsetDay} onChange={(e) => setFilter('offsetDay', e.target.value)}>
+            <option value="">All beats</option>
+            {COUNTDOWN_OFFSETS.map((o) => <option key={o} value={o}>{beatLabel(o)}</option>)}
+          </select>
+        </Filter>
+        <div className="flex-1" />
+        {(f.type || f.campaignId || f.channel || f.offsetDay !== '') && (
+          <button
+            onClick={() => setF({ days: f.days, type: '', campaignId: '', channel: '', offsetDay: '' })}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-ink-muted hover:border-brand/50"
+          >
+            <X size={13} /> Clear filters
+          </button>
+        )}
+        {loading && <Loader2 size={16} className="animate-spin text-brand" />}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-soft p-5">
-        <h2 className="font-display font-bold text-lg mb-1">Last {data.days} days</h2>
-        <p className="text-xs text-ink-muted mb-4">
-          “Sent” means handed to the mail server / FCM — not opened. Opens and
-          clicks would need tracking pixels, which this does not add.
-        </p>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {CHANNELS.map((ch) => {
-            const s = (data.channels || {})[ch.value] || { sent: 0, failed: 0 };
-            return (
-              <div key={ch.value} className="rounded-xl border border-gray-100 p-4">
-                <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                  <ch.icon size={15} className="text-brand" /> {ch.label}
-                </div>
-                <div className="text-2xl font-bold text-ink mt-2">{s.sent}</div>
-                <div className="text-[11px] text-ink-muted">{s.failed} failed</div>
+      {!data ? (
+        <div className="py-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>
+      ) : (
+        <>
+          {/* ── The five numbers worth knowing ───────────────────────────── */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <Kpi label="People reached" value={(fn.people || 0).toLocaleString('en-IN')}
+              sub={`${(fn.sent || 0).toLocaleString('en-IN')} messages`} icon={Users} />
+            <Kpi label="Opened" value={pct(fn.opened, top)} sub={`${fn.opened || 0} of ${top}`} icon={Mail} soft />
+            <Kpi label="Click-through" value={pct(fn.clicked, top)} sub={`${fn.clicked || 0} clicked`}
+              icon={MousePointerClick} tone="text-teal-700" />
+            <Kpi label="Explored an experience" value={pct(fn.explored, top)} sub={`${fn.explored || 0} opened a listing`}
+              icon={Sparkles} tone="text-rose-700" />
+            <Kpi label="Influenced revenue" value={rupees(fn.revenuePaise)}
+              sub={`${fn.bookings || 0} bookings within ${data.attributionDays} days`}
+              icon={IndianRupee} tone="text-emerald-700" soft />
+          </div>
+
+          <div className="grid lg:grid-cols-5 gap-4">
+            {/* ── Funnel ────────────────────────────────────────────────── */}
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-soft p-5">
+              <h2 className="font-display font-bold text-base">From inbox to booking</h2>
+              <p className="text-[11px] text-ink-muted mb-4">
+                Each step as a share of everything delivered in this slice.
+              </p>
+              <div className="space-y-2.5">
+                {funnelSteps.map((s, i) => {
+                  const width = top ? Math.max((s.value / top) * 100, s.value ? 2 : 0) : 0;
+                  return (
+                    <div key={s.key}>
+                      <div className="flex items-baseline gap-2 text-xs mb-1">
+                        <span className="font-semibold text-ink">{s.label}</span>
+                        {!s.hard && (
+                          <span className="text-[9px] px-1 py-px rounded bg-amber-50 text-amber-700 border border-amber-200">est.</span>
+                        )}
+                        <span className="ml-auto font-bold text-ink">{s.value.toLocaleString('en-IN')}</span>
+                        <span className="text-ink-muted w-12 text-right">{pct(s.value, top)}</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${width}%`, background: FUNNEL_HUE[i] }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <p className="text-[10px] text-ink-muted mt-4 leading-relaxed">
+                <strong>Opened</strong> comes from a tracking pixel — mail clients
+                pre-fetch and proxy images, so it over-counts. <strong>Influenced
+                revenue</strong> is last-touch: a confirmed booking by someone who
+                clicked this campaign within {data.attributionDays} days. Useful for
+                comparing occasions, not as a claim that the wave caused the sale.
+              </p>
+            </div>
 
-      {(data.campaigns || []).length > 0 && (
-        <div className="bg-white rounded-2xl shadow-soft p-5">
-          <h2 className="font-display font-bold text-lg mb-3">By campaign</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-ink-muted">
-                  <th className="py-2">Occasion</th><th>Messages</th><th>People reached</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.campaigns.map((c) => (
-                  <tr key={c.campaignEventId} className="border-t border-gray-100">
-                    <td className="py-2 font-semibold text-ink">{c.name}</td>
-                    <td>{c.messages}</td>
-                    <td>{c.people}</td>
-                  </tr>
+            {/* ── Over time ─────────────────────────────────────────────── */}
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-soft p-5">
+              <h2 className="font-display font-bold text-base">Delivery and response over time</h2>
+              <p className="text-[11px] text-ink-muted mb-3">By the occasion&rsquo;s own date.</p>
+              {timeline.length === 0 ? (
+                <Empty>Nothing has gone out in this window yet.</Empty>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={timeline} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gSent" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={SERIES.sent} stopOpacity={0.22} />
+                        <stop offset="100%" stopColor={SERIES.sent} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: MUTED }} tickLine={false} axisLine={{ stroke: GRID }} />
+                    <YAxis tick={{ fontSize: 11, fill: MUTED }} tickLine={false} axisLine={false} width={44} />
+                    <Tooltip content={<ChartTip />} cursor={{ stroke: MUTED, strokeDasharray: '3 3' }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: MUTED }} />
+                    <Area type="monotone" dataKey="Delivered" stroke={SERIES.sent} strokeWidth={2}
+                      fill="url(#gSent)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                    <Line type="monotone" dataKey="Clicked" stroke={SERIES.clicked} strokeWidth={2}
+                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                    <Line type="monotone" dataKey="Explored" stroke={SERIES.explored} strokeWidth={2}
+                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            {/* ── Which beat of the countdown actually converts ──────────── */}
+            <div className="bg-white rounded-2xl shadow-soft p-5">
+              <h2 className="font-display font-bold text-base">Which beat converts</h2>
+              <p className="text-[11px] text-ink-muted mb-3">
+                Click-through by position in the run-up. This is the number that
+                tells you whether a week out is too early.
+              </p>
+              {beats.length === 0 ? <Empty>No beats have run yet.</Empty> : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={beats} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="beat" tick={{ fontSize: 10, fill: MUTED }} tickLine={false} axisLine={{ stroke: GRID }} />
+                    <YAxis tick={{ fontSize: 11, fill: MUTED }} tickLine={false} axisLine={false} width={44}
+                      tickFormatter={(v) => `${v}%`} />
+                    <Tooltip content={<ChartTip suffix="%" />} cursor={{ fill: 'rgba(13,148,136,.06)' }} />
+                    <Bar dataKey="rate" name="Click-through" fill={SERIES.clicked} radius={[4, 4, 0, 0]} maxBarSize={46} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* ── Channels ──────────────────────────────────────────────── */}
+            <div className="bg-white rounded-2xl shadow-soft p-5">
+              <h2 className="font-display font-bold text-base mb-3">By channel</h2>
+              <div className="space-y-2">
+                {CHANNELS.map((ch) => {
+                  const s = (data.channels || {})[ch.value];
+                  if (!s) return null;
+                  return (
+                    <div key={ch.value} className="rounded-xl border border-gray-100 p-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                        <ch.icon size={15} className="text-brand" /> {ch.label}
+                        <span className="ml-auto text-xs text-ink-muted">{s.people} people</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+                        <Mini label="Sent" value={s.sent} />
+                        <Mini label="Opened" value={ch.value === 'email' ? s.opened : '—'} />
+                        <Mini label="Clicked" value={s.clicked} />
+                        <Mini label="Failed" value={s.failed} tone={s.failed ? 'text-red-600' : ''} />
+                      </div>
+                      {s.clicked > 0 && (
+                        <div className="text-[11px] text-ink-muted mt-2">
+                          {s.viaApp} opened in the app · {s.viaBrowser} in the browser
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Per-occasion table ──────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <h2 className="font-display font-bold text-base mb-3">Every occasion in this window</h2>
+            {(data.campaigns || []).length === 0 ? <Empty>Nothing matches these filters.</Empty> : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[720px]">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-ink-muted border-b border-gray-100">
+                      <th className="py-2">Occasion</th>
+                      <th className="text-right">Sent</th>
+                      <th className="text-right">People</th>
+                      <th className="text-right">Opened</th>
+                      <th className="text-right">Clicked</th>
+                      <th className="text-right">Explored</th>
+                      <th className="text-right">CTR</th>
+                      <th className="text-right">Influenced</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.campaigns.map((c) => (
+                      <tr key={c.id} className="border-b border-gray-50 hover:bg-surface-alt/50">
+                        <td className="py-2">
+                          <div className="font-semibold text-ink">{c.name}</div>
+                          {c.type && (
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${TYPE_CHIP[c.type] || TYPE_CHIP.sale}`}>
+                              {c.type}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-right tabular-nums">{c.sent}</td>
+                        <td className="text-right tabular-nums">{c.people}</td>
+                        <td className="text-right tabular-nums text-ink-muted">{c.opened || '—'}</td>
+                        <td className="text-right tabular-nums font-semibold" style={{ color: SERIES.clicked }}>{c.clicked || '—'}</td>
+                        <td className="text-right tabular-nums" style={{ color: c.explored ? SERIES.explored : undefined }}>{c.explored || '—'}</td>
+                        <td className="text-right tabular-nums">{pct(c.clicked, c.sent)}</td>
+                        <td className="text-right tabular-nums font-semibold text-emerald-700">
+                          {c.revenuePaise ? rupees(c.revenuePaise) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* ── Audience health ─────────────────────────────────────────── */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <Stat label="Reachable" value={a.optedIn ?? 0} tone="bg-emerald-50 text-emerald-700" />
+            <Stat label="Opted out" value={a.optedOut ?? 0} tone="bg-gray-100 text-gray-600" />
+            <Stat label="Birthday on file" value={a.withDob ?? 0} tone="bg-pink-50 text-pink-700" />
+            <Stat label="Anniversary on file" value={a.withAnniversary ?? 0} tone="bg-rose-50 text-rose-700" />
+            <Stat label="App push enabled" value={a.withPush ?? 0} tone="bg-blue-50 text-blue-700" />
+          </div>
+
+          {/* ── Recent activity ─────────────────────────────────────────── */}
+          {(data.recent || []).length > 0 && (
+            <div className="bg-white rounded-2xl shadow-soft p-5">
+              <h2 className="font-display font-bold text-base mb-3">Latest messages</h2>
+              <div className="space-y-1.5">
+                {data.recent.map((r) => (
+                  <div key={r.id} className="flex flex-wrap items-center gap-2 text-xs border-b border-gray-50 pb-1.5">
+                    <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
+                      r.status === 'failed' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'
+                    }`}>{r.status}</span>
+                    <span className="font-semibold text-ink">{r.campaign}</span>
+                    <span className="text-ink-muted">{r.channel} · {beatLabel(r.offsetDay)} · {r.occurrenceDate}</span>
+                    <div className="flex-1" />
+                    {r.openedAt && <span className="text-amber-700">opened</span>}
+                    {r.clickedAt && (
+                      <span style={{ color: SERIES.clicked }} className="font-semibold">
+                        clicked{r.clickKind === 'experience' ? ' an experience' : ''}
+                        {r.clickVia ? ` · ${r.clickVia}` : ''}
+                      </span>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {(data.recent || []).length > 0 && (
-        <div className="bg-white rounded-2xl shadow-soft p-5">
-          <h2 className="font-display font-bold text-lg mb-3">Recent activity</h2>
-          <div className="space-y-1.5">
-            {data.recent.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-2 text-xs border-b border-gray-50 pb-1.5">
-                <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
-                  r.status === 'failed' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'
-                }`}>{r.status}</span>
-                <span className="font-semibold text-ink">{r.campaign}</span>
-                <span className="text-ink-muted">{r.channel}</span>
-                <span className="text-ink-muted">· {r.occurrenceDate}{r.offsetDay ? ` (${r.offsetDay}d)` : ''}</span>
-                {r.error && <span className="text-red-500">· {r.error}</span>}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
+}
+
+function Filter({ label, children }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
+function Mini({ label, value, tone = '' }) {
+  return (
+    <div>
+      <div className={`text-base font-bold ${tone || 'text-ink'}`}>{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</div>
+    </div>
+  );
+}
+
+function Empty({ children }) {
+  return <p className="text-sm text-ink-muted py-10 text-center">{children}</p>;
 }
 
 function Section({ n, title, hint, children }) {
