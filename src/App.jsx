@@ -7,6 +7,7 @@ import UserProtectedRoute from './components/public/UserProtectedRoute.jsx';
 import UserLoginModal from './components/public/UserLoginModal.jsx';
 import ScrollToTop from './components/public/ScrollToTop.jsx';
 import ClarityTracker from './components/ClarityTracker.jsx';
+import CampaignVisitTracker from './components/CampaignVisitTracker.jsx';
 
 import LandingPage from './pages/LandingPage.jsx';
 import UnsubscribePage from './pages/UnsubscribePage.jsx';
@@ -132,6 +133,10 @@ export default function App() {
       <ScrollToTop />
       {/* Clarity analytics — public + user pages only; never admin/team/supplier. */}
       <ClarityTracker />
+      {/* Reports "landed" and "time on page" back to the occasion campaign
+          whose email brought this visitor here (the ?rc= handle). No-op for
+          everyone who did not arrive from a greeting. */}
+      <CampaignVisitTracker />
       <Routes>
         {/* Public entry — branded sign-in landing */}
         <Route path="/" element={<LandingPage />} />

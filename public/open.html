@@ -162,7 +162,23 @@
     try { new Image().src = trk + '&via=' + encodeURIComponent(via); } catch (e) { /* never block the click */ }
   }
 
-  var webUrl = window.location.origin + to;
+  /*
+    Carry the dispatch handle THROUGH to the destination.
+
+    A click beacon proves somebody tapped; it cannot prove they arrived, and
+    it certainly cannot say how long they stayed. Appending `rc=<token>` to
+    the destination lets the website itself report both — see
+    CampaignVisitTracker in the React app. The token is the same signed handle
+    the pixels use, so it identifies the dispatch and nothing else.
+  */
+  var rc = '';
+  if (trk) {
+    var m = /[?&]t=([^&]+)/.exec(trk);
+    if (m) rc = m[1];
+  }
+  var withRc = rc ? to + (to.indexOf('?') === -1 ? '?' : '&') + 'rc=' + rc : to;
+
+  var webUrl = window.location.origin + withRc;
   var ua = navigator.userAgent || '';
   var isAndroid = /Android/i.test(ua);
   var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -200,7 +216,7 @@
       installed and handles reconnct://open, and navigates to
       browser_fallback_url (the Play Store) if it is not.
     */
-    elApp.href = 'intent://open?to=' + encodeURIComponent(to)
+    elApp.href = 'intent://open?to=' + encodeURIComponent(withRc)
       + '#Intent;scheme=' + SCHEME
       + ';package=' + PACKAGE
       + ';S.browser_fallback_url=' + encodeURIComponent(PLAY_URL)
@@ -208,7 +224,7 @@
   } else {
     if (!IOS_STORE_URL) elNote.textContent = 'Not installed? We’ll open the website instead';
 
-    elApp.href = SCHEME + '://open?to=' + encodeURIComponent(to);
+    elApp.href = SCHEME + '://open?to=' + encodeURIComponent(withRc);
     elApp.addEventListener('click', function (e) {
       e.preventDefault();
       /*

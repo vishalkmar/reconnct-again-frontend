@@ -7,6 +7,7 @@ import {
   CalendarHeart, Loader2, Plus, X, Save, Trash2, Power, Send, Play, Sparkles,
   AlertTriangle, CheckCircle2, Mail, Smartphone, Bell, CalendarDays, BarChart3, Gift, Merge,
   Timer, FlaskConical, Users, MousePointerClick, IndianRupee, Search, SlidersHorizontal,
+  ChevronDown, ChevronUp, Clock, MapPin,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -482,25 +483,53 @@ const daysUntil = (isoDate, today) => {
 };
 
 function CampaignFilters({ q, setQ, count, total }) {
+  const [open, setOpen] = useState(false);
   const set = (k, v) => setQ((p) => ({ ...p, [k]: v }));
   const dirty = q.text || q.type || q.recurrence || q.window !== '' || q.flag;
 
+  const activeCount = [q.type, q.recurrence, q.window, q.flag].filter((v) => v !== '' && v != null).length;
+
+  /*
+    Search stays OUT of the fold and always visible — it is the control people
+    reach for, and burying the one you use every time behind a toggle is how a
+    collapsed bar becomes an obstacle rather than a tidy-up.
+  */
   return (
-    <div className="bg-white rounded-2xl shadow-soft p-3 mb-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="flex-1 min-w-[190px]">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Find an occasion</span>
-          <div className="relative mt-1">
+    <div className="mb-4">
+      <div className="bg-white rounded-2xl shadow-soft p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex-1 min-w-[190px] relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
               className="input pl-9"
-              placeholder="Diwali, birthday, Republic Day…"
+              placeholder="Find an occasion — Diwali, birthday, Republic Day…"
               value={q.text}
               onChange={(e) => set('text', e.target.value)}
             />
           </div>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold ${
+              activeCount ? 'border-brand bg-brand/10 text-ink' : 'border-gray-200 text-ink-muted hover:border-brand/50'
+            }`}
+          >
+            <SlidersHorizontal size={14} /> Filters
+            {activeCount > 0 && (
+              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-ink text-[10px] font-bold grid place-items-center">
+                {activeCount}
+              </span>
+            )}
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          <label className="block">
+            <select className="input w-auto" value={q.sort} onChange={(e) => set('sort', e.target.value)}>
+              {SORTS.map((x) => <option key={x.value} value={x.value}>Sort: {x.label}</option>)}
+            </select>
+          </label>
         </div>
 
+        {open && (
+        <div className="flex flex-wrap items-end gap-2 mt-3 pt-3 border-t border-gray-50">
         <label className="block">
           <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Type</span>
           <select className="input w-auto mt-1" value={q.type} onChange={(e) => set('type', e.target.value)}>
@@ -530,15 +559,11 @@ function CampaignFilters({ q, setQ, count, total }) {
           </select>
         </label>
 
-        <label className="block">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Sort</span>
-          <select className="input w-auto mt-1" value={q.sort} onChange={(e) => set('sort', e.target.value)}>
-            {SORTS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
-          </select>
-        </label>
+        </div>
+        )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-50">
+      <div className="flex flex-wrap items-center gap-2 mt-2 px-1">
         <SlidersHorizontal size={13} className="text-ink-muted" />
         <span className="text-xs text-ink-muted">
           Showing <strong className="text-ink">{count}</strong> of {total} occasions
@@ -568,6 +593,10 @@ function CalendarSummary({ campaigns, today, onPick }) {
       total: campaigns.length,
       active: active.length,
       onCountdown: campaigns.filter((c) => c.onCountdown).length,
+      // Only festivals/holidays/sales/personal dates can run a countdown at
+      // all, so "12 on the countdown" alone is meaningless — it needs the
+      // denominator of what could be.
+      eligible: campaigns.filter((c) => c.canCountdown).length,
       needsCheck: campaigns.filter((c) => c.needsDateCheck && c.isActive).length,
       soon,
     };
@@ -594,10 +623,19 @@ function CalendarSummary({ campaigns, today, onPick }) {
       </button>
 
       <button onClick={() => onPick({ flag: 'noCountdown' })}
-        className="bg-white rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition">
+        className={`rounded-2xl shadow-soft p-4 text-left hover:shadow-md transition ${
+          stats.onCountdown ? 'bg-white' : 'bg-indigo-50 border border-indigo-200'
+        }`}>
         <div className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">On the 7-day countdown</div>
-        <div className="text-2xl font-bold text-indigo-700 mt-1">{stats.onCountdown}</div>
-        <div className="text-[11px] text-ink-muted">tap to see the ones that are not</div>
+        <div className="text-2xl font-bold text-indigo-700 mt-1">
+          {stats.onCountdown}
+          <span className="text-sm font-semibold text-ink-muted"> / {stats.eligible}</span>
+        </div>
+        <div className="text-[11px] text-ink-muted">
+          {stats.onCountdown === 0
+            ? 'none yet — hit “Apply 7-day countdown” above'
+            : `tap to see the ${Math.max(stats.eligible - stats.onCountdown, 0)} that are not`}
+        </div>
       </button>
 
       <button onClick={() => onPick({ flag: 'needsCheck' })}
@@ -1378,7 +1416,7 @@ const SERIES = {
 // The funnel is one measure across ordered stages, so it gets ONE hue getting
 // lighter as it narrows — not four categorical colours, which would imply the
 // stages are unrelated things.
-const FUNNEL_HUE = ['#3730a3', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc'];
+const FUNNEL_HUE = ['#312e81', '#3730a3', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc'];
 
 const INK = '#101828';
 const MUTED = '#667085';
@@ -1393,6 +1431,10 @@ const rupees = (paise) => {
 };
 
 const pct = (part, whole) => (whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—');
+
+const WINDOW_LABEL = {
+  7: 'Last 7 days', 30: 'Last 30 days', 90: 'Last 90 days', 365: 'Last year', 730: 'Everything',
+};
 
 const BEAT_LABEL = {
   '-7': '1 week before',
@@ -1471,6 +1513,7 @@ function AnalyticsTab({ campaigns }) {
     { key: 'sent', label: 'Delivered', value: fn.sent || 0, hard: true },
     { key: 'opened', label: 'Opened (email)', value: fn.opened || 0, hard: false },
     { key: 'clicked', label: 'Clicked through', value: fn.clicked || 0, hard: true },
+    { key: 'landed', label: 'Reached the page', value: fn.landed || 0, hard: true },
     { key: 'explored', label: 'Explored an experience', value: fn.explored || 0, hard: true },
     { key: 'booked', label: 'Booked within 7 days', value: fn.bookings || 0, hard: false },
   ]), [fn]);
@@ -1494,8 +1537,23 @@ function AnalyticsTab({ campaigns }) {
 
   return (
     <div className="space-y-5">
-      {/* ── Filters. One row, above everything they affect. ─────────────── */}
-      <div className="bg-white rounded-2xl shadow-soft p-3 flex flex-wrap items-end gap-2">
+      {/* ── Filters, folded by default with a count of what is applied. ─── */}
+      <FilterShell
+        activeCount={[f.type, f.campaignId, f.channel, f.offsetDay].filter((v) => v !== '' && v != null).length}
+        summary={`${WINDOW_LABEL[f.days] || `${f.days} days`}${
+          f.type ? ` · ${f.type}` : ''}${f.channel ? ` · ${f.channel}` : ''}${
+          f.offsetDay !== '' ? ` · ${beatLabel(Number(f.offsetDay))}` : ''}`}
+        right={loading ? <Loader2 size={16} className="animate-spin text-brand" /> : (
+          [f.type, f.campaignId, f.channel, f.offsetDay].some((v) => v !== '' && v != null) && (
+            <button
+              onClick={() => setF({ days: f.days, type: '', campaignId: '', channel: '', offsetDay: '' })}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink"
+            >
+              <X size={13} /> Clear
+            </button>
+          )
+        )}
+      >
         <Filter label="Window">
           <select className="input w-auto" value={f.days} onChange={(e) => setFilter('days', Number(e.target.value))}>
             <option value={7}>Last 7 days</option>
@@ -1529,24 +1587,16 @@ function AnalyticsTab({ campaigns }) {
             {COUNTDOWN_OFFSETS.map((o) => <option key={o} value={o}>{beatLabel(o)}</option>)}
           </select>
         </Filter>
-        <div className="flex-1" />
-        {(f.type || f.campaignId || f.channel || f.offsetDay !== '') && (
-          <button
-            onClick={() => setF({ days: f.days, type: '', campaignId: '', channel: '', offsetDay: '' })}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-ink-muted hover:border-brand/50"
-          >
-            <X size={13} /> Clear filters
-          </button>
-        )}
-        {loading && <Loader2 size={16} className="animate-spin text-brand" />}
-      </div>
+      </FilterShell>
 
       {!data ? (
         <div className="py-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>
       ) : (
         <>
-          {/* ── The five numbers worth knowing ───────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <TrackingNotice tracking={data.tracking} funnel={fn} />
+
+          {/* ── The numbers worth knowing ────────────────────────────────── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             <Kpi label="People reached" value={(fn.people || 0).toLocaleString('en-IN')}
               sub={`${(fn.sent || 0).toLocaleString('en-IN')} messages`} icon={Users} />
             <Kpi label="Opened" value={pct(fn.opened, top)} sub={`${fn.opened || 0} of ${top}`} icon={Mail} soft />
@@ -1554,6 +1604,11 @@ function AnalyticsTab({ campaigns }) {
               icon={MousePointerClick} tone="text-teal-700" />
             <Kpi label="Explored an experience" value={pct(fn.explored, top)} sub={`${fn.explored || 0} opened a listing`}
               icon={Sparkles} tone="text-rose-700" />
+            <Kpi label="Reached the page" value={(fn.landed || 0).toLocaleString('en-IN')}
+              sub={fn.clicked ? `${pct(fn.landed, fn.clicked)} of clicks arrived` : 'no clicks yet'}
+              icon={MapPin} />
+            <Kpi label="Avg time on page" value={mmss(fn.avgDwellSeconds)}
+              sub={`from ${fn.dwellCount || 0} measured visits`} icon={Clock} />
             <Kpi label="Influenced revenue" value={rupees(fn.revenuePaise)}
               sub={`${fn.bookings || 0} bookings within ${data.attributionDays} days`}
               icon={IndianRupee} tone="text-emerald-700" soft />
@@ -1726,6 +1781,10 @@ function AnalyticsTab({ campaigns }) {
             )}
           </div>
 
+          <RecipientsTable filters={{
+            days: f.days, campaignId: f.campaignId, channel: f.channel, offsetDay: f.offsetDay,
+          }} />
+
           {/* ── Audience health ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <Stat label="Reachable" value={a.optedIn ?? 0} tone="bg-emerald-50 text-emerald-700" />
@@ -1760,6 +1819,264 @@ function AnalyticsTab({ campaigns }) {
               </div>
             </div>
           )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/*
+  A filter bar that starts folded.
+
+  Six dropdowns permanently open push the actual data below the fold, and most
+  visits change nothing — so the row collapses to a single button that carries
+  a count of what is currently applied. The count is the important half: a
+  folded bar must never be able to hide the reason a number looks wrong.
+*/
+function FilterShell({ activeCount, summary, children, right }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-white rounded-2xl shadow-soft">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-semibold ${
+            activeCount ? 'border-brand bg-brand/10 text-ink' : 'border-gray-200 text-ink-muted hover:border-brand/50'
+          }`}
+        >
+          <SlidersHorizontal size={14} />
+          Filters
+          {activeCount > 0 && (
+            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-ink text-[10px] font-bold grid place-items-center">
+              {activeCount}
+            </span>
+          )}
+          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        <span className="text-xs text-ink-muted truncate">{summary}</span>
+        <div className="flex-1" />
+        {right}
+      </div>
+      {open && (
+        <div className="px-3 pb-3 pt-1 border-t border-gray-50 flex flex-wrap items-end gap-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/*
+  Why the engagement numbers are zero.
+
+  Zeroes here have three causes and only one is worth acting on, so the other
+  two are stated instead of left to be discovered:
+
+    - APP_URL is unset on the server, so no pixel URL can be built and every
+      send goes out unmeasured however many there are,
+    - the messages predate tracking and were never instrumented,
+    - people really did not engage.
+
+  Silence on the first two is how an admin concludes the feature is broken.
+*/
+function TrackingNotice({ tracking, funnel }) {
+  if (!tracking) return null;
+
+  if (!tracking.enabled) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800">
+        <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+        <div>
+          <strong>Tracking is off on this server.</strong> Opens and clicks cannot be
+          recorded because <code className="font-mono">APP_URL</code> is not set in its
+          environment — greeting emails go out without a tracking pixel or click link.
+          Set <code className="font-mono">APP_URL</code> to this backend&rsquo;s public URL
+          and redeploy; messages sent before that stay unmeasured.
+        </div>
+      </div>
+    );
+  }
+
+  if (!tracking.firstEngagementAt && (funnel?.sent || 0) > 0) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+        <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+        <div>
+          <strong>Nothing has been measured yet.</strong> Tracking is configured, but
+          every message in this window was sent before it existed — those emails carry
+          no pixel and no tracked links, so their opens and clicks can never appear
+          here. The next wave (or a fresh <em>Run today&rsquo;s sends</em>) will report
+          properly.
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+const mmss = (s) => {
+  if (!s) return '—';
+  const m = Math.floor(s / 60);
+  return m ? `${m}m ${s % 60}s` : `${s}s`;
+};
+
+const timeAgo = (iso) => {
+  if (!iso) return null;
+  const mins = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.round(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+};
+
+/*
+  The named list behind the percentages.
+
+  A rate says whether it worked; it never says who. Sorted most-engaged first
+  by the API, because the people a wave actually moved are the point of the
+  list and would otherwise sit behind a thousand "delivered, nothing" rows.
+*/
+function RecipientsTable({ filters }) {
+  const [data, setData] = useState(null);
+  const [state, setState] = useState('clicked');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { setPage(1); }, [state, filters]);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    const q = new URLSearchParams(
+      Object.entries({ ...filters, state, page }).filter(([, v]) => v !== '' && v != null)
+    ).toString();
+    api.get(`/admin/campaigns/recipients?${q}`)
+      .then((res) => { if (alive) setData(res.data?.data || null); })
+      .catch(() => { if (alive) setData(null); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [filters, state, page]);
+
+  const STATES = [
+    { value: 'clicked', label: 'Clicked' },
+    { value: 'explored', label: 'Explored an experience' },
+    { value: 'landed', label: 'Reached the page' },
+    { value: 'opened', label: 'Opened the email' },
+    { value: 'nothing', label: 'No response' },
+    { value: '', label: 'Everyone' },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-soft p-5">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <h2 className="font-display font-bold text-base">Who did what</h2>
+        <div className="flex-1" />
+        <div className="flex flex-wrap gap-1">
+          {STATES.map((s) => (
+            <button
+              key={s.value || 'all'}
+              onClick={() => setState(s.value)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                state === s.value
+                  ? 'bg-brand/10 border-brand text-ink'
+                  : 'border-gray-200 text-ink-muted hover:border-brand/50'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        {loading && <Loader2 size={15} className="animate-spin text-brand" />}
+      </div>
+
+      {!data || data.items.length === 0 ? (
+        <p className="text-sm text-ink-muted py-10 text-center">
+          Nobody in this window matches “{STATES.find((s) => s.value === state)?.label}”.
+        </p>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[820px]">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-ink-muted border-b border-gray-100">
+                  <th className="py-2">Person</th>
+                  <th>Occasion</th>
+                  <th>Opened</th>
+                  <th>Clicked</th>
+                  <th>Where</th>
+                  <th className="text-right">Time on page</th>
+                  <th className="text-right">Booked</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((r) => (
+                  <tr key={r.id} className="border-b border-gray-50 hover:bg-surface-alt/50 align-top">
+                    <td className="py-2">
+                      <div className="font-semibold text-ink">{r.user.name}</div>
+                      <div className="text-[11px] text-ink-muted">{r.user.email}</div>
+                    </td>
+                    <td className="text-xs">
+                      <div className="text-ink">{r.campaign}</div>
+                      <div className="text-[11px] text-ink-muted">
+                        {r.channel} · {beatLabel(r.offsetDay)}
+                      </div>
+                    </td>
+                    <td className="text-xs text-ink-muted">{r.openedAt ? timeAgo(r.openedAt) : '—'}</td>
+                    <td className="text-xs">
+                      {r.clickedAt ? (
+                        <>
+                          <span className="font-semibold" style={{ color: SERIES.clicked }}>
+                            {timeAgo(r.clickedAt)}
+                          </span>
+                          {r.clickCount > 1 && <span className="text-ink-muted"> ×{r.clickCount}</span>}
+                          {r.clickKind === 'experience' && (
+                            <div className="text-[10px] font-bold uppercase" style={{ color: SERIES.explored }}>
+                              experience
+                            </div>
+                          )}
+                        </>
+                      ) : <span className="text-ink-muted">—</span>}
+                    </td>
+                    <td className="text-xs text-ink-muted">
+                      {r.clickVia ? (r.clickVia === 'app' ? '📱 app' : '🌐 browser') : '—'}
+                    </td>
+                    <td className="text-right text-xs tabular-nums">
+                      {r.dwellSeconds ? mmss(r.dwellSeconds)
+                        : r.landedAt ? <span className="text-ink-muted">arrived</span>
+                        : <span className="text-ink-muted">—</span>}
+                    </td>
+                    <td className="text-right text-xs">
+                      {r.booking ? (
+                        <>
+                          <div className="font-bold text-emerald-700">{rupees(r.booking.paise)}</div>
+                          <div className="text-[10px] text-ink-muted">{r.booking.code}</div>
+                        </>
+                      ) : <span className="text-ink-muted">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center gap-2 mt-3 text-xs text-ink-muted">
+            <span>{data.total.toLocaleString('en-IN')} people</span>
+            <div className="flex-1" />
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 font-semibold disabled:opacity-40">
+              Previous
+            </button>
+            <span>Page {data.page} of {data.pages}</span>
+            <button disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 font-semibold disabled:opacity-40">
+              Next
+            </button>
+          </div>
+          <p className="text-[10px] text-ink-muted mt-2">
+            “Booked” is a confirmed booking by this person within {data.attributionDays} days
+            of their click — influence, not proof.
+          </p>
         </>
       )}
     </div>
