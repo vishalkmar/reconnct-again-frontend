@@ -11,6 +11,7 @@ import CampaignVisitTracker from './components/CampaignVisitTracker.jsx';
 
 import LandingPage from './pages/LandingPage.jsx';
 import UnsubscribePage from './pages/UnsubscribePage.jsx';
+import DeleteAccountPage from './pages/DeleteAccountPage.jsx';
 
 // User dashboard
 import UserDashboardHomePage from './pages/user/UserDashboardHomePage.jsx';
@@ -143,6 +144,11 @@ export default function App() {
 
         {/* Opt-out target for occasion greeting emails — deliberately public. */}
         <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+        {/* Account deletion — public by requirement: Google Play needs a page a
+            user can reach WITHOUT installing the app. Also the target of the
+            emailed confirmation link (/delete-account?token=…). */}
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
 
         {/* Booking flow — requires a signed-in member. Full-bleed, no sidebar. */}
         <Route

@@ -10,6 +10,7 @@ import api, { fileUrl } from '../../services/api';
 import DatePicker from '../../components/common/DatePicker.jsx';
 import { PERIOD_OPTIONS, rangeForPeriod } from '../../utils/datePresets.js';
 import { fmtMoney, fmtDate, fmtDateTime } from '../../components/user/bookingFormatters.js';
+import DeletionRequestsPanel from '../../components/admin/DeletionRequestsPanel.jsx';
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -34,6 +35,9 @@ export default function AdminUsersPage() {
   const [limit, setLimit] = useState(25);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // 'users' = the directory, 'deletions' = the account-deletion queue.
+  const [tab, setTab] = useState('users');
+  const [pendingDeletions, setPendingDeletions] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,7 +53,14 @@ export default function AdminUsersPage() {
     }
   }, [page, limit, filters]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (tab === 'users') load(); }, [load, tab]);
+
+  // Keep the tab badge honest without opening the queue.
+  useEffect(() => {
+    api.get('/admin/users/deletion-requests', { params: { status: 'pending' } })
+      .then((res) => setPendingDeletions(res.data?.data?.pendingCount || 0))
+      .catch(() => {});
+  }, []);
 
   const updateFilter = (key, value) => {
     setFilters((p) => ({ ...p, [key]: value }));
@@ -79,6 +90,36 @@ export default function AdminUsersPage() {
         </p>
       </div>
 
+      {/* Tabs — the directory, and the queue of people asking to be deleted. */}
+      <div className="flex items-center gap-2 mb-5 border-b border-slate-200">
+        {[
+          { key: 'users', label: 'All users' },
+          { key: 'deletions', label: 'Deletion requests', badge: pendingDeletions },
+        ].map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`relative px-4 py-2.5 text-sm font-semibold -mb-px border-b-2 transition ${
+              tab === t.key
+                ? 'border-brand text-ink'
+                : 'border-transparent text-ink-muted hover:text-ink'
+            }`}
+          >
+            {t.label}
+            {t.badge > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold align-middle">
+                {t.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'deletions' && <DeletionRequestsPanel onPendingCount={setPendingDeletions} />}
+
+      {tab === 'users' && (
+      <>
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <StatCard icon={UsersIcon}  label="Total users"     value={summary.totalUsers ?? 0}                accent="bg-blue-50 text-blue-600"       loading={loading} />
@@ -220,6 +261,8 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

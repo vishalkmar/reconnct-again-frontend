@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Loader2, Save, User as UserIcon, Camera } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Camera, Trash2, ShieldAlert } from 'lucide-react';
 import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
@@ -31,6 +31,28 @@ const initialForm = (user) => ({
 });
 
 export default function UserProfilePage() {
+  // Account deletion is a REQUEST, not an instant wipe — an admin actions it.
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteSent, setDeleteSent] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+
+  const submitDeletion = async () => {
+    setDeleteBusy(true);
+    try {
+      const res = await api.post('/user-auth/account/delete-request-me', {
+        source: 'web',
+        reason: deleteReason.trim() || undefined,
+      });
+      toast.success(res.data?.message || 'Deletion request sent');
+      setDeleteSent(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send your request');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   const { user, setSession } = useUserAuth();
   const [form, setForm] = useState(initialForm(user));
   const [saving, setSaving] = useState(false);
@@ -245,6 +267,75 @@ export default function UserProfilePage() {
           </button>
         </div>
       </form>
+
+      {/* Danger zone — the same account-deletion route the app offers, so a
+          member who signed up on the phone can also do it here. */}
+      <section className="mt-10 rounded-2xl border border-red-200 bg-red-50/40 p-5">
+        <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+          <ShieldAlert size={16} className="text-red-600" /> Delete account
+        </h2>
+        <p className="text-sm text-ink-muted mt-2">
+          Removes your profile, wishlist and support messages, and strips your name and contact
+          details from past bookings. Booking records themselves are kept for accounting. This
+          cannot be undone.
+        </p>
+        {deleteSent ? (
+          <p className="mt-4 text-sm font-semibold text-emerald-700">
+            Your deletion request has been sent. Our team will action it shortly.
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowDelete(true)}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-300 text-red-700 text-sm font-semibold hover:bg-red-100 transition"
+          >
+            <Trash2 size={15} /> Request account deletion
+          </button>
+        )}
+      </section>
+
+      {showDelete && !deleteSent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <ShieldAlert size={22} />
+              </div>
+              <h3 className="font-display font-bold text-ink">Request account deletion?</h3>
+            </div>
+            <p className="text-sm text-ink-muted">
+              We will delete your profile, wishlist and support messages, and remove your name and
+              contact details from past bookings. Our team actions this shortly after you confirm.
+              <strong className="text-ink"> It cannot be undone.</strong>
+            </p>
+            <textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="Reason (optional)"
+              className="input w-full mt-4 resize-none"
+            />
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowDelete(false)}
+                className="flex-1 h-11 rounded-xl border border-gray-200 font-semibold text-ink-muted hover:bg-surface-alt"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={submitDeletion}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 disabled:opacity-40"
+              >
+                {deleteBusy ? 'Sending…' : 'Confirm request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tailwind class composition lives here so the inputs stay consistent
           across this page without sprinkling tokens everywhere. */}
