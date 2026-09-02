@@ -25,6 +25,89 @@ const STATUS_PILL = {
   rejected: 'bg-slate-100 text-slate-500',
 };
 
+function Row({ r, busyId, onDelete, onReject }) {
+  const src = SOURCE[r.source] || SOURCE.public;
+  return (
+    <tr className="hover:bg-surface-alt/40">
+      <td className="px-4 py-3">
+        <div className="font-semibold text-ink">{r.name || '—'}</div>
+        <div className="text-xs text-ink-muted">{r.email}</div>
+        {r.phone && <div className="text-xs text-ink-muted">{r.phone}</div>}
+      </td>
+      <td className="px-4 py-3">
+        <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+          <src.Icon size={13} /> {src.label}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-ink-muted max-w-[260px]">
+        {r.reason ? <span className="line-clamp-2">{r.reason}</span> : <span className="opacity-50">—</span>}
+      </td>
+      <td className="px-4 py-3 text-xs text-ink-muted whitespace-nowrap">{fmtDateTime(r.requestedAt)}</td>
+      <td className="px-4 py-3">
+        <span className={`px-2 py-1 rounded-full text-[11px] font-bold capitalize ${STATUS_PILL[r.status]}`}>
+          {r.status}
+        </span>
+        {r.handledAt && <div className="text-[11px] text-ink-muted mt-1">{fmtDateTime(r.handledAt)}</div>}
+      </td>
+      <td className="px-4 py-3 text-right whitespace-nowrap">
+        {r.status === 'pending' ? (
+          <div className="inline-flex gap-2">
+            <button
+              type="button"
+              disabled={busyId === r.id}
+              onClick={() => onDelete(r)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-40"
+            >
+              <Trash2 size={13} /> Delete account
+            </button>
+            <button
+              type="button"
+              disabled={busyId === r.id}
+              onClick={() => onReject(r)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-ink-muted hover:bg-surface-alt disabled:opacity-40"
+            >
+              <X size={13} /> Reject
+            </button>
+          </div>
+        ) : (
+          <span className="text-xs text-ink-muted inline-flex items-center gap-1">
+            <Check size={13} /> Handled
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function Table({ title, list, empty, busyId, onDelete, onReject }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-soft overflow-hidden mb-6">
+      <div className="px-4 py-3 border-b border-slate-100 text-sm font-bold text-ink">
+        {title} <span className="text-ink-muted font-semibold">({list.length})</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[820px]">
+          <thead className="bg-surface-alt/60 text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+            <tr>
+              <th className="text-left px-4 py-3">User</th>
+              <th className="text-left px-4 py-3">Asked from</th>
+              <th className="text-left px-4 py-3">Reason</th>
+              <th className="text-left px-4 py-3">Requested</th>
+              <th className="text-left px-4 py-3">Status</th>
+              <th className="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {list.length === 0
+              ? <tr><td colSpan={6} className="px-4 py-10 text-center text-ink-muted text-sm">{empty}</td></tr>
+              : list.map((r) => <Row key={r.id} r={r} busyId={busyId} onDelete={onDelete} onReject={onReject} />)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function DeletionRequestsPanel({ onPendingCount }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,87 +147,6 @@ export default function DeletionRequestsPanel({ onPendingCount }) {
   const pending = rows.filter((r) => r.status === 'pending');
   const handled = rows.filter((r) => r.status !== 'pending');
 
-  const Row = ({ r }) => {
-    const src = SOURCE[r.source] || SOURCE.public;
-    return (
-      <tr className="hover:bg-surface-alt/40">
-        <td className="px-4 py-3">
-          <div className="font-semibold text-ink">{r.name || '—'}</div>
-          <div className="text-xs text-ink-muted">{r.email}</div>
-          {r.phone && <div className="text-xs text-ink-muted">{r.phone}</div>}
-        </td>
-        <td className="px-4 py-3">
-          <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
-            <src.Icon size={13} /> {src.label}
-          </span>
-        </td>
-        <td className="px-4 py-3 text-sm text-ink-muted max-w-[260px]">
-          {r.reason ? <span className="line-clamp-2">{r.reason}</span> : <span className="opacity-50">—</span>}
-        </td>
-        <td className="px-4 py-3 text-xs text-ink-muted whitespace-nowrap">{fmtDateTime(r.requestedAt)}</td>
-        <td className="px-4 py-3">
-          <span className={`px-2 py-1 rounded-full text-[11px] font-bold capitalize ${STATUS_PILL[r.status]}`}>
-            {r.status}
-          </span>
-          {r.handledAt && <div className="text-[11px] text-ink-muted mt-1">{fmtDateTime(r.handledAt)}</div>}
-        </td>
-        <td className="px-4 py-3 text-right whitespace-nowrap">
-          {r.status === 'pending' ? (
-            <div className="inline-flex gap-2">
-              <button
-                type="button"
-                disabled={busyId === r.id}
-                onClick={() => setConfirming(r)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-40"
-              >
-                <Trash2 size={13} /> Delete account
-              </button>
-              <button
-                type="button"
-                disabled={busyId === r.id}
-                onClick={() => act(r.id, 'reject')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-ink-muted hover:bg-surface-alt disabled:opacity-40"
-              >
-                <X size={13} /> Reject
-              </button>
-            </div>
-          ) : (
-            <span className="text-xs text-ink-muted inline-flex items-center gap-1">
-              <Check size={13} /> Handled
-            </span>
-          )}
-        </td>
-      </tr>
-    );
-  };
-
-  const Table = ({ title, list, empty }) => (
-    <div className="bg-white rounded-2xl shadow-soft overflow-hidden mb-6">
-      <div className="px-4 py-3 border-b border-slate-100 text-sm font-bold text-ink">
-        {title} <span className="text-ink-muted font-semibold">({list.length})</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px]">
-          <thead className="bg-surface-alt/60 text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-            <tr>
-              <th className="text-left px-4 py-3">User</th>
-              <th className="text-left px-4 py-3">Asked from</th>
-              <th className="text-left px-4 py-3">Reason</th>
-              <th className="text-left px-4 py-3">Requested</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {list.length === 0
-              ? <tr><td colSpan={6} className="px-4 py-10 text-center text-ink-muted text-sm">{empty}</td></tr>
-              : list.map((r) => <Row key={r.id} r={r} />)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="bg-white rounded-2xl shadow-soft p-12 text-center text-ink-muted">
@@ -155,8 +157,9 @@ export default function DeletionRequestsPanel({ onPendingCount }) {
 
   return (
     <>
-      <Table title="Pending" list={pending} empty="No pending deletion requests." />
-      {handled.length > 0 && <Table title="Handled" list={handled} empty="" />}
+      <Table title="Pending" list={pending} empty="No pending deletion requests."
+        busyId={busyId} onDelete={setConfirming} onReject={(r) => act(r.id, 'reject')} />
+      {handled.length > 0 && <Table title="Handled" list={handled} empty="" busyId={busyId} />}
 
       {/* Final confirmation — deleting is irreversible, so it never happens on
           a single click from the table. */}
