@@ -1,7 +1,8 @@
+import ReconnctLogo from '../components/ReconnctLogo.jsx';
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ShieldCheck, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck, ListChecks,
+  LayoutDashboard, Truck, Sparkles, LogOut, Menu, X, ClipboardCheck, Users, HeartHandshake, MapPinned, BadgeCheck, ListChecks,
 } from 'lucide-react';
 import { useTeamAuth } from '../context/TeamAuthContext.jsx';
 import { hasDashboard } from '../components/team/teamNav.js';
@@ -56,10 +57,9 @@ export default function TeamLayout() {
   const Sidebar = (
     <div className="h-full flex flex-col bg-[#0f1830] text-white w-64">
       <div className="px-5 py-6 flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-brand/20 text-brand flex items-center justify-center"><ShieldCheck size={20} /></div>
         <div>
-          <div className="font-display font-bold leading-tight">Team Portal</div>
-          <div className="text-[11px] text-white/50">reconnct</div>
+          <ReconnctLogo />
+          <div className="text-xs text-white/70">Team Portal</div>
         </div>
         <button onClick={() => setOpen(false)} className="ml-auto lg:hidden text-white/60"><X size={20} /></button>
       </div>
@@ -107,7 +107,7 @@ export default function TeamLayout() {
           {/* Top bar with the review bell */}
           <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-20">
             <button onClick={() => setOpen(true)} className="lg:hidden text-ink-muted"><Menu size={22} /></button>
-            <span className="font-display font-bold lg:hidden">Team Portal</span>
+            <span className="lg:hidden"><ReconnctLogo /></span>
             <div className="ml-auto"><ReviewBell /></div>
           </div>
           <main className="flex-1 p-4 md:p-8">

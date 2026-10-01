@@ -1,3 +1,4 @@
+import ReconnctLogo from '../components/ReconnctLogo.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, Link, useNavigate, NavLink } from 'react-router-dom';
 import {
@@ -5,7 +6,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSupplierAuth } from '../context/SupplierAuthContext.jsx';
-import useSiteLogo from '../hooks/useSiteLogo.js';
 import api from '../services/api';
 
 const NAV = [
@@ -80,7 +80,6 @@ function SupplierNotificationBell() {
 }
 
 function SupplierSidebar({ open, onClose }) {
-  const { logoSrc, companyName } = useSiteLogo();
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
       isActive ? 'bg-brand text-ink shadow-soft' : 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -91,8 +90,8 @@ function SupplierSidebar({ open, onClose }) {
       {open && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f1830] text-white transform transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="flex items-center justify-between px-5 h-16 border-b border-white/10">
-          <Link to="/supplier/dashboard" className="flex items-center gap-2">
-            <img src={logoSrc} alt={companyName} className="h-9 w-auto object-contain bg-white/95 rounded px-1.5 py-0.5" />
+          <Link to="/supplier/dashboard" className="flex flex-col items-start gap-0.5">
+            <ReconnctLogo />
             <span className="font-display font-bold text-sm">Supplier Portal</span>
           </Link>
           <button onClick={onClose} className="lg:hidden text-white/70 hover:text-white" aria-label="Close menu"><X size={20} /></button>

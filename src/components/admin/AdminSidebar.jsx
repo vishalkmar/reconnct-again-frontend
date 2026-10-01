@@ -1,3 +1,4 @@
+import ReconnctLogo from '../ReconnctLogo.jsx';
 import { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
@@ -116,9 +117,7 @@ export default function AdminSidebar({ open, onClose }) {
       >
         <div className="flex items-center justify-between px-5 h-16 border-b border-white/10">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <span className="font-display text-xl font-semibold tracking-tight text-white">
-              reconn<span className="text-accent">ct</span>
-            </span>
+            <ReconnctLogo />
             <span className="font-display text-sm text-white/70">Admin</span>
           </Link>
           <button onClick={onClose} className="lg:hidden text-white/70 hover:text-white">

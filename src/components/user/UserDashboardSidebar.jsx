@@ -1,3 +1,4 @@
+import ReconnctLogo from '../ReconnctLogo.jsx';
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   Store,
   X,
 } from 'lucide-react';
-import useSiteLogo from '../../hooks/useSiteLogo.js';
 
 const items = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -28,7 +28,6 @@ const items = [
 ];
 
 export default function UserDashboardSidebar({ open, onClose }) {
-  const { logoSrc, companyName } = useSiteLogo();
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
       isActive
@@ -50,12 +49,8 @@ export default function UserDashboardSidebar({ open, onClose }) {
         } lg:translate-x-0`}
       >
         <div className="flex items-center justify-between px-5 h-16 border-b border-white/10">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <img
-              src={logoSrc}
-              alt={companyName}
-              className="h-9 w-auto object-contain bg-white/95 rounded px-1.5 py-0.5"
-            />
+          <Link to="/dashboard" className="flex flex-col items-start gap-0.5">
+            <ReconnctLogo />
             <span className="font-display font-bold text-sm">My Account</span>
           </Link>
           <button onClick={onClose} className="lg:hidden text-white/70 hover:text-white" aria-label="Close menu">
