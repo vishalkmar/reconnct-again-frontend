@@ -1,7 +1,8 @@
+import LoginBrand from '../auth/LoginBrand.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { X, Mail, ArrowRight, Loader2, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { X, ArrowRight, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 
@@ -205,8 +206,8 @@ export default function UserLoginModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm px-4">
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div className="login-overlay">
+      <div className="login-card" role="dialog" aria-modal="true" aria-label="Sign in to Reconnct">
         <button
           type="button"
           onClick={closeLogin}
@@ -218,10 +219,8 @@ export default function UserLoginModal() {
         </button>
 
         {step === 'email' && (
-          <form onSubmit={handleEmailSubmit} className="p-7 sm:p-8">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-brand/10 text-brand mb-4">
-              <Mail size={22} />
-            </div>
+          <form onSubmit={handleEmailSubmit} className="login-modal-step">
+            <LoginBrand />
             <h2 className="text-xl sm:text-2xl font-semibold text-ink mb-1">Sign in or create your account</h2>
             <p className="text-sm text-gray-500 mb-5">We’ll email you a 6-digit code — no password to remember.</p>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
@@ -238,7 +237,7 @@ export default function UserLoginModal() {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-brand hover:brightness-110 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
+              className="mt-5 login-submit"
             >
               {submitting ? <Loader2 size={18} className="animate-spin" /> : <>Continue <ArrowRight size={16} /></>}
             </button>
@@ -256,10 +255,8 @@ export default function UserLoginModal() {
         )}
 
         {step === 'otp' && (
-          <div className="p-7 sm:p-8">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-brand/10 text-brand mb-4">
-              <ShieldCheck size={22} />
-            </div>
+          <div className="login-modal-step">
+            <LoginBrand />
             <h2 className="text-xl sm:text-2xl font-semibold text-ink mb-1">Enter the 6-digit code</h2>
             <p className="text-sm text-gray-500 mb-5">
               We sent it to <span className="font-medium text-gray-700">{email}</span>.{' '}
@@ -270,10 +267,11 @@ export default function UserLoginModal() {
                 disabled={submitting}
               >Change</button>
             </p>
-            <div className="flex justify-between gap-2 mb-5" onPaste={handleOtpPaste}>
+            <div className="login-otp flex justify-between gap-2 mb-5" onPaste={handleOtpPaste}>
               {otp.map((digit, i) => (
                 <input
                   key={i}
+                  aria-label={`Verification code digit ${i + 1}`}
                   ref={(el) => { otpRefs.current[i] = el; }}
                   type="text"
                   inputMode="numeric"
@@ -290,7 +288,7 @@ export default function UserLoginModal() {
               type="button"
               onClick={handleOtpSubmit}
               disabled={submitting || otp.join('').length !== OTP_LENGTH}
-              className="w-full inline-flex items-center justify-center gap-2 bg-brand hover:brightness-110 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
+              className="login-submit"
             >
               {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Verify & continue'}
             </button>
@@ -309,10 +307,8 @@ export default function UserLoginModal() {
         )}
 
         {step === 'profile' && (
-          <form onSubmit={handleProfileSubmit} className="p-7 sm:p-8">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-brand/10 text-brand mb-4">
-              <UserIcon size={22} />
-            </div>
+          <form onSubmit={handleProfileSubmit} className="login-modal-step">
+            <LoginBrand />
             <h2 className="text-xl sm:text-2xl font-semibold text-ink mb-1">Tell us about you</h2>
             <p className="text-sm text-gray-500 mb-5">Just two quick details so we can personalise your bookings.</p>
 
@@ -354,7 +350,7 @@ export default function UserLoginModal() {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-brand hover:brightness-110 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
+              className="mt-3 login-submit"
             >
               {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Finish & go to dashboard'}
             </button>

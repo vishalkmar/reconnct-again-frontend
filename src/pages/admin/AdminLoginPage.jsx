@@ -1,16 +1,15 @@
+import LoginBrand from '../../components/auth/LoginBrand.jsx';
 import { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, KeyRound, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Loader2, Lock, Mail, Eye, EyeOff, ShieldCheck, KeyRound, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuth } from '../../context/AuthContext.jsx';
-import useSiteLogo from '../../hooks/useSiteLogo.js';
 
 export default function AdminLoginPage() {
   const {
     admin, login, verify2fa, resend2faEmail, loading,
   } = useAuth();
-  const { logoSrc, companyName } = useSiteLogo();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin/dashboard';
@@ -71,16 +70,10 @@ export default function AdminLoginPage() {
   const needTotp = challenge?.factors?.includes('totp');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light/20 via-white to-wellness-light/20 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-3">
-            <img
-              src={logoSrc}
-              alt={companyName}
-              className="h-14 w-auto object-contain"
-            />
-          </div>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-header">
+          <LoginBrand />
           <h1 className="text-2xl font-bold">{challenge ? 'Verify it\'s you' : 'Admin Login'}</h1>
           <p className="text-sm text-ink-muted mt-1">
             {challenge ? 'Extra security is on for this account' : 'Sign in to manage your site'}
@@ -88,8 +81,8 @@ export default function AdminLoginPage() {
         </div>
 
         {challenge ? (
-          <form onSubmit={handleVerify} className="bg-white rounded-2xl shadow-card p-8 space-y-5">
-            <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold">
+          <form onSubmit={handleVerify} className="login-form">
+            <div className="flex items-center gap-2 text-brand-dark text-sm font-semibold">
               <ShieldCheck size={18} /> Password verified
             </div>
 
@@ -122,8 +115,8 @@ export default function AdminLoginPage() {
               </div>
             )}
 
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
-              {submitting ? 'Verifying…' : 'Verify & sign in'}
+            <button type="submit" disabled={submitting} className="login-submit">
+              {submitting ? <><Loader2 size={20} className="animate-spin" /> Verifying...</> : <>Verify & sign in <ArrowRight size={22} className="login-arrow" /></>}
             </button>
             <button type="button" onClick={() => { setChallenge(null); setEmailCode(''); setTotpCode(''); }}
               className="w-full inline-flex items-center justify-center gap-1.5 text-xs text-ink-muted hover:text-ink">
@@ -131,29 +124,29 @@ export default function AdminLoginPage() {
             </button>
           </form>
         ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="login-form">
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="login-email">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
               <input
-                type="email"
+                id="login-email" autoComplete="username" type="email"
                 required
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input pl-10"
-                placeholder="admin@traveon.com"
+                placeholder="admin@reconnct.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="label">Password</label>
+            <label className="label" htmlFor="login-password">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
               <input
-                type={showPwd ? 'text' : 'password'}
+                id="login-password" autoComplete="current-password" type={showPwd ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -163,6 +156,8 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPwd(!showPwd)}
+                aria-label={showPwd ? 'Hide password' : 'Show password'}
+                aria-pressed={showPwd}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
               >
                 {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -173,14 +168,10 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="btn-primary w-full"
+            className="login-submit"
           >
-            {submitting ? 'Signing in…' : 'Sign in'}
+            {submitting ? <><Loader2 size={20} className="animate-spin" /> Signing in...</> : <>Sign In <ArrowRight size={22} className="login-arrow" /></>}
           </button>
-
-          <p className="text-xs text-center text-ink-muted">
-            Credentials are seeded from <code className="bg-surface-alt px-1 rounded">.env</code>
-          </p>
         </form>
         )}
       </div>
