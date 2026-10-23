@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, PlusCircle, Pencil, Trash2, MapPin, Clock, ImageOff, CalendarCheck, Search, X, MessageSquareWarning, Send, Eye, Hourglass, Globe, XCircle, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const STATUS_BADGE = {
   draft: { label: 'Draft', cls: 'bg-slate-100 text-slate-600' },
@@ -169,25 +170,23 @@ export default function HostListingsPage({ basePath = '/host' }) {
   };
 
   return (
-    <div className="max-w-6xl">
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-display font-bold">My Listings</h1>
-          <p className="text-sm text-ink-muted mt-1">Your experiences — drafts, pending review and published.</p>
-        </div>
-        {canAdd ? (
-          <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105 transition">
-            <PlusCircle size={18} /> Create Listing
+    <div className="max-w-[1400px]">
+      <HostPageHero
+        title="My Listings"
+        subtitle="Your experiences — drafts, pending review and published."
+        actions={canAdd ? (
+          <Link to={`${basePath}/listings/new`} className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-rc-brand text-rc-navy font-bold hover:brightness-105 shadow-[0_10px_22px_-12px_rgba(255,185,0,0.95)] transition">
+            <PlusCircle size={19} /> Create Listing
           </Link>
         ) : (
-          <button disabled title="Available once your first experience is live" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-200 text-slate-400 font-semibold cursor-not-allowed">
-            <PlusCircle size={18} /> Create Listing
+          <button disabled title="Available once your first experience is live" className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-[#EDEAE4] text-rc-ink-faint font-bold cursor-not-allowed">
+            <PlusCircle size={19} /> Create Listing
           </button>
         )}
-      </div>
+      />
 
       {isSupplier && !canAdd && (
-        <div className="mb-5 flex items-start gap-2.5 bg-amber-50 text-amber-800 rounded-xl px-4 py-3 text-sm">
+        <div className="mb-5 flex items-start gap-2.5 bg-[#FFF8E6] border border-[#FBE3A8] text-[#8A5A00] rounded-2xl px-4 py-3.5 text-sm">
           <PlusCircle size={16} className="mt-0.5 shrink-0" />
           You can add your own listings once your first experience is <strong>live</strong> on the platform. Your account manager onboards the first one — after that, this unlocks.
         </div>

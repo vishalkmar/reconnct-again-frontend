@@ -24,19 +24,37 @@
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
   "shortcuts": [
-    { "name": "Explore experiences", "shortName": "Explore", "url": "/experiences?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" },
-    { "name": "My bookings", "shortName": "Bookings", "url": "/dashboard/bookings?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" },
-    { "name": "Supplier dashboard", "shortName": "Supplier", "url": "/supplier/dashboard?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" }
+    {
+      "name": "Explore experiences",
+      "shortName": "Explore",
+      "url": "/experiences?source=pwa",
+      "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png"
+    },
+    {
+      "name": "My bookings",
+      "shortName": "Bookings",
+      "url": "/dashboard/bookings?source=pwa",
+      "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png"
+    },
+    {
+      "name": "Supplier dashboard",
+      "shortName": "Supplier",
+      "url": "/supplier/dashboard?source=pwa",
+      "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png"
+    }
   ],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://reconnct-again-frontend.vercel.app/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://reconnct-again-frontend.vercel.app/",
   "minSdkVersion": 21,
-  "fingerprints": []
+  "fingerprints": [],
+  "appVersion": "1.0.0"
 }

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 // Lifecycle buckets — the SAME the backend computes (utils/bookingLifecycle),
 // so the tab counts always agree with each row's status pill.
@@ -132,11 +133,12 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
   }, [rows, tab, query, time, specificDate, from, to, category, minRating]);
 
   return (
-    <div className="max-w-6xl">
-      <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">All Bookings</h1>
-        <p className="text-sm text-ink-muted">Every booking across all your listings, in one place.</p>
-      </div>
+    <div className="max-w-[1400px]">
+      <HostPageHero
+        title="All Bookings"
+        subtitle="Every booking across all your listings, in one place."
+        art="🧳"
+      />
 
       {/* Category tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">

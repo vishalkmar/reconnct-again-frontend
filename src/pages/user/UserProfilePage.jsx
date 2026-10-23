@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Loader2, Save, User as UserIcon, Camera, Trash2, ShieldAlert } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Camera, Trash2, ShieldAlert, MapPin } from 'lucide-react';
 import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
@@ -127,187 +127,207 @@ export default function UserProfilePage() {
   };
 
   return (
-    <div className="max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold">My Profile</h1>
-        <p className="text-sm text-ink-muted mt-1">Keep your information up to date for faster bookings.</p>
+    <div className="max-w-[1400px]">
+      {/* Photo banner with the page title (same copy as before) */}
+      <div className="relative isolate overflow-hidden rounded-[26px] h-[170px] sm:h-[190px] lg:h-[200px]">
+        <picture>
+          <source srcSet="/hero/santorini-640.webp 640w, /hero/santorini-1024.webp 1024w, /hero/santorini-1795.webp 1795w" sizes="(min-width: 1024px) 75vw, 100vw" type="image/webp" />
+          <img src="/hero/santorini-1600.jpg" alt="" className="absolute inset-0 -z-20 w-full h-full object-cover object-[center_55%]" />
+        </picture>
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/90 via-white/55 to-transparent" aria-hidden="true" />
+        <div className="px-6 sm:px-10 lg:px-14 pt-7 sm:pt-9">
+          <h1 className="font-display font-bold text-[32px] sm:text-[40px] leading-tight text-rc-navy">My Profile</h1>
+          <p className="text-[14px] sm:text-[16px] text-rc-navy/85 mt-1">Keep your information up to date for faster bookings.</p>
+        </div>
       </div>
 
-      {/* Install the app — hidden automatically inside the installed app */}
-      <InstallAppButton
-        source="profile"
-        className="mb-6 flex items-center gap-3 bg-gradient-to-r from-[#FFC629] to-[#F9B402] text-white rounded-2xl p-4 shadow-soft"
-      >
-        <span className="text-2xl" aria-hidden="true">📱</span>
-        <span className="flex-1">
-          <span className="block font-bold">Install the Reconnct app</span>
-          <span className="block text-sm opacity-90">Book faster and open it from your home screen.</span>
-        </span>
-        <span className="text-sm font-bold bg-white/25 px-3 py-1.5 rounded-full">Install</span>
-      </InstallAppButton>
+      <div className="relative -mt-12 sm:-mt-14 mx-0 sm:mx-6 lg:mx-10">
+        {/* Install the app — hidden automatically inside the installed app */}
+        <InstallAppButton
+          source="profile"
+          className="mb-4 flex items-center gap-3 bg-gradient-to-r from-[#FFC629] to-[#F9B402] text-white rounded-2xl p-4 shadow-soft"
+        >
+          <span className="text-2xl" aria-hidden="true">📱</span>
+          <span className="flex-1">
+            <span className="block font-bold">Install the Reconnct app</span>
+            <span className="block text-sm opacity-90">Book faster and open it from your home screen.</span>
+          </span>
+          <span className="text-sm font-bold bg-white/25 px-3 py-1.5 rounded-full">Install</span>
+        </InstallAppButton>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-soft p-6 md:p-8 space-y-8">
-        {/* Avatar */}
-        <section className="flex items-center gap-5 pb-6 border-b">
-          <div className="relative">
-            {form.avatarUrl ? (
-              <img src={form.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover ring-2 ring-brand/20" />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-brand text-white flex items-center justify-center text-2xl font-bold">
-                {initials}
-              </div>
-            )}
-            {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
-                <Loader2 className="animate-spin text-white" size={20} />
-              </div>
-            )}
+        <form onSubmit={handleSubmit} className="bg-white rounded-[24px] border border-[#F1ECE3] shadow-[0_24px_50px_-32px_rgba(16,24,40,0.5)] p-5 sm:p-8 space-y-7">
+          {/* Avatar */}
+          <section className="flex flex-wrap items-center gap-5 sm:gap-6 pb-6 border-b border-[#F1ECE3]">
+            <div className="relative shrink-0">
+              {form.avatarUrl ? (
+                <img src={form.avatarUrl} alt="" className="w-24 h-24 sm:w-[104px] sm:h-[104px] rounded-full object-cover ring-4 ring-[#FFF1CC]" />
+              ) : (
+                <div className="w-24 h-24 sm:w-[104px] sm:h-[104px] rounded-full bg-[#E5A72A] text-white flex items-center justify-center text-4xl font-bold ring-4 ring-[#FFF1CC]">
+                  {initials}
+                </div>
+              )}
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
+                  <Loader2 className="animate-spin text-white" size={22} />
+                </div>
+              )}
+              <label
+                title={form.avatarUrl ? 'Change photo' : 'Upload photo'}
+                className="absolute -bottom-0.5 -right-0.5 grid place-items-center w-10 h-10 rounded-full bg-white text-rc-navy shadow-[0_6px_16px_-6px_rgba(16,24,40,0.45)] border border-[#F1ECE3] cursor-pointer hover:bg-[#FFF1CC] transition"
+              >
+                <Camera size={18} />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+              </label>
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <h2 className="font-display font-bold text-2xl sm:text-[28px] text-rc-navy leading-tight">{user?.name || 'Your name'}</h2>
+              <p className="text-rc-ink-muted mt-0.5 break-all">{user?.email}</p>
+              <p className="text-[12.5px] text-rc-ink-muted mt-2">
+                <span className="font-semibold text-rc-navy/80">Profile photo</span> · PNG or JPG, square works best.
+                {form.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, avatarUrl: '' }))}
+                    className="ml-2 font-semibold text-[#D93025] hover:underline"
+                  >Remove</button>
+                )}
+              </p>
+            </div>
+          </section>
+
+          {/* Basic info */}
+          <section>
+            <h2 className="font-sans font-extrabold text-[17px] text-rc-navy mb-4 flex items-center gap-2.5">
+              <UserIcon size={20} className="text-[#E5A72A]" /> Basic information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <Field label="Full name" required>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={handleChange('name')}
+                  required
+                  className="input"
+                  placeholder="Your full name"
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="input is-disabled"
+                />
+                <p className="text-xs text-rc-ink-muted mt-1.5">Email cannot be changed — sign in is tied to it.</p>
+              </Field>
+              <Field label="Phone" required>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={handleChange('phone')}
+                  required
+                  className="input"
+                  placeholder="+91 98765 43210"
+                />
+              </Field>
+              <Field label="Gender">
+                <select value={form.gender} onChange={handleChange('gender')} className="input">
+                  {GENDERS.map((g) => (
+                    <option key={g.value} value={g.value}>{g.label}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Date of birth">
+                <DatePicker
+                  value={form.dob || ''}
+                  onChange={(iso) => setForm((f) => ({ ...f, dob: iso }))}
+                  placeholder="Pick your DOB"
+                />
+              </Field>
+              {/* Both dates feed the birthday/anniversary greetings — a blank
+                  one simply means we never wish you on it. */}
+              <Field label="Anniversary">
+                <DatePicker
+                  value={form.anniversary || ''}
+                  onChange={(iso) => setForm((f) => ({ ...f, anniversary: iso }))}
+                  placeholder="Pick your anniversary"
+                />
+              </Field>
+            </div>
+          </section>
+
+          {/* Address */}
+          <section className="pt-6 border-t border-[#F1ECE3]">
+            <h2 className="font-sans font-extrabold text-[17px] text-rc-navy mb-4 flex items-center gap-2.5">
+              <MapPin size={20} className="text-[#E5A72A]" /> Address
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <Field label="Address line" className="md:col-span-2">
+                <input
+                  type="text"
+                  value={form.addressLine}
+                  onChange={handleChange('addressLine')}
+                  className="input"
+                  placeholder="House, street, area"
+                />
+              </Field>
+              <Field label="City">
+                <input type="text" value={form.city} onChange={handleChange('city')} className="input" />
+              </Field>
+              <Field label="State / Province">
+                <input type="text" value={form.state} onChange={handleChange('state')} className="input" />
+              </Field>
+              <Field label="Country">
+                <input type="text" value={form.country} onChange={handleChange('country')} className="input" />
+              </Field>
+              <Field label="Pincode">
+                <input type="text" value={form.pincode} onChange={handleChange('pincode')} className="input" />
+              </Field>
+            </div>
+          </section>
+
+          {/* Sticky on phones so Save is always in reach above the keyboard / tab bar */}
+          <div className="rc-sticky-actions flex items-center justify-end gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving || uploading}
+              className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-[#E5A72A] text-white font-bold hover:bg-[#D49616] shadow-[0_10px_22px_-12px_rgba(229,167,42,0.95)] disabled:opacity-60 transition"
+            >
+              {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Save changes
+            </button>
           </div>
-          <div className="flex-1">
-            <h2 className="font-semibold text-ink">Profile photo</h2>
-            <p className="text-sm text-ink-muted mb-2">PNG or JPG, square works best.</p>
-            <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-surface-alt cursor-pointer text-sm font-medium">
-              <Camera size={16} />
-              {form.avatarUrl ? 'Change photo' : 'Upload photo'}
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-            </label>
-            {form.avatarUrl && (
-              <button
-                type="button"
-                onClick={() => setForm((p) => ({ ...p, avatarUrl: '' }))}
-                className="ml-2 text-sm text-red-600 hover:underline"
-              >Remove</button>
-            )}
+        </form>
+
+        {/* Danger zone — the same account-deletion route the app offers, so a
+            member who signed up on the phone can also do it here. */}
+        <section className="mt-5 rounded-[22px] border border-[#FAD2D2] bg-[#FFF5F5] p-5 sm:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+          <span className="grid place-items-center w-14 h-14 rounded-full bg-[#FFE1E1] text-[#E5484D] shrink-0">
+            <Trash2 size={24} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-rc-navy flex items-center gap-2">Delete account</h2>
+            <p className="text-[13.5px] text-rc-ink-muted mt-1 leading-relaxed">
+              Removes your profile, wishlist and support messages, and strips your name and contact
+              details from past bookings. Booking records themselves are kept for accounting. This
+              cannot be undone.
+            </p>
           </div>
+          {deleteSent ? (
+            <p className="text-sm font-semibold text-emerald-700 md:max-w-[260px]">
+              Your deletion request has been sent. Our team will action it shortly.
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDelete(true)}
+              className="shrink-0 self-start md:self-center inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-[#F3A6A6] bg-white text-[#D93025] text-sm font-bold hover:bg-[#FFE9E9] transition"
+            >
+              <Trash2 size={16} /> Request account deletion
+            </button>
+          )}
         </section>
-
-        {/* Basic info */}
-        <section>
-          <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
-            <UserIcon size={18} className="text-brand" /> Basic information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Field label="Full name" required>
-              <input
-                type="text"
-                value={form.name}
-                onChange={handleChange('name')}
-                required
-                className="input"
-                placeholder="Your full name"
-              />
-            </Field>
-            <Field label="Email">
-              <input
-                type="email"
-                value={user?.email || ''}
-                disabled
-                className="input bg-surface-alt cursor-not-allowed"
-              />
-              <p className="text-xs text-ink-muted mt-1">Email cannot be changed — sign in is tied to it.</p>
-            </Field>
-            <Field label="Phone" required>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={handleChange('phone')}
-                required
-                className="input"
-                placeholder="+91 98765 43210"
-              />
-            </Field>
-            <Field label="Gender">
-              <select value={form.gender} onChange={handleChange('gender')} className="input">
-                {GENDERS.map((g) => (
-                  <option key={g.value} value={g.value}>{g.label}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Date of birth">
-              <DatePicker
-                value={form.dob || ''}
-                onChange={(iso) => setForm((f) => ({ ...f, dob: iso }))}
-                placeholder="Pick your DOB"
-              />
-            </Field>
-            {/* Both dates feed the birthday/anniversary greetings — a blank
-                one simply means we never wish you on it. */}
-            <Field label="Anniversary">
-              <DatePicker
-                value={form.anniversary || ''}
-                onChange={(iso) => setForm((f) => ({ ...f, anniversary: iso }))}
-                placeholder="Pick your anniversary"
-              />
-            </Field>
-          </div>
-        </section>
-
-        {/* Address */}
-        <section>
-          <h2 className="font-semibold text-ink mb-4">Address</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Field label="Address line" className="md:col-span-2">
-              <input
-                type="text"
-                value={form.addressLine}
-                onChange={handleChange('addressLine')}
-                className="input"
-                placeholder="House, street, area"
-              />
-            </Field>
-            <Field label="City">
-              <input type="text" value={form.city} onChange={handleChange('city')} className="input" />
-            </Field>
-            <Field label="State / Province">
-              <input type="text" value={form.state} onChange={handleChange('state')} className="input" />
-            </Field>
-            <Field label="Country">
-              <input type="text" value={form.country} onChange={handleChange('country')} className="input" />
-            </Field>
-            <Field label="Pincode">
-              <input type="text" value={form.pincode} onChange={handleChange('pincode')} className="input" />
-            </Field>
-          </div>
-        </section>
-
-        {/* Sticky on phones so Save is always in reach above the keyboard / tab bar */}
-        <div className="rc-sticky-actions flex items-center justify-end gap-3 pt-4 border-t">
-          <button
-            type="submit"
-            disabled={saving || uploading}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-white font-medium hover:brightness-110 disabled:opacity-60 transition"
-          >
-            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            Save changes
-          </button>
-        </div>
-      </form>
-
-      {/* Danger zone — the same account-deletion route the app offers, so a
-          member who signed up on the phone can also do it here. */}
-      <section className="mt-10 rounded-2xl border border-red-200 bg-red-50/40 p-5">
-        <h2 className="text-sm font-bold text-ink flex items-center gap-2">
-          <ShieldAlert size={16} className="text-red-600" /> Delete account
-        </h2>
-        <p className="text-sm text-ink-muted mt-2">
-          Removes your profile, wishlist and support messages, and strips your name and contact
-          details from past bookings. Booking records themselves are kept for accounting. This
-          cannot be undone.
-        </p>
-        {deleteSent ? (
-          <p className="mt-4 text-sm font-semibold text-emerald-700">
-            Your deletion request has been sent. Our team will action it shortly.
-          </p>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowDelete(true)}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-300 text-red-700 text-sm font-semibold hover:bg-red-100 transition"
-          >
-            <Trash2 size={15} /> Request account deletion
-          </button>
-        )}
-      </section>
+      </div>
 
       {showDelete && !deleteSent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -357,17 +377,22 @@ export default function UserProfilePage() {
       <style>{`
         .input {
           width: 100%;
-          padding: 0.625rem 0.875rem;
-          border-radius: 0.5rem;
-          border: 1px solid #d1d5db;
+          height: 3rem;
+          padding: 0 1rem;
+          border-radius: 0.75rem;
+          border: 1px solid #E6E1D7;
           outline: none;
-          font-size: 0.875rem;
+          font-size: 0.9375rem;
+          color: #1A1A2E;
           background-color: white;
+          transition: border-color .15s, box-shadow .15s;
         }
+        textarea.input { height: auto; padding: 0.75rem 1rem; }
         .input:focus {
-          border-color: rgb(var(--brand));
-          box-shadow: 0 0 0 3px rgb(var(--brand) / 0.15);
+          border-color: #FFB900;
+          box-shadow: 0 0 0 4px rgb(255 185 0 / 0.18);
         }
+        .input.is-disabled { background-color: #F8F6F2; color: #4B5563; cursor: not-allowed; }
       `}</style>
     </div>
   );
@@ -376,7 +401,7 @@ export default function UserProfilePage() {
 function Field({ label, required, children, className = '' }) {
   return (
     <label className={`block ${className}`}>
-      <span className="text-sm font-medium text-ink mb-1.5 inline-block">
+      <span className="text-sm font-semibold text-rc-navy mb-2 inline-block">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </span>
       {children}

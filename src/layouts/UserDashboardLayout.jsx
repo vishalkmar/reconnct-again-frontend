@@ -16,8 +16,18 @@ const TITLES = [
   [/^\/dashboard/, 'Dashboard'],
 ];
 
+const COLLAPSE_KEY = 'rc_member_sidebar_collapsed';
+
 export default function UserDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Desktop icon-rail mode, remembered per browser.
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+  });
+  const toggleCollapse = () => setCollapsed((v) => {
+    try { localStorage.setItem(COLLAPSE_KEY, v ? '0' : '1'); } catch { /* ignore */ }
+    return !v;
+  });
   const { pathname } = useLocation();
   const appShell = useAppShell();
   // The support chat runs full-bleed (no topbar, tiny margin) like the admin one.
@@ -27,7 +37,7 @@ export default function UserDashboardLayout() {
   if (appShell) {
     const title = (TITLES.find(([re]) => re.test(pathname)) || [null, 'Dashboard'])[1];
     return (
-      <div className="min-h-screen bg-surface-alt">
+      <div className="min-h-screen bg-[#FBFAF8]">
         <MobileTopBar title={title} />
         <main
           className={isChat ? 'px-2 pb-2 overflow-hidden' : 'px-4 pb-6'}
@@ -40,11 +50,16 @@ export default function UserDashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-alt flex">
-      <UserDashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col lg:ml-64">
+    <div className="min-h-screen bg-[#FBFAF8] flex">
+      <UserDashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapse}
+      />
+      <div className={`flex-1 min-w-0 flex flex-col transition-all duration-200 ${collapsed ? 'lg:ml-[88px]' : 'lg:ml-[272px]'}`}>
         {!isChat && <UserDashboardTopbar onMenuClick={() => setSidebarOpen(true)} />}
-        <main className={isChat ? 'flex-1 p-2.5 overflow-hidden' : 'flex-1 p-4 md:p-8'}>
+        <main className={isChat ? 'flex-1 p-2.5 overflow-hidden' : 'flex-1 p-4 md:p-7 2xl:p-8'}>
           <Outlet />
         </main>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Ticket, Clock, Bell } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const ICON = { host_booking: Ticket, reminder: Clock };
@@ -29,11 +30,8 @@ export default function HostNotificationsPage({ basePath = '/host' }) {
   }, [basePath]);
 
   return (
-    <div className="max-w-3xl">
-      <div className="mb-6 flex items-center gap-2">
-        <Bell className="text-brand" size={22} />
-        <h1 className="text-2xl font-display font-bold">Notifications</h1>
-      </div>
+    <div className="max-w-5xl">
+      <HostPageHero title="Notifications" art="🔔" />
 
       {loading ? (
         <div className="flex justify-center py-16 text-slate-400"><Loader2 className="animate-spin" size={22} /></div>

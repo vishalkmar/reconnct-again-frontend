@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Loader2, Save, Camera, Building2 } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 
 // Global rule: every image upload must be under 5MB.
@@ -69,11 +70,12 @@ export default function HostProfilePage() {
   };
 
   return (
-    <div className="max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold">Host Profile</h1>
-        <p className="text-sm text-ink-muted mt-1">This is the same profile as your account — guests see your name and business.</p>
-      </div>
+    <div className="max-w-5xl">
+      <HostPageHero
+        photo="coast"
+        title="Host Profile"
+        subtitle="This is the same profile as your account — guests see your name and business."
+      />
 
       <form onSubmit={submit} className="bg-white rounded-2xl shadow-soft p-6 md:p-8 space-y-8">
         <section className="flex items-center gap-5 pb-6 border-b">

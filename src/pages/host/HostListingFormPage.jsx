@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -168,14 +169,17 @@ export default function HostListingFormPage({ basePath = '/host' }) {
   if (loading) return <div className="p-10 text-center text-ink-muted"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
   return (
-    <div className={`max-w-6xl mx-auto ${appShell ? 'pb-28' : ''}`}>
-      <div className="mb-6">
-        <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
+    <div className={`max-w-[1400px] mx-auto ${appShell ? 'pb-28' : 'px-4 md:px-7 pt-5 md:pt-7 pb-10'}`}>
+      <div className="mb-3">
+        <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-[#F1ECE3] text-sm font-semibold text-rc-navy hover:bg-[#FFF6DD] transition">
           <ArrowLeft size={16} /> Back to listings
         </button>
-        <h1 className="text-2xl font-display font-bold mb-1">{editing ? 'Edit listing' : 'Create listing'}</h1>
-        <p className="text-sm text-ink-muted">Fill in the details below, then save a draft or submit for review. Everything auto-saves as a draft.</p>
       </div>
+      <HostPageHero
+        title={editing ? 'Edit listing' : 'Create listing'}
+        subtitle="Fill in the details below, then save a draft or submit for review. Everything auto-saves as a draft."
+        art="✨"
+      />
 
       {/* Phones / installed app: step bar under the app bar (wizard feel). */}
       {appShell && <FormStepNav containerRef={formRef} top={appBarH} />}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, IndianRupee, Clock, Receipt } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -36,11 +37,13 @@ export default function HostTransactionsPage({ basePath = '/host' }) {
   const s = stats || {};
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold">Transactions</h1>
-        <p className="text-sm text-ink-muted mt-1">Your earnings, completed payouts and pending amounts.</p>
-      </div>
+    <div className="max-w-[1400px]">
+      <HostPageHero
+        photo="coast"
+        title="Transactions"
+        subtitle="Your earnings, completed payouts and pending amounts."
+        art="💰"
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-2xl shadow-soft p-5">

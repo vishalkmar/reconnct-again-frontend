@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.reconnct.web",
+      "sha256_cert_fingerprints": [
+        "DA:1D:65:45:84:BB:C9:F1:87:CA:F3:4B:C8:47:70:A6:D0:CD:D1:CF:49:2C:A8:84:B6:23:C1:B8:DB:68:00:45"
+      ]
+    }
+  }
+]

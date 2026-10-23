@@ -385,3 +385,40 @@ html.pwa main.pt-16 { padding-top: calc(4rem + env(safe-area-inset-top)); }
 @media (prefers-reduced-motion: reduce) {
   .rc-sweep { animation: none; }
 }
+
+/* ── Host / Supplier portal skin (HostLayout adds .rc-host) ──────────────────
+   One place that brings every host tab — listings, bookings, transactions,
+   forms — onto the landing-site look without touching page logic. */
+.rc-host .bg-white.rounded-2xl.shadow-soft,
+.rc-host .bg-white.rounded-xl.shadow-soft,
+.rc-host .bg-white.rounded-2xl.shadow-card,
+.rc-host .card {
+  border: 1px solid #F1ECE3;
+  border-radius: 22px;
+  box-shadow: 0 14px 34px -26px rgba(16, 24, 40, 0.5);
+}
+.rc-host .win,
+.rc-host .hinput,
+.rc-host .input {
+  border-radius: 12px;
+  border-color: #E6E1D7;
+  min-height: 46px;
+  color: #1A1A2E;
+}
+.rc-host textarea.win,
+.rc-host textarea.hinput,
+.rc-host textarea.input { min-height: 0; }
+.rc-host .win:focus,
+.rc-host .hinput:focus,
+.rc-host .input:focus {
+  border-color: #FFB900;
+  box-shadow: 0 0 0 4px rgb(255 185 0 / 0.18);
+  --tw-ring-shadow: 0 0 #0000;
+}
+.rc-host a.bg-brand.rounded-lg,
+.rc-host button.bg-brand.rounded-lg {
+  border-radius: 9999px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+.rc-host h1.font-display { color: #1A1A2E; }

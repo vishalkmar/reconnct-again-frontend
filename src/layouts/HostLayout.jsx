@@ -42,12 +42,12 @@ function HostNotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button onClick={() => setOpen((o) => !o)} className="relative p-2 rounded-lg hover:bg-surface-alt" aria-label="Notifications">
-        <Bell size={20} className="text-ink-muted" />
-        {items.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />}
+      <button onClick={() => setOpen((o) => !o)} className="relative grid place-items-center w-11 h-11 rounded-full text-rc-navy hover:bg-[#FFF6DD] transition" aria-label="Notifications">
+        <Bell size={22} strokeWidth={1.9} />
+        {items.length > 0 && <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[26rem] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 z-40">
+        <div className="absolute right-0 mt-2 w-[26rem] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-[20px] shadow-[0_24px_50px_-24px_rgba(16,24,40,0.45)] border border-[#F1ECE3] z-40">
           <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm flex items-center justify-between">
             Notifications
             <Link to="/host/notifications" onClick={() => setOpen(false)} className="text-xs font-semibold text-brand">View all</Link>
@@ -94,8 +94,18 @@ const HOST_TITLES = [
   [/^\/host/, 'Host dashboard'],
 ];
 
+const COLLAPSE_KEY = 'rc_host_sidebar_collapsed';
+
 export default function HostLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Desktop icon-rail mode, remembered per browser.
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+  });
+  const toggleCollapse = () => setCollapsed((v) => {
+    try { localStorage.setItem(COLLAPSE_KEY, v ? '0' : '1'); } catch { /* ignore */ }
+    return !v;
+  });
   const { user, logout } = useUserAuth();
   const navigate = useNavigate();
   const path = useLocation().pathname;
@@ -117,7 +127,7 @@ export default function HostLayout() {
     const title = HOST_TITLES.find(([re]) => re.test(path))?.[1] || 'Host mode';
     const tabRoot = /^\/host(\/(listings|all-bookings|profile))?\/?$/.test(path);
     return (
-      <div className="min-h-screen bg-surface-alt">
+      <div className="rc-host min-h-screen bg-[#FBFAF8]">
         <MobileTopBar title={title} back={!tabRoot} right={<HostNotificationBell />} />
         <main
           className={isWizard ? 'px-3' : isChat ? 'px-2 pb-2 overflow-hidden' : 'px-4 pb-6'}
@@ -151,34 +161,34 @@ export default function HostLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-alt flex">
-      <HostSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col lg:ml-64">
-        <header className="sticky top-0 z-30 bg-white border-b shadow-soft">
-          <div className="flex items-center justify-between px-4 md:px-8 h-16">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-surface-alt rounded" aria-label="Open menu">
-              <Menu size={22} />
+    <div className="rc-host min-h-screen bg-[#FBFAF8] flex">
+      <HostSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
+      <div className={`flex-1 min-w-0 flex flex-col transition-all duration-200 ${collapsed ? 'lg:ml-[88px]' : 'lg:ml-[272px]'}`}>
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-[#F1ECE3]">
+          <div className="flex items-center justify-between gap-3 px-4 md:px-8 h-[76px] lg:h-[88px]">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden grid place-items-center w-10 h-10 rounded-full bg-[#F4F2EE] text-rc-navy" aria-label="Open menu">
+              <Menu size={20} />
             </button>
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wide bg-brand/15 text-brand-dark px-2.5 py-1 rounded-full">Host mode</span>
-              <h2 className="text-lg font-display font-semibold">Welcome, {(user?.name || '').split(/\s+/)[0] || 'Host'}</h2>
+            <div className="hidden lg:flex items-center gap-3 min-w-0">
+              <span className="inline-flex items-center h-8 px-3.5 rounded-full bg-[#FFF1CC] text-[#B07800] text-[12px] font-bold tracking-[0.12em] uppercase">Host mode</span>
+              <h2 className="font-sans text-[22px] font-extrabold text-rc-navy truncate">Welcome, {(user?.name || '').split(/\s+/)[0] || 'Host'}</h2>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <HostNotificationBell />
-              <Link to="/dashboard" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border hover:bg-surface-alt">
-                <ExternalLink size={14} /> My Account
+              <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-2 h-11 px-4 rounded-full text-sm font-semibold bg-[#FFF6DD] text-rc-navy hover:bg-[#FFEDB8] transition">
+                <ExternalLink size={15} /> My Account
               </Link>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-wellness/10 text-wellness hover:bg-wellness hover:text-white text-sm font-semibold transition"
+                className="inline-flex items-center gap-1.5 h-11 px-3 sm:px-4 rounded-full bg-[#FFEDEC] text-[#D93025] hover:bg-[#D93025] hover:text-white text-sm font-bold transition"
                 title="Sign out"
               >
-                <LogOut size={16} /> Logout
+                <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
         </header>
-        <main className={isWizard ? 'flex-1 p-0' : isChat ? 'flex-1 p-2.5 overflow-hidden' : 'flex-1 p-4 md:p-8'}>
+        <main className={isWizard ? 'flex-1 p-0' : isChat ? 'flex-1 p-2.5 overflow-hidden' : 'flex-1 p-4 md:p-7 2xl:p-8'}>
           <Outlet />
         </main>
       </div>

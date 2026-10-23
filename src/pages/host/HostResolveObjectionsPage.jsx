@@ -122,7 +122,7 @@ export default function HostResolveObjectionsPage({ basePath = '/host' }) {
         <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand"><ArrowLeft size={16} /> Back</button>
       </div>
 
-      <h1 className="text-2xl font-display font-bold mb-1">Resolve objections</h1>
+      <h1 className="font-display font-bold text-[28px] sm:text-[34px] leading-tight text-rc-navy mb-1">Resolve objections</h1>
       <p className="text-sm text-ink-muted mb-4">{listing.title} · {objections.length} objection{objections.length > 1 ? 's' : ''} to address before you can send it back.</p>
 
       {suggestion && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, UserCog, Mail, Phone, BadgeCheck, CircleSlash } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const initials = (name) => String(name || '?')
   .split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -35,11 +36,12 @@ export default function SupplierAccountManagerPage({ basePath = '/supplier' }) {
   if (loading) return <div className="p-16 text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
   return (
-    <div className="max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">Key Account Manager</h1>
-        <p className="text-sm text-ink-muted">Your dedicated point of contact at reconnct — reach out for anything about your listings, bookings or payouts.</p>
-      </div>
+    <div className="max-w-5xl">
+      <HostPageHero
+        title="Key Account Manager"
+        subtitle="Your dedicated point of contact at reconnct — reach out for anything about your listings, bookings or payouts."
+        art="🤝"
+      />
 
       {!manager ? (
         <div className="bg-white rounded-2xl shadow-soft p-12 text-center">
