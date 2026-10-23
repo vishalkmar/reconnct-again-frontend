@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import UnderProgressBlock from '../../components/team/UnderProgressBlock.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
@@ -42,8 +43,7 @@ export default function TeamAmListingsPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">My suppliers’ listings</h1>
-        <p className="text-sm text-ink-muted">Every listing across the suppliers assigned to you — live, rejected and delisted.</p>
+        <HostPageHero photo="lake" title="My suppliers’ listings" subtitle="Every listing across the suppliers assigned to you — live, rejected and delisted." className="!mb-0" />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">

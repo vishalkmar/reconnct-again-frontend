@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, UserMinus, Truck, Home } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 /*
   Best-effort churn view — providers who once listed in this CM's categories but
@@ -25,8 +26,7 @@ export default function CategoryChurnPage() {
   return (
     <div className="max-w-4xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Churn</h1>
-      <p className="text-sm text-ink-muted mb-1">Providers who’ve dropped off — nothing live in your categories right now.</p>
+      <HostPageHero photo="lake" title="Churn" subtitle="Providers who’ve dropped off — nothing live in your categories right now." />
       <p className="text-[11px] text-amber-600 mb-4">Best-effort signal — the formal churn model is coming; Win-Back builds on this.</p>
 
       {items.length === 0 ? (

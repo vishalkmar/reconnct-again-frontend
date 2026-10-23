@@ -4,6 +4,7 @@ import {
   Loader2, Layers, Truck, ClipboardCheck, Star, Wallet, Rocket, UserMinus, Ban, HeartHandshake,
 } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 /*
   Category Manager landing. Everything here is already scoped server-side to the
@@ -41,8 +42,7 @@ export default function CategoryOverviewPage() {
   return (
     <div className="max-w-6xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">Category Overview</h1>
-        <p className="text-sm text-ink-muted">Everything in the broad categories you manage — suppliers, listings, revenue and reviews, all in one place.</p>
+        <HostPageHero photo="lake" title="Category Overview" subtitle="Everything in the broad categories you manage — suppliers, listings, revenue and reviews, all in one place." className="!mb-0" />
       </div>
 
       {/* Assigned categories */}

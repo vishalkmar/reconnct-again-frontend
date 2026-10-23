@@ -10,6 +10,7 @@ import api, { fileUrl } from '../../services/api';
 import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
 import ExperiencePricing from '../../components/admin/ExperiencePricing.jsx';
 import ExperienceTaxPricing from '../../components/admin/ExperienceTaxPricing.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const SOURCE_STYLE = {
   staff: { icon: Truck, className: 'bg-amber-50 text-amber-700' },
@@ -85,8 +86,7 @@ export default function TeamReviewQueuePage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">Review Queue</h1>
-        <p className="text-sm text-ink-muted">Content review → QCOPS site check → go live. Every level of the onboarding flow.</p>
+        <HostPageHero photo="lake" title="Review Queue" subtitle="Content review → QCOPS site check → go live. Every level of the onboarding flow." className="!mb-0" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">

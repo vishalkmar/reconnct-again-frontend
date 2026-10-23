@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const isToday = (d) => d && new Date(d).toDateString() === new Date().toDateString();
 
@@ -106,8 +107,7 @@ export default function TeamQcVisitsPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">My QC Visits</h1>
-        <p className="text-sm text-ink-muted">Every on-site quality check assigned to you — active, approved and rejected. Click any to see full details.</p>
+        <HostPageHero photo="lake" title="My QC Visits" subtitle="Every on-site quality check assigned to you — active, approved and rejected. Click any to see full details." className="!mb-0" />
       </div>
 
       {stats && (

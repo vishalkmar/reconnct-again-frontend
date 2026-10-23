@@ -4,6 +4,7 @@ import {
   Loader2, ArrowLeft, Search, Truck, Home, Mail, Phone, Star, ChevronDown, UserCog,
 } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const STATUS_PILL = {
   live: 'bg-emerald-100 text-emerald-700',
@@ -47,8 +48,7 @@ export default function CategorySuppliersPage() {
   return (
     <div className="max-w-5xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Suppliers</h1>
-      <p className="text-sm text-ink-muted mb-4">Everyone listing in your categories — {providers.length} in total.</p>
+      <HostPageHero photo="lake" title="Suppliers" subtitle={<>Everyone listing in your categories — {providers.length} in total.</>} />
 
       <div className="relative mb-4 max-w-md">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const STAGE_LABEL = {
   qc_assigned: 'Assigned', qc_acknowledged: 'Received', qc_onsite: 'On-site',
@@ -121,8 +122,7 @@ export default function TeamQcManagementPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">QCOPS Management</h1>
-        <p className="text-sm text-ink-muted">Every Quality-Check Ops member and their on-site verification performance. Click one for full analytics.</p>
+        <HostPageHero photo="coast" title="QCOPS Management" subtitle="Every Quality-Check Ops member and their on-site verification performance. Click one for full analytics." className="!mb-0" />
       </div>
 
       {list.length === 0 ? (

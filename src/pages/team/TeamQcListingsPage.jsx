@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 /* QCOPS "Listing Management" — the final outcomes of every listing they
    checked: approved (live) and rejected (with reason). Nothing disappears; each
@@ -80,8 +81,7 @@ export default function TeamQcListingsPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-display font-bold mb-1">Listing Management</h1>
-        <p className="text-sm text-ink-muted">The final outcome of every listing you checked — approved and rejected. Click any for full details and your feedback.</p>
+        <HostPageHero photo="lake" title="Listing Management" subtitle="The final outcome of every listing you checked — approved and rejected. Click any for full details and your feedback." className="!mb-0" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

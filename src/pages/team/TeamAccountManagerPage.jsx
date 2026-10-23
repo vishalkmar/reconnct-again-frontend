@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, Users, Truck, Mail, Phone, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 export default function TeamAccountManagerPage() {
   const [items, setItems] = useState([]);
@@ -25,8 +26,7 @@ export default function TeamAccountManagerPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">My Suppliers</h1>
-        <p className="text-sm text-ink-muted">Suppliers assigned to you to guide and monitor — auto-assigned the moment they add their first experience.</p>
+        <HostPageHero photo="coast" title="My Suppliers" subtitle="Suppliers assigned to you to guide and monitor — auto-assigned the moment they add their first experience." className="!mb-0" />
       </div>
 
       {loading ? (

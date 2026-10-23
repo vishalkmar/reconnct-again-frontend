@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 function StatTile({ icon: Icon, label, value, tone }) {
   const tones = { blue: 'bg-blue-50 text-blue-600', indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600' };
@@ -46,15 +47,16 @@ export default function TeamSuppliersPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-display font-bold mb-1">My Suppliers</h1>
-          <p className="text-sm text-ink-muted">Vendors you&apos;ve onboarded — open one to see all their listings by stage.</p>
-        </div>
-        <Link to="new" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105">
-          <Plus size={18} /> New supplier
-        </Link>
-      </div>
+      <HostPageHero
+        photo="lake"
+        title="My Suppliers"
+        subtitle="Vendors you&apos;ve onboarded — open one to see all their listings by stage."
+        actions={(
+          <Link to="new" className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-rc-brand text-rc-navy font-bold hover:brightness-105 shadow-[0_10px_22px_-12px_rgba(255,185,0,0.95)] transition">
+            <Plus size={19} /> New supplier
+          </Link>
+        )}
+      />
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">

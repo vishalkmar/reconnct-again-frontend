@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { useReviewNotify } from '../../context/ReviewNotifyContext.jsx';
 import UnderProgressBlock from '../../components/team/UnderProgressBlock.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const TABS = [
   { key: 'in_queue', label: 'In Queue', icon: Clock, tone: 'blue' },
@@ -86,15 +87,16 @@ export default function TeamExperiencesPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-display font-bold mb-1">My Experiences</h1>
-          <p className="text-sm text-ink-muted">Everything you&apos;ve added, by stage. New ones go to Center Ops for review before going live.</p>
-        </div>
-        <Link to="new" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-ink font-semibold hover:brightness-105">
-          <Plus size={18} /> New experience
-        </Link>
-      </div>
+      <HostPageHero
+        photo="coast"
+        title="My Experiences"
+        subtitle="Everything you&apos;ve added, by stage. New ones go to Center Ops for review before going live."
+        actions={(
+          <Link to="new" className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-rc-brand text-rc-navy font-bold hover:brightness-105 shadow-[0_10px_22px_-12px_rgba(255,185,0,0.95)] transition">
+            <Plus size={19} /> New experience
+          </Link>
+        )}
+      />
 
       {/* Clickable stat cards → tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">

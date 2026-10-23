@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell,
 } from 'recharts';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const PERIODS = [['week', 'This week'], ['month', 'This month'], ['year', 'This year'], ['all', 'All time']];
@@ -91,8 +92,7 @@ export default function CategoryRevenuePage() {
   return (
     <div className="max-w-5xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Revenue</h1>
-      <p className="text-sm text-ink-muted mb-4">Earnings and bookings across your categories — all-time {money(data?.totals?.revenue)} from {data?.totals?.bookings || 0} bookings.</p>
+      <HostPageHero photo="coast" title="Revenue" subtitle={<>Earnings and bookings across your categories — all-time {money(data?.totals?.revenue)} from {data?.totals?.bookings || 0} bookings.</>} />
 
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 mb-4">

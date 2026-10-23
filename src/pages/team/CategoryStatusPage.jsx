@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, Search } from 'lucide-react';
 import api from '../../services/api';
 import CategoryStatusDetailModal from './CategoryStatusDetailModal.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const PHASE_PILL = {
   cops_review: 'bg-blue-100 text-blue-700',
@@ -56,8 +57,7 @@ export default function CategoryStatusPage() {
   return (
     <div className="max-w-5xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Experience Status</h1>
-      <p className="text-sm text-ink-muted mb-4">Where every listing in your categories sits in the review pipeline.</p>
+      <HostPageHero photo="lake" title="Experience Status" subtitle="Where every listing in your categories sits in the review pipeline." />
 
       <div className="flex flex-wrap gap-2 mb-3">
         {TABS.map((t) => (

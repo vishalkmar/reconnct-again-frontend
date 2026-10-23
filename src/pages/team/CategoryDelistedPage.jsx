@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, Ban } from 'lucide-react';
 import api from '../../services/api';
 import CategoryStatusDetailModal from './CategoryStatusDetailModal.jsx';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
@@ -25,8 +26,7 @@ export default function CategoryDelistedPage() {
   return (
     <div className="max-w-4xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Delisted</h1>
-      <p className="text-sm text-ink-muted mb-4">Listings that came down — {items.length} in your categories. Click one for the full story.</p>
+      <HostPageHero photo="coast" title="Delisted" subtitle={<>Listings that came down — {items.length} in your categories. Click one for the full story.</>} />
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-soft p-12 text-center text-ink-muted">Nothing delisted in your categories.</div>

@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line,
 } from 'recharts';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const fmtMonth = (m) => { const [y, mo] = String(m).split('-'); return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][(+mo) - 1] || ''} ${y}`; };
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -43,8 +44,7 @@ export default function CategoryReviewsPage() {
   return (
     <div className="max-w-5xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Ratings & Reviews</h1>
-      <p className="text-sm text-ink-muted mb-4">What guests are saying about listings in your categories.</p>
+      <HostPageHero photo="lake" title="Ratings & Reviews" subtitle="What guests are saying about listings in your categories." />
 
       {/* Top stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">

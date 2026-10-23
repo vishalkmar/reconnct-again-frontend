@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Loader2, HeartHandshake, Mail, Phone, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 export default function TeamCsmPage() {
   const [items, setItems] = useState([]);
@@ -24,8 +25,7 @@ export default function TeamCsmPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold mb-1">My Customers</h1>
-        <p className="text-sm text-ink-muted">Customers assigned to you to follow up with — auto-assigned the moment they hit a failed payment or a cancellation.</p>
+        <HostPageHero photo="coast" title="My Customers" subtitle="Customers assigned to you to follow up with — auto-assigned the moment they hit a failed payment or a cancellation." className="!mb-0" />
       </div>
 
       {loading ? (

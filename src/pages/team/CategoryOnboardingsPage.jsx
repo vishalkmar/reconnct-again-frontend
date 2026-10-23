@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, Search, Star, Users, Ticket } from 'lucide-react';
 import api from '../../services/api';
+import HostPageHero from '../../components/host/HostPageHero.jsx';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
@@ -31,8 +32,7 @@ export default function CategoryOnboardingsPage() {
   return (
     <div className="max-w-5xl">
       <Link to="/team/category" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3"><ArrowLeft size={16} /> Category Overview</Link>
-      <h1 className="text-2xl font-display font-bold mb-1">Live Onboardings</h1>
-      <p className="text-sm text-ink-muted mb-4">{items.length} live listing{items.length !== 1 ? 's' : ''} · {money(totalRev)} from {totalBk} bookings.</p>
+      <HostPageHero photo="lake" title="Live Onboardings" subtitle={<>{items.length} live listing{items.length !== 1 ? 's' : ''} · {money(totalRev)} from {totalBk} bookings.</>} />
 
       <div className="relative mb-4 max-w-md">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
