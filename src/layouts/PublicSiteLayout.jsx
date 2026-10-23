@@ -24,7 +24,7 @@ const PAGE = [
 /*
   Shell for the public site (/, /experiences, /connect, legal, …).
   Browser: solid site header (64px, 88px on desktop) + footer. Installed app:
-  the home page keeps the site header, every other page gets an app bar
+  the home page gets the golden app header (like the Android app), every other page gets an app bar
   instead, there is no footer (the bottom tab bar takes over) and pages slide in.
 */
 export default function PublicSiteLayout() {
@@ -33,15 +33,17 @@ export default function PublicSiteLayout() {
   const reduce = useReducedMotion();
   const page = PAGE.find(([re]) => re.test(pathname));
   const appBar = isPwa && pathname !== '/' && page;
+  // Installed app home: the page draws its own golden app header (AppHomeHeader).
+  const appHome = isPwa && pathname === '/';
 
   return (
     <GeoProvider>
       <div className="min-h-screen flex flex-col bg-rc-bg text-rc-ink font-sans">
         {appBar
           ? <MobileTopBar title={page[1]} back={page[2]} />
-          : <SiteHeader />}
+          : !appHome && <SiteHeader />}
         <main
-          className={`flex-1 ${appBar ? 'pt-14' : 'pt-16 lg:pt-[88px]'}`}
+          className={`flex-1 ${appHome ? 'pt-0' : appBar ? 'pt-14' : 'pt-16 lg:pt-[88px]'}`}
           style={appBar ? { paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' } : undefined}
         >
           {isPwa && !reduce ? (
