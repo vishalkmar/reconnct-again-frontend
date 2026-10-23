@@ -26,7 +26,6 @@ const NAV = [
   menu drawer.
 */
 export default function SiteHeader() {
-  const { isPwa } = usePwa();
   const [drawer, setDrawer] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -75,16 +74,14 @@ export default function SiteHeader() {
 
         <AccountArea />
 
-        {!isPwa && (
-          <button
-            type="button"
-            onClick={() => setDrawer(true)}
-            aria-label="Open menu"
-            className="lg:hidden grid place-items-center w-10 h-10 rounded-full text-rc-navy hover:bg-rc-bg"
-          >
-            <Menu size={21} />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setDrawer(true)}
+          aria-label="Open menu"
+          className="lg:hidden grid place-items-center w-10 h-10 rounded-full text-rc-navy hover:bg-rc-bg"
+        >
+          <Menu size={21} />
+        </button>
       </div>
 
       {drawer && <MobileDrawer onClose={() => setDrawer(false)} />}

@@ -5,8 +5,6 @@ import { useGeo } from '../../context/GeoContext.jsx';
 import publicApi from '../../services/publicApi';
 import { useTaxonomy } from '../../hooks/usePublicApi';
 import HeroSection from '../../components/landing/sections/HeroSection.jsx';
-import AppHomeHeader from '../../components/pwa/AppHomeHeader.jsx';
-import { usePwa } from '../../context/PwaContext.jsx';
 import ConnectWithShowcase from '../../components/landing/sections/ConnectWithShowcase.jsx';
 import OfferBannerCarousel from '../../components/landing/sections/OfferBannerCarousel.jsx';
 import { InstallBanner } from '../../components/pwa/InstallApp.jsx';
@@ -35,9 +33,6 @@ import usePullToRefresh from '../../hooks/usePullToRefresh.jsx';
 */
 export default function HomeLandingPage() {
   const { isAuthenticated } = useUserAuth();
-  // Inside the installed app the home opens like the Android app (golden
-  // header), not like the website (photo hero under the site header).
-  const { isPwa } = usePwa();
 
   // Auto "rate and review" popup for signed-in members — same endpoints and
   // 60 s poll as the app Home, so it appears the moment an experience ends.
@@ -108,7 +103,7 @@ export default function HomeLandingPage() {
   return (
     <div className="pb-6">
       {pullIndicator}
-      {isPwa ? <AppHomeHeader /> : <HeroSection />}
+      <HeroSection />
 
       <>
           {/* Web-only: "Get the app" nudge for mobile browsers (hidden in the app) */}

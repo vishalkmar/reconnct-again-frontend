@@ -34,14 +34,12 @@ const partnerTabs = (base) => [
 // Chat screens hide the tabs (full-height conversation, like WhatsApp).
 const HIDDEN = /^\/(admin|team|login|book\/|checkout\/|booking-success\/|supplier\/(login|reset-password)|delete-account|unsubscribe|dashboard\/support|host\/support|(host|supplier)\/listings\/(new|[^/]+\/edit))/;
 const MEMBER_AREA = /^\/(dashboard|profile|search)(\/|$)/;
-const PUBLIC_AREA = /^\/($|experiences$|connect|privacy|terms|download)/;
 
 export function navKindFor(pathname, isPwa) {
   if (HIDDEN.test(pathname)) return null;
   if (pathname.startsWith('/supplier')) return 'supplier';
   if (pathname.startsWith('/host')) return 'host';
   if (MEMBER_AREA.test(pathname)) return 'member';
-  if (isPwa && PUBLIC_AREA.test(pathname)) return 'member';
   return null;
 }
 
