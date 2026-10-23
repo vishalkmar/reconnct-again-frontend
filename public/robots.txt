@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /team
+Disallow: /supplier
+Disallow: /dashboard
+Disallow: /host
+Disallow: /book/
+Disallow: /checkout/
+Disallow: /booking-success/
+Disallow: /login

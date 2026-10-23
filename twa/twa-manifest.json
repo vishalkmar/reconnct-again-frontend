@@ -1,0 +1,42 @@
+{
+  "packageId": "com.reconnct.web",
+  "host": "reconnct-again-frontend.vercel.app",
+  "name": "Reconnct — experiences that connect",
+  "launcherName": "Reconnct",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#FFB900",
+  "themeColorDark": "#FFB900",
+  "navigationColor": "#FFFFFF",
+  "navigationColorDark": "#1A1A2E",
+  "navigationDividerColor": "#E5E7EB",
+  "navigationDividerColorDark": "#1A1A2E",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": false,
+  "startUrl": "/?source=pwa",
+  "iconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://reconnct-again-frontend.vercel.app/icons/maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./reconnct-web-upload.keystore",
+    "alias": "reconnct-web"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    { "name": "Explore experiences", "shortName": "Explore", "url": "/experiences?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" },
+    { "name": "My bookings", "shortName": "Bookings", "url": "/dashboard/bookings?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" },
+    { "name": "Supplier dashboard", "shortName": "Supplier", "url": "/supplier/dashboard?source=pwa", "chosenIconUrl": "https://reconnct-again-frontend.vercel.app/icons/icon-96.png" }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://reconnct-again-frontend.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://reconnct-again-frontend.vercel.app/",
+  "minSdkVersion": 21,
+  "fingerprints": []
+}

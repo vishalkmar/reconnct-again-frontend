@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { detectPwa } from '../utils/pwa';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -10,7 +11,11 @@ api.interceptors.request.use((config) => {
   // User token rides on a dedicated `X-User-Auth` header so the two auth
   // systems never overwrite each other when a single browser is signed in
   // to both at the same time (rare but possible during dev/QA).
-  const adminToken = localStorage.getItem('admin_token');
+  // Inside the installed app (PWA/TWA) only member + supplier sessions exist:
+  // a stray admin/team token left in this browser's storage is never sent.
+  const inApp = detectPwa();
+
+  const adminToken = !inApp && localStorage.getItem('admin_token');
   if (adminToken) config.headers.Authorization = `Bearer ${adminToken}`;
 
   const userToken = localStorage.getItem('user_token');
@@ -19,7 +24,7 @@ api.interceptors.request.use((config) => {
   // Team member (BD/COPS/...) token rides on its own header too, so it never
   // collides with an admin token that might also be sitting in the same
   // browser's localStorage.
-  const teamToken = localStorage.getItem('team_token');
+  const teamToken = !inApp && localStorage.getItem('team_token');
   if (teamToken) config.headers['X-Team-Auth'] = `Bearer ${teamToken}`;
 
   // A supplier's own login (Phase 4) — same idea, own header.

@@ -1,7 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import RouteFallback from './components/common/RouteFallback.jsx';
 
-import AdminLayout from './layouts/AdminLayout.jsx';
-import UserDashboardLayout from './layouts/UserDashboardLayout.jsx';
+// Every page except the landing shell is lazy-loaded, so a visitor (or the
+// installed app) downloads only the area it opens — admin/team code never
+// reaches a member's phone. See docs/web-pwa (T2 Phase 4).
+
+const AdminLayout = lazy(() => import('./layouts/AdminLayout.jsx'));
+const UserDashboardLayout = lazy(() => import('./layouts/UserDashboardLayout.jsx'));
 import ProtectedRoute from './components/admin/ProtectedRoute.jsx';
 import UserProtectedRoute from './components/public/UserProtectedRoute.jsx';
 import UserLoginModal from './components/public/UserLoginModal.jsx';
@@ -9,124 +15,142 @@ import ScrollToTop from './components/public/ScrollToTop.jsx';
 import ClarityTracker from './components/ClarityTracker.jsx';
 import CampaignVisitTracker from './components/CampaignVisitTracker.jsx';
 
-import LandingPage from './pages/LandingPage.jsx';
-import UnsubscribePage from './pages/UnsubscribePage.jsx';
-import DeleteAccountPage from './pages/DeleteAccountPage.jsx';
+// Public landing site — mirrors the mobile app's Home screen (docs/web-pwa).
+import PublicSiteLayout from './layouts/PublicSiteLayout.jsx';
+import PwaRouteGuard from './components/pwa/PwaRouteGuard.jsx';
+import PwaStatus from './components/pwa/PwaStatus.jsx';
+import MobileBottomNav from './components/pwa/MobileBottomNav.jsx';
+import IntroSlides from './components/pwa/IntroSlides.jsx';
+import HomeLandingPage from './pages/home/HomeLandingPage.jsx';
+const ExperiencesListPage = lazy(() => import('./pages/experiences/ExperiencesListPage.jsx'));
+const ExperienceDetailPage = lazy(() => import('./pages/experiences/ExperienceDetailPage.jsx'));
+const ConnectPage = lazy(() => import('./pages/experiences/ConnectPage.jsx'));
+const LegalDocPage = lazy(() => import('./pages/legal/LegalDocPage.jsx'));
+const DownloadPage = lazy(() => import('./pages/download/DownloadPage.jsx'));
+const SearchPage = lazy(() => import('./pages/home/SearchPage.jsx'));
+const DestinationsPage = lazy(() => import('./pages/experiences/DestinationsPage.jsx'));
+const ProfileHubPage = lazy(() => import('./pages/home/ProfileHubPage.jsx'));
+const LoginChooserPage = lazy(() => import('./pages/auth/LoginChooserPage.jsx'));
+const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage.jsx'));
+const DeleteAccountPage = lazy(() => import('./pages/DeleteAccountPage.jsx'));
 
 // User dashboard
-import UserDashboardHomePage from './pages/user/UserDashboardHomePage.jsx';
-import UserProfilePage from './pages/user/UserProfilePage.jsx';
-import UserSupportPage from './pages/user/UserSupportPage.jsx';
-import UserBookingsPage from './pages/user/UserBookingsPage.jsx';
-import UserTransactionsPage from './pages/user/UserTransactionsPage.jsx';
-import UserWishlistPage from './pages/user/UserWishlistPage.jsx';
-import UserNotificationsPage from './pages/user/UserNotificationsPage.jsx';
-import UserReferEarnPage from './pages/user/UserReferEarnPage.jsx';
+const UserDashboardHomePage = lazy(() => import('./pages/user/UserDashboardHomePage.jsx'));
+const UserProfilePage = lazy(() => import('./pages/user/UserProfilePage.jsx'));
+const UserSupportPage = lazy(() => import('./pages/user/UserSupportPage.jsx'));
+const UserBookingsPage = lazy(() => import('./pages/user/UserBookingsPage.jsx'));
+const UserTransactionsPage = lazy(() => import('./pages/user/UserTransactionsPage.jsx'));
+const UserWishlistPage = lazy(() => import('./pages/user/UserWishlistPage.jsx'));
+const UserNotificationsPage = lazy(() => import('./pages/user/UserNotificationsPage.jsx'));
+const UserReferEarnPage = lazy(() => import('./pages/user/UserReferEarnPage.jsx'));
 
 // Host ("Switch to Host") — a member manages their own experience listings.
-import HostLayout from './layouts/HostLayout.jsx';
-import HostDashboardPage from './pages/host/HostDashboardPage.jsx';
-import HostListingsPage from './pages/host/HostListingsPage.jsx';
-import HostListingFormPage from './pages/host/HostListingFormPage.jsx';
-import HostResolveObjectionsPage from './pages/host/HostResolveObjectionsPage.jsx';
-import HostProfilePage from './pages/host/HostProfilePage.jsx';
-import HostTransactionsPage from './pages/host/HostTransactionsPage.jsx';
-import HostListingBookingsPage from './pages/host/HostListingBookingsPage.jsx';
-import HostListingViewPage from './pages/host/HostListingViewPage.jsx';
-import HostBookingDetailPage from './pages/host/HostBookingDetailPage.jsx';
-import HostAllBookingsPage from './pages/host/HostAllBookingsPage.jsx';
-import HostNotificationsPage from './pages/host/HostNotificationsPage.jsx';
+const HostLayout = lazy(() => import('./layouts/HostLayout.jsx'));
+const HostDashboardPage = lazy(() => import('./pages/host/HostDashboardPage.jsx'));
+const HostListingsPage = lazy(() => import('./pages/host/HostListingsPage.jsx'));
+const HostListingFormPage = lazy(() => import('./pages/host/HostListingFormPage.jsx'));
+const HostResolveObjectionsPage = lazy(() => import('./pages/host/HostResolveObjectionsPage.jsx'));
+const HostProfilePage = lazy(() => import('./pages/host/HostProfilePage.jsx'));
+const HostTransactionsPage = lazy(() => import('./pages/host/HostTransactionsPage.jsx'));
+const HostListingBookingsPage = lazy(() => import('./pages/host/HostListingBookingsPage.jsx'));
+const HostListingViewPage = lazy(() => import('./pages/host/HostListingViewPage.jsx'));
+const HostBookingDetailPage = lazy(() => import('./pages/host/HostBookingDetailPage.jsx'));
+const HostAllBookingsPage = lazy(() => import('./pages/host/HostAllBookingsPage.jsx'));
+const HostNotificationsPage = lazy(() => import('./pages/host/HostNotificationsPage.jsx'));
+const HostSupportPage = lazy(() => import('./pages/host/HostSupportPage.jsx'));
 
 // Booking flow (kept — part of the member experience / payment via Cashfree)
-import BookingPreviewPage from './pages/user/BookingPreviewPage.jsx';
-import BookingCheckoutPage from './pages/user/BookingCheckoutPage.jsx';
-import BookingSuccessPage from './pages/user/BookingSuccessPage.jsx';
+const BookingPreviewPage = lazy(() => import('./pages/user/BookingPreviewPage.jsx'));
+const BookingCheckoutPage = lazy(() => import('./pages/user/BookingCheckoutPage.jsx'));
+const BookingSuccessPage = lazy(() => import('./pages/user/BookingSuccessPage.jsx'));
 
 // Admin — Main dashboard only (booking management). The "Configure" / website
 // content modules from the original project are intentionally not wired here.
-import AdminLoginPage from './pages/admin/AdminLoginPage.jsx';
-import DashboardPage from './pages/admin/DashboardPage.jsx';
-import AdminBookingsPage from './pages/admin/AdminBookingsPage.jsx';
-import AdminBookingAnalyticsPage from './pages/admin/AdminBookingAnalyticsPage.jsx';
-import BookingVoucherPage from './pages/admin/BookingVoucherPage.jsx';
-import AdminTransactionsPage from './pages/admin/AdminTransactionsPage.jsx';
-import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
-import AdminUserDetailPage from './pages/admin/AdminUserDetailPage.jsx';
-import ExperiencesPage from './pages/admin/ExperiencesPage.jsx';
-import ExperienceFormPage from './pages/admin/ExperienceFormPage.jsx';
-import ExperienceViewPage from './pages/admin/ExperienceViewPage.jsx';
-import AdminAllListedPage from './pages/admin/AdminAllListedPage.jsx';
-import AdminDelistedPage from './pages/admin/AdminDelistedPage.jsx';
-import ExperienceSetupPage from './pages/admin/ExperienceSetupPage.jsx';
-import MarkupManagementPage from './pages/admin/pricing-setup/MarkupManagementPage.jsx';
-import MarkupAnalyticsPage from './pages/admin/pricing-setup/MarkupAnalyticsPage.jsx';
-import GstAnalyticsPage from './pages/admin/pricing-setup/GstAnalyticsPage.jsx';
-import ConvenienceAnalyticsPage from './pages/admin/pricing-setup/ConvenienceAnalyticsPage.jsx';
-import SecurityFraudPage from './pages/admin/SecurityFraudPage.jsx';
-import SecurityTwoFactorPage from './pages/admin/SecurityTwoFactorPage.jsx';
-import DiscountAnalyticsPage from './pages/admin/pricing-setup/DiscountAnalyticsPage.jsx';
-import DiscountManagementPage from './pages/admin/pricing-setup/DiscountManagementPage.jsx';
-import GstTaxesManagementPage from './pages/admin/pricing-setup/GstTaxesManagementPage.jsx';
-import ConvenienceManagementPage from './pages/admin/pricing-setup/ConvenienceManagementPage.jsx';
-import SuppliersPage from './pages/admin/SuppliersPage.jsx';
-import SupplierRevenuePage from './pages/admin/SupplierRevenuePage.jsx';
-import SupplierFormPage from './pages/admin/SupplierFormPage.jsx';
-import ContractFormPage from './pages/admin/ContractFormPage.jsx';
-import CompanyProfilePage from './pages/admin/CompanyProfilePage.jsx';
-import AppScreensControlPage from './pages/admin/AppScreensControlPage.jsx';
-import RevenuePage from './pages/admin/RevenuePage.jsx';
-import RevenueAnalysisPage from './pages/admin/RevenueAnalysisPage.jsx';
-import RevenueComparePage from './pages/admin/RevenueComparePage.jsx';
-import B2BManagementPage from './pages/admin/B2BManagementPage.jsx';
-import B2BExperiencePage from './pages/admin/B2BExperiencePage.jsx';
-import B2BActivityBookingsPage from './pages/admin/B2BActivityBookingsPage.jsx';
-import ChatSupportPage from './pages/admin/ChatSupportPage.jsx';
-import TeamManagementPage from './pages/admin/TeamManagementPage.jsx';
-import OccasionMarketingPage from './pages/admin/OccasionMarketingPage.jsx';
-import AdminReviewsPage from './pages/admin/AdminReviewsPage.jsx';
-import AdminReviewAnalyticsPage from './pages/admin/AdminReviewAnalyticsPage.jsx';
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage.jsx'));
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage.jsx'));
+const AdminBookingsPage = lazy(() => import('./pages/admin/AdminBookingsPage.jsx'));
+const AdminBookingAnalyticsPage = lazy(() => import('./pages/admin/AdminBookingAnalyticsPage.jsx'));
+const BookingVoucherPage = lazy(() => import('./pages/admin/BookingVoucherPage.jsx'));
+const AdminTransactionsPage = lazy(() => import('./pages/admin/AdminTransactionsPage.jsx'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
+const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage.jsx'));
+const ExperiencesPage = lazy(() => import('./pages/admin/ExperiencesPage.jsx'));
+const ExperienceFormPage = lazy(() => import('./pages/admin/ExperienceFormPage.jsx'));
+const ExperienceViewPage = lazy(() => import('./pages/admin/ExperienceViewPage.jsx'));
+const AdminAllListedPage = lazy(() => import('./pages/admin/AdminAllListedPage.jsx'));
+const AdminDelistedPage = lazy(() => import('./pages/admin/AdminDelistedPage.jsx'));
+const ExperienceSetupPage = lazy(() => import('./pages/admin/ExperienceSetupPage.jsx'));
+const MarkupManagementPage = lazy(() => import('./pages/admin/pricing-setup/MarkupManagementPage.jsx'));
+const MarkupAnalyticsPage = lazy(() => import('./pages/admin/pricing-setup/MarkupAnalyticsPage.jsx'));
+const GstAnalyticsPage = lazy(() => import('./pages/admin/pricing-setup/GstAnalyticsPage.jsx'));
+const ConvenienceAnalyticsPage = lazy(() => import('./pages/admin/pricing-setup/ConvenienceAnalyticsPage.jsx'));
+const SecurityFraudPage = lazy(() => import('./pages/admin/SecurityFraudPage.jsx'));
+const SecurityTwoFactorPage = lazy(() => import('./pages/admin/SecurityTwoFactorPage.jsx'));
+const DiscountAnalyticsPage = lazy(() => import('./pages/admin/pricing-setup/DiscountAnalyticsPage.jsx'));
+const DiscountManagementPage = lazy(() => import('./pages/admin/pricing-setup/DiscountManagementPage.jsx'));
+const GstTaxesManagementPage = lazy(() => import('./pages/admin/pricing-setup/GstTaxesManagementPage.jsx'));
+const ConvenienceManagementPage = lazy(() => import('./pages/admin/pricing-setup/ConvenienceManagementPage.jsx'));
+const SuppliersPage = lazy(() => import('./pages/admin/SuppliersPage.jsx'));
+const SupplierRevenuePage = lazy(() => import('./pages/admin/SupplierRevenuePage.jsx'));
+const SupplierFormPage = lazy(() => import('./pages/admin/SupplierFormPage.jsx'));
+const ContractFormPage = lazy(() => import('./pages/admin/ContractFormPage.jsx'));
+const CompanyProfilePage = lazy(() => import('./pages/admin/CompanyProfilePage.jsx'));
+const AppScreensControlPage = lazy(() => import('./pages/admin/AppScreensControlPage.jsx'));
+const RevenuePage = lazy(() => import('./pages/admin/RevenuePage.jsx'));
+const RevenueAnalysisPage = lazy(() => import('./pages/admin/RevenueAnalysisPage.jsx'));
+const RevenueComparePage = lazy(() => import('./pages/admin/RevenueComparePage.jsx'));
+const B2BManagementPage = lazy(() => import('./pages/admin/B2BManagementPage.jsx'));
+const B2BExperiencePage = lazy(() => import('./pages/admin/B2BExperiencePage.jsx'));
+const B2BActivityBookingsPage = lazy(() => import('./pages/admin/B2BActivityBookingsPage.jsx'));
+const ChatSupportPage = lazy(() => import('./pages/admin/ChatSupportPage.jsx'));
+const TeamManagementPage = lazy(() => import('./pages/admin/TeamManagementPage.jsx'));
+const OccasionMarketingPage = lazy(() => import('./pages/admin/OccasionMarketingPage.jsx'));
+const AdminReviewsPage = lazy(() => import('./pages/admin/AdminReviewsPage.jsx'));
+const AdminReviewAnalyticsPage = lazy(() => import('./pages/admin/AdminReviewAnalyticsPage.jsx'));
 
 // Team Portal — internal staff (BD/COPS/Account Manager/CSM/QCOPS/Marketing).
 // Reuses the exact admin Supplier/Experience form components (permission-
 // gated on the backend), wrapped in its own layout + auth.
-import TeamLayout from './layouts/TeamLayout.jsx';
+const TeamLayout = lazy(() => import('./layouts/TeamLayout.jsx'));
 import TeamProtectedRoute from './components/team/TeamProtectedRoute.jsx';
-import TeamLoginPage from './pages/team/TeamLoginPage.jsx';
-import TeamResetPasswordPage from './pages/team/TeamResetPasswordPage.jsx';
-import TeamDashboardGate, { TeamLanding } from './components/team/TeamDashboardGate.jsx';
-import TeamSuppliersPage from './pages/team/TeamSuppliersPage.jsx';
-import TeamExperiencesPage from './pages/team/TeamExperiencesPage.jsx';
-import TeamReviewQueuePage from './pages/team/TeamReviewQueuePage.jsx';
-import CategoryOverviewPage from './pages/team/CategoryOverviewPage.jsx';
-import CategoryModulePlaceholder from './pages/team/CategoryModulePlaceholder.jsx';
-import CategorySuppliersPage from './pages/team/CategorySuppliersPage.jsx';
-import CategoryStatusPage from './pages/team/CategoryStatusPage.jsx';
-import CategoryReviewsPage from './pages/team/CategoryReviewsPage.jsx';
-import CategoryRevenuePage from './pages/team/CategoryRevenuePage.jsx';
-import CategoryOnboardingsPage from './pages/team/CategoryOnboardingsPage.jsx';
-import CategoryDelistedPage from './pages/team/CategoryDelistedPage.jsx';
-import CategoryChurnPage from './pages/team/CategoryChurnPage.jsx';
-import CategoryWinbackPage from './pages/team/CategoryWinbackPage.jsx';
-import TeamReviewDetailPage from './pages/team/TeamReviewDetailPage.jsx';
-import TeamResolveObjectionsPage from './pages/team/TeamResolveObjectionsPage.jsx';
-import TeamQcVisitsPage from './pages/team/TeamQcVisitsPage.jsx';
-import TeamExperienceViewPage from './pages/team/TeamExperienceViewPage.jsx';
-import TeamQcManagementPage from './pages/team/TeamQcManagementPage.jsx';
-import TeamQcListingsPage from './pages/team/TeamQcListingsPage.jsx';
-import TeamSupplierExperiencesPage from './pages/team/TeamSupplierExperiencesPage.jsx';
-import TeamSupplierListingsPage from './pages/team/TeamSupplierListingsPage.jsx';
-import TeamAmListingsPage from './pages/team/TeamAmListingsPage.jsx';
-import TeamAccountManagerPage from './pages/team/TeamAccountManagerPage.jsx';
-import TeamCsmPage from './pages/team/TeamCsmPage.jsx';
+const TeamLoginPage = lazy(() => import('./pages/team/TeamLoginPage.jsx'));
+const TeamResetPasswordPage = lazy(() => import('./pages/team/TeamResetPasswordPage.jsx'));
+const TeamDashboardGate = lazy(() => import('./components/team/TeamDashboardGate.jsx'));
+const TeamLanding = lazy(() => import('./components/team/TeamDashboardGate.jsx').then((m) => ({ default: m.TeamLanding })));
+const TeamSuppliersPage = lazy(() => import('./pages/team/TeamSuppliersPage.jsx'));
+const TeamExperiencesPage = lazy(() => import('./pages/team/TeamExperiencesPage.jsx'));
+const TeamReviewQueuePage = lazy(() => import('./pages/team/TeamReviewQueuePage.jsx'));
+const CategoryOverviewPage = lazy(() => import('./pages/team/CategoryOverviewPage.jsx'));
+const CategoryModulePlaceholder = lazy(() => import('./pages/team/CategoryModulePlaceholder.jsx'));
+const CategorySuppliersPage = lazy(() => import('./pages/team/CategorySuppliersPage.jsx'));
+const CategoryStatusPage = lazy(() => import('./pages/team/CategoryStatusPage.jsx'));
+const CategoryReviewsPage = lazy(() => import('./pages/team/CategoryReviewsPage.jsx'));
+const CategoryRevenuePage = lazy(() => import('./pages/team/CategoryRevenuePage.jsx'));
+const CategoryOnboardingsPage = lazy(() => import('./pages/team/CategoryOnboardingsPage.jsx'));
+const CategoryDelistedPage = lazy(() => import('./pages/team/CategoryDelistedPage.jsx'));
+const CategoryChurnPage = lazy(() => import('./pages/team/CategoryChurnPage.jsx'));
+const CategoryWinbackPage = lazy(() => import('./pages/team/CategoryWinbackPage.jsx'));
+const TeamReviewDetailPage = lazy(() => import('./pages/team/TeamReviewDetailPage.jsx'));
+const TeamResolveObjectionsPage = lazy(() => import('./pages/team/TeamResolveObjectionsPage.jsx'));
+const TeamQcVisitsPage = lazy(() => import('./pages/team/TeamQcVisitsPage.jsx'));
+const TeamExperienceViewPage = lazy(() => import('./pages/team/TeamExperienceViewPage.jsx'));
+const TeamQcManagementPage = lazy(() => import('./pages/team/TeamQcManagementPage.jsx'));
+const TeamQcListingsPage = lazy(() => import('./pages/team/TeamQcListingsPage.jsx'));
+const TeamSupplierExperiencesPage = lazy(() => import('./pages/team/TeamSupplierExperiencesPage.jsx'));
+const TeamSupplierListingsPage = lazy(() => import('./pages/team/TeamSupplierListingsPage.jsx'));
+const TeamAmListingsPage = lazy(() => import('./pages/team/TeamAmListingsPage.jsx'));
+const TeamAccountManagerPage = lazy(() => import('./pages/team/TeamAccountManagerPage.jsx'));
+const TeamCsmPage = lazy(() => import('./pages/team/TeamCsmPage.jsx'));
 
 // Supplier Portal — a supplier's own login (Phase 4). Reuses the EXACT same
 // Host*Page components (host.controller.js resolves ownership from
 // req.supplier here vs req.user on /host/*) via a `basePath` prop.
-import SupplierLayout from './layouts/SupplierLayout.jsx';
+const SupplierLayout = lazy(() => import('./layouts/SupplierLayout.jsx'));
 import SupplierProtectedRoute from './components/supplier/SupplierProtectedRoute.jsx';
-import SupplierLoginPage from './pages/supplier/SupplierLoginPage.jsx';
-import SupplierResetPasswordPage from './pages/supplier/SupplierResetPasswordPage.jsx';
-import SupplierAccountManagerPage from './pages/supplier/SupplierAccountManagerPage.jsx';
+const SupplierLoginPage = lazy(() => import('./pages/supplier/SupplierLoginPage.jsx'));
+const SupplierResetPasswordPage = lazy(() => import('./pages/supplier/SupplierResetPasswordPage.jsx'));
+const SupplierAccountManagerPage = lazy(() => import('./pages/supplier/SupplierAccountManagerPage.jsx'));
+const SupplierAccountPage = lazy(() => import('./pages/supplier/SupplierAccountPage.jsx'));
 
 export default function App() {
   return (
@@ -138,17 +162,36 @@ export default function App() {
           whose email brought this visitor here (the ?rc= handle). No-op for
           everyone who did not arrive from a greeting. */}
       <CampaignVisitTracker />
+      {/* Service worker updates + offline banner (installable app) */}
+      <PwaStatus />
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
-        {/* Public entry — branded sign-in landing */}
-        <Route path="/" element={<LandingPage />} />
+        {/* Public landing site — same sections + data as the app Home screen */}
+        <Route element={<PublicSiteLayout />}>
+          <Route path="/" element={<HomeLandingPage />} />
+          <Route path="/experiences" element={<ExperiencesListPage />} />
+          <Route path="/experiences/:idOrSlug" element={<ExperienceDetailPage />} />
+          <Route path="/connect" element={<ConnectPage />} />
+          <Route path="/privacy" element={<LegalDocPage type="privacy" />} />
+          <Route path="/terms" element={<LegalDocPage type="terms" />} />
+          <Route path="/download" element={<DownloadPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/destinations" element={<DestinationsPage />} />
+          {/* No About page — old links land on Home. */}
+          <Route path="/about" element={<Navigate to="/" replace />} />
+          <Route path="/profile" element={<ProfileHubPage />} />
+          {/* Account deletion — public by requirement: Google Play needs a page a
+              user can reach WITHOUT installing the app. Also the target of the
+              emailed confirmation link (/delete-account?token=…). */}
+          <Route path="/delete-account" element={<DeleteAccountPage />} />
+        </Route>
+
+        {/* Sign-in chooser (member OTP / partner) — the app's entry screen */}
+        <Route path="/login" element={<LoginChooserPage />} />
 
         {/* Opt-out target for occasion greeting emails — deliberately public. */}
         <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
-        {/* Account deletion — public by requirement: Google Play needs a page a
-            user can reach WITHOUT installing the app. Also the target of the
-            emailed confirmation link (/delete-account?token=…). */}
-        <Route path="/delete-account" element={<DeleteAccountPage />} />
 
         {/* Booking flow — requires a signed-in member. Full-bleed, no sidebar. */}
         <Route
@@ -214,112 +257,117 @@ export default function App() {
           <Route path="all-bookings" element={<HostAllBookingsPage />} />
           <Route path="bookings/:id" element={<HostBookingDetailPage />} />
           <Route path="notifications" element={<HostNotificationsPage />} />
+          <Route path="support" element={<HostSupportPage />} />
           <Route path="transactions" element={<HostTransactionsPage />} />
           <Route path="account-manager" element={<SupplierAccountManagerPage basePath="/host" />} />
           <Route path="profile" element={<HostProfilePage />} />
         </Route>
 
-        {/* Admin — Main dashboard (bookings, users, transactions) */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="bookings" element={<AdminBookingsPage />} />
-          <Route path="bookings/analytics" element={<AdminBookingAnalyticsPage />} />
-          <Route path="bookings/:code/voucher" element={<BookingVoucherPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="users/:id" element={<AdminUserDetailPage />} />
-          <Route path="transactions" element={<AdminTransactionsPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
-          <Route path="revenue/analysis" element={<RevenueAnalysisPage />} />
-          <Route path="revenue/compare" element={<RevenueComparePage />} />
-          <Route path="b2b" element={<B2BManagementPage />} />
-          <Route path="b2b/activity/:name" element={<B2BActivityBookingsPage />} />
-          <Route path="b2b/:id" element={<B2BExperiencePage />} />
-          <Route path="reviews" element={<AdminReviewsPage />} />
-          <Route path="reviews/analytics" element={<AdminReviewAnalyticsPage />} />
-          <Route path="experiences" element={<ExperiencesPage />} />
-          <Route path="experiences/listed" element={<AdminAllListedPage />} />
-          <Route path="experiences/delisted" element={<AdminDelistedPage />} />
-          <Route path="experiences/new" element={<ExperienceFormPage />} />
-          <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
-          <Route path="experiences/:id/view" element={<ExperienceViewPage />} />
-          <Route path="suppliers" element={<SuppliersPage />} />
-          <Route path="suppliers/new" element={<SupplierFormPage />} />
-          <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
-          <Route path="suppliers/:id/revenue" element={<SupplierRevenuePage />} />
-          <Route path="contracts/new" element={<ContractFormPage />} />
-          <Route path="contracts/:id/edit" element={<ContractFormPage />} />
-          <Route path="company-profile" element={<CompanyProfilePage />} />
-          <Route path="experience-setup" element={<ExperienceSetupPage />} />
-          <Route path="app-screens" element={<AppScreensControlPage />} />
-          <Route path="chat-support" element={<ChatSupportPage />} />
-          <Route path="team" element={<TeamManagementPage />} />
-          {/* Occasion Marketing — festival / weekend / birthday greetings */}
-          <Route path="occasions" element={<OccasionMarketingPage />} />
-          {/* Pricing Setup Management — markup / discount / GST / convenience */}
-          <Route path="pricing-setup" element={<Navigate to="/admin/pricing-setup/markup" replace />} />
-          <Route path="pricing-setup/markup" element={<MarkupManagementPage />} />
-          <Route path="pricing-setup/markup/analysis" element={<MarkupAnalyticsPage />} />
-          <Route path="pricing-setup/discount" element={<DiscountManagementPage />} />
-          <Route path="pricing-setup/discount/analysis" element={<DiscountAnalyticsPage />} />
-          <Route path="pricing-setup/gst" element={<GstTaxesManagementPage />} />
-          <Route path="pricing-setup/gst/analysis" element={<GstAnalyticsPage />} />
-          <Route path="pricing-setup/convenience" element={<ConvenienceManagementPage />} />
-          <Route path="pricing-setup/convenience/analysis" element={<ConvenienceAnalyticsPage />} />
-          {/* Security — payment fraud detection */}
-          <Route path="security" element={<Navigate to="/admin/security/fraud" replace />} />
-          <Route path="security/fraud" element={<SecurityFraudPage />} />
-          <Route path="security/2fa" element={<SecurityTwoFactorPage />} />
-        </Route>
+        {/* Staff portals — blocked inside the installed app (PWA/TWA): the app
+            is for members + suppliers only, like the Android app. */}
+        <Route element={<PwaRouteGuard />}>
+          {/* Admin — Main dashboard (bookings, users, transactions) */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="bookings" element={<AdminBookingsPage />} />
+            <Route path="bookings/analytics" element={<AdminBookingAnalyticsPage />} />
+            <Route path="bookings/:code/voucher" element={<BookingVoucherPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users/:id" element={<AdminUserDetailPage />} />
+            <Route path="transactions" element={<AdminTransactionsPage />} />
+            <Route path="revenue" element={<RevenuePage />} />
+            <Route path="revenue/analysis" element={<RevenueAnalysisPage />} />
+            <Route path="revenue/compare" element={<RevenueComparePage />} />
+            <Route path="b2b" element={<B2BManagementPage />} />
+            <Route path="b2b/activity/:name" element={<B2BActivityBookingsPage />} />
+            <Route path="b2b/:id" element={<B2BExperiencePage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="reviews/analytics" element={<AdminReviewAnalyticsPage />} />
+            <Route path="experiences" element={<ExperiencesPage />} />
+            <Route path="experiences/listed" element={<AdminAllListedPage />} />
+            <Route path="experiences/delisted" element={<AdminDelistedPage />} />
+            <Route path="experiences/new" element={<ExperienceFormPage />} />
+            <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
+            <Route path="experiences/:id/view" element={<ExperienceViewPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="suppliers/new" element={<SupplierFormPage />} />
+            <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
+            <Route path="suppliers/:id/revenue" element={<SupplierRevenuePage />} />
+            <Route path="contracts/new" element={<ContractFormPage />} />
+            <Route path="contracts/:id/edit" element={<ContractFormPage />} />
+            <Route path="company-profile" element={<CompanyProfilePage />} />
+            <Route path="experience-setup" element={<ExperienceSetupPage />} />
+            <Route path="app-screens" element={<AppScreensControlPage />} />
+            <Route path="chat-support" element={<ChatSupportPage />} />
+            <Route path="team" element={<TeamManagementPage />} />
+            {/* Occasion Marketing — festival / weekend / birthday greetings */}
+            <Route path="occasions" element={<OccasionMarketingPage />} />
+            {/* Pricing Setup Management — markup / discount / GST / convenience */}
+            <Route path="pricing-setup" element={<Navigate to="/admin/pricing-setup/markup" replace />} />
+            <Route path="pricing-setup/markup" element={<MarkupManagementPage />} />
+            <Route path="pricing-setup/markup/analysis" element={<MarkupAnalyticsPage />} />
+            <Route path="pricing-setup/discount" element={<DiscountManagementPage />} />
+            <Route path="pricing-setup/discount/analysis" element={<DiscountAnalyticsPage />} />
+            <Route path="pricing-setup/gst" element={<GstTaxesManagementPage />} />
+            <Route path="pricing-setup/gst/analysis" element={<GstAnalyticsPage />} />
+            <Route path="pricing-setup/convenience" element={<ConvenienceManagementPage />} />
+            <Route path="pricing-setup/convenience/analysis" element={<ConvenienceAnalyticsPage />} />
+            {/* Security — payment fraud detection */}
+            <Route path="security" element={<Navigate to="/admin/security/fraud" replace />} />
+            <Route path="security/fraud" element={<SecurityFraudPage />} />
+            <Route path="security/2fa" element={<SecurityTwoFactorPage />} />
+          </Route>
 
-        {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}
-        <Route path="/team/login" element={<TeamLoginPage />} />
-        <Route path="/team/reset-password" element={<TeamResetPasswordPage />} />
-        <Route
-          path="/team"
-          element={
-            <TeamProtectedRoute>
-              <TeamLayout />
-            </TeamProtectedRoute>
-          }
-        >
-          <Route index element={<TeamLanding />} />
-          <Route path="dashboard" element={<TeamDashboardGate />} />
-          <Route path="suppliers" element={<TeamSuppliersPage />} />
-          <Route path="suppliers/new" element={<SupplierFormPage />} />
-          <Route path="suppliers/:id/listings" element={<TeamSupplierListingsPage />} />
-          <Route path="experiences" element={<TeamExperiencesPage />} />
-          <Route path="experiences/new" element={<ExperienceFormPage />} />
-          <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
-          <Route path="experiences/:id/resolve" element={<TeamResolveObjectionsPage />} />
-          <Route path="experiences/:id/view" element={<TeamExperienceViewPage />} />
-          <Route path="review-queue" element={<TeamReviewQueuePage />} />
-          <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
-          <Route path="qc-visits" element={<TeamQcVisitsPage />} />
-          <Route path="qc-listings" element={<TeamQcListingsPage />} />
-          <Route path="qc-management" element={<TeamQcManagementPage />} />
-          <Route path="my-suppliers/:supplierId" element={<TeamSupplierExperiencesPage />} />
-          <Route path="am-listings" element={<TeamAmListingsPage />} />
-          <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
-          <Route path="my-customers" element={<TeamCsmPage />} />
-          {/* Category Manager dashboard */}
-          <Route path="category" element={<CategoryOverviewPage />} />
-          <Route path="category/suppliers" element={<CategorySuppliersPage />} />
-          <Route path="category/status" element={<CategoryStatusPage />} />
-          <Route path="category/reviews" element={<CategoryReviewsPage />} />
-          <Route path="category/revenue" element={<CategoryRevenuePage />} />
-          <Route path="category/onboardings" element={<CategoryOnboardingsPage />} />
-          <Route path="category/churn" element={<CategoryChurnPage />} />
-          <Route path="category/delisted" element={<CategoryDelistedPage />} />
-          <Route path="category/winback" element={<CategoryWinbackPage />} />
+          {/* Team Portal — BD/COPS/Account Manager/CSM/QCOPS/Marketing */}
+          <Route path="/team/login" element={<TeamLoginPage />} />
+          <Route path="/team/reset-password" element={<TeamResetPasswordPage />} />
+          <Route
+            path="/team"
+            element={
+              <TeamProtectedRoute>
+                <TeamLayout />
+              </TeamProtectedRoute>
+            }
+          >
+            <Route index element={<TeamLanding />} />
+            <Route path="dashboard" element={<TeamDashboardGate />} />
+            <Route path="suppliers" element={<TeamSuppliersPage />} />
+            <Route path="suppliers/new" element={<SupplierFormPage />} />
+            <Route path="suppliers/:id/listings" element={<TeamSupplierListingsPage />} />
+            <Route path="experiences" element={<TeamExperiencesPage />} />
+            <Route path="experiences/new" element={<ExperienceFormPage />} />
+            <Route path="experiences/:id/edit" element={<ExperienceFormPage />} />
+            <Route path="experiences/:id/resolve" element={<TeamResolveObjectionsPage />} />
+            <Route path="experiences/:id/view" element={<TeamExperienceViewPage />} />
+            <Route path="review-queue" element={<TeamReviewQueuePage />} />
+            <Route path="review-queue/:id" element={<TeamReviewDetailPage />} />
+            <Route path="qc-visits" element={<TeamQcVisitsPage />} />
+            <Route path="qc-listings" element={<TeamQcListingsPage />} />
+            <Route path="qc-management" element={<TeamQcManagementPage />} />
+            <Route path="my-suppliers/:supplierId" element={<TeamSupplierExperiencesPage />} />
+            <Route path="am-listings" element={<TeamAmListingsPage />} />
+            <Route path="my-suppliers" element={<TeamAccountManagerPage />} />
+            <Route path="my-customers" element={<TeamCsmPage />} />
+            {/* Category Manager dashboard */}
+            <Route path="category" element={<CategoryOverviewPage />} />
+            <Route path="category/suppliers" element={<CategorySuppliersPage />} />
+            <Route path="category/status" element={<CategoryStatusPage />} />
+            <Route path="category/reviews" element={<CategoryReviewsPage />} />
+            <Route path="category/revenue" element={<CategoryRevenuePage />} />
+            <Route path="category/onboardings" element={<CategoryOnboardingsPage />} />
+            <Route path="category/churn" element={<CategoryChurnPage />} />
+            <Route path="category/delisted" element={<CategoryDelistedPage />} />
+            <Route path="category/winback" element={<CategoryWinbackPage />} />
+          </Route>
         </Route>
 
         {/* Supplier Portal — a supplier's own login, dashboard cloned from Host */}
@@ -345,11 +393,19 @@ export default function App() {
           <Route path="bookings/:id" element={<HostBookingDetailPage basePath="/supplier" />} />
           <Route path="transactions" element={<HostTransactionsPage basePath="/supplier" />} />
           <Route path="account-manager" element={<SupplierAccountManagerPage />} />
+          <Route path="notifications" element={<HostNotificationsPage basePath="/supplier" />} />
+          <Route path="account" element={<SupplierAccountPage />} />
         </Route>
 
         {/* Anything else → landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
+
+      {/* App-style bottom tab bar (installed app + phone-width member/partner areas) */}
+      <MobileBottomNav />
+      {/* First launch of the installed app only */}
+      <IntroSlides />
 
       {/* Global OTP login modal — opened from anywhere via requestLogin(). */}
       <UserLoginModal />

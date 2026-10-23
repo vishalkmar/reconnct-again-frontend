@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Smartphone, Save, Upload, Loader2, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import {
+  Smartphone, Save, Upload, Loader2, Plus, Trash2, Image as ImageIcon, Link2, ArrowRight, ChevronUp, ChevronDown,
+} from 'lucide-react';
 import api from '../../services/api.js';
 
 /**
@@ -99,15 +101,31 @@ function OfferBanners() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // Published experiences, for the "link to an experience" shortcut.
+  const [experiences, setExperiences] = useState([]);
+
   useEffect(() => {
     api.get('/admin/app-screens/offer-banners')
       .then((r) => setBanners(r.data.data.banners || []))
       .catch(() => {});
+    api.get('/public/experiences')
+      .then((r) => setExperiences(r.data?.data?.items || []))
+      .catch(() => {});
   }, []);
 
-  const add = () => setBanners((b) => [...b, { id: Date.now(), type: 'image_text', active: true, image: '', title: '', subtitle: '', ctaText: '' }]);
+  const add = () => setBanners((b) => [...b, {
+    id: Date.now(), type: 'image_text', active: true, image: '',
+    badge: 'Featured experience', title: '', subtitle: '', ctaText: 'Explore Experience', ctaLink: '',
+  }]);
   const set = (i, patch) => setBanners((b) => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
   const remove = (i) => setBanners((b) => b.filter((_, idx) => idx !== i));
+  const move = (i, dir) => setBanners((b) => {
+    const j = i + dir;
+    if (j < 0 || j >= b.length) return b;
+    const next = [...b];
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  });
   const save = async () => {
     setSaving(true); setMsg('');
     try {
@@ -122,13 +140,18 @@ function OfferBanners() {
         <ImageIcon className="text-amber-500" />
         <h2 className="text-xl font-bold">Offer Banners</h2>
       </div>
-      <p className="text-gray-500 mb-4">The auto-sliding advert carousel on the app Home. Type “image” = plain advert; “image + text” = title, subtitle &amp; button.</p>
+      <p className="text-gray-500 mb-4">
+        The featured carousel under the hero on the <b>website Home</b> and the advert carousel on the <b>Android app Home</b>.
+        “Image + text” shows the badge, title, subtitle and button over the photo; “Image only” shows just the photo.
+        Clicking the banner (or its button) opens the <b>Redirect URL</b>.
+      </p>
 
       <div className="space-y-4">
         {banners.map((b, i) => (
           <div key={b.id || i} className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
                 <select className="border rounded-lg px-3 py-1.5" value={b.type} onChange={(e) => set(i, { type: e.target.value })}>
                   <option value="image_text">Image + text</option>
                   <option value="image">Image only</option>
@@ -137,20 +160,56 @@ function OfferBanners() {
                   <input type="checkbox" checked={b.active !== false} onChange={(e) => set(i, { active: e.target.checked })} /> Active
                 </label>
               </div>
-              <button onClick={() => remove(i)} className="text-red-500 inline-flex items-center gap-1 text-sm"><Trash2 size={15} /> Remove</button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => move(i, -1)} disabled={i === 0} title="Move up" className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronUp size={16} /></button>
+                <button onClick={() => move(i, 1)} disabled={i === banners.length - 1} title="Move down" className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronDown size={16} /></button>
+                <button onClick={() => remove(i)} className="ml-2 text-red-500 inline-flex items-center gap-1 text-sm"><Trash2 size={15} /> Remove</button>
+              </div>
             </div>
             <div className="grid md:grid-cols-2 gap-3">
               <div>
                 <BannerImage value={b.image} onChange={(url) => set(i, { image: url })} />
+                <p className="text-xs text-gray-400 mt-1">Wide photo works best (about 1600 × 460 px or wider).</p>
               </div>
-              {b.type === 'image_text' && (
-                <div className="space-y-2">
-                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Title" value={b.title || ''} onChange={(e) => set(i, { title: e.target.value })} />
-                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Subtitle" value={b.subtitle || ''} onChange={(e) => set(i, { subtitle: e.target.value })} />
-                  <input className="w-full border rounded-lg px-3 py-2" placeholder="Button text (e.g. BOOK NOW)" value={b.ctaText || ''} onChange={(e) => set(i, { ctaText: e.target.value })} />
-                </div>
-              )}
+              <div className="space-y-2">
+                {b.type === 'image_text' && (
+                  <>
+                    <Field label="Badge text" hint="Small pill above the title, e.g. FEATURED EXPERIENCE">
+                      <input className="w-full border rounded-lg px-3 py-2" placeholder="Featured experience" value={b.badge || ''} onChange={(e) => set(i, { badge: e.target.value })} />
+                    </Field>
+                    <Field label="Title">
+                      <input className="w-full border rounded-lg px-3 py-2" placeholder="Family Fun at the Water Park" value={b.title || ''} onChange={(e) => set(i, { title: e.target.value })} />
+                    </Field>
+                    <Field label="Subtitle">
+                      <textarea rows={2} className="w-full border rounded-lg px-3 py-2" placeholder="Splash, play and create unforgettable memories with your loved ones." value={b.subtitle || ''} onChange={(e) => set(i, { subtitle: e.target.value })} />
+                    </Field>
+                    <Field label="Button text">
+                      <input className="w-full border rounded-lg px-3 py-2" placeholder="Explore Experience" value={b.ctaText || ''} onChange={(e) => set(i, { ctaText: e.target.value })} />
+                    </Field>
+                  </>
+                )}
+                <Field label="Redirect URL (on click)" hint="A page on this site like /experiences/my-deal, or a full https:// link (opens in a new tab).">
+                  <div className="flex items-center gap-2">
+                    <Link2 size={16} className="text-gray-400 shrink-0" />
+                    <input className="w-full border rounded-lg px-3 py-2" placeholder="/experiences/pixyland-20-vr-gaming-experience" value={b.ctaLink || ''} onChange={(e) => set(i, { ctaLink: e.target.value })} />
+                  </div>
+                </Field>
+                {experiences.length > 0 && (
+                  <select
+                    className="w-full border rounded-lg px-3 py-2 text-sm text-gray-600"
+                    value=""
+                    onChange={(e) => {
+                      const exp = experiences.find((x) => String(x.id) === e.target.value);
+                      if (exp) set(i, { ctaLink: `/experiences/${exp.slug || exp.id}` });
+                    }}
+                  >
+                    <option value="">…or pick an experience to link to</option>
+                    {experiences.map((x) => <option key={x.id} value={x.id}>{x.name}{x.city ? ` — ${x.city}` : ''}</option>)}
+                  </select>
+                )}
+              </div>
             </div>
+            {b.image && <BannerPreview banner={b} />}
           </div>
         ))}
       </div>
@@ -161,6 +220,48 @@ function OfferBanners() {
           {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Save banners
         </button>
         {!!msg && <span className="text-sm text-gray-600">{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold text-gray-600 mb-1">{label}</span>
+      {children}
+      {hint && <span className="block text-[11px] text-gray-400 mt-1">{hint}</span>}
+    </label>
+  );
+}
+
+// Small live preview of how the banner reads on the website.
+function BannerPreview({ banner: b }) {
+  return (
+    <div className="mt-4">
+      <div className="text-xs font-semibold text-gray-500 mb-1.5">Website preview</div>
+      <div className="relative h-44 rounded-2xl overflow-hidden bg-gray-800">
+        <img src={b.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        {b.type === 'image_text' && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
+            <div className="absolute left-6 top-1/2 -translate-y-1/2 max-w-[60%] text-white">
+              {b.badge && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/30 border border-white/25 text-[9px] font-semibold tracking-widest uppercase">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />{b.badge}
+                </span>
+              )}
+              {b.title && <div className="text-xl font-black leading-tight mt-2 line-clamp-2">{b.title}</div>}
+              {b.subtitle && <div className="text-xs mt-1 opacity-90 line-clamp-2">{b.subtitle}</div>}
+              {b.ctaText && (
+                <span className="mt-2 inline-flex items-center gap-1 bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full">{b.ctaText} <ArrowRight size={12} /></span>
+              )}
+            </div>
+          </>
+        )}
+        <span className="absolute right-3 bottom-3 text-[10px] bg-white/90 text-gray-700 px-2 py-0.5 rounded-full max-w-[60%] truncate">
+          → {b.ctaLink || '/experiences (default)'}
+        </span>
       </div>
     </div>
   );

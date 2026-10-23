@@ -136,11 +136,11 @@ export default function BookingDetailsModal({ booking, open, onClose, onChanged 
 
   return (
     <div
-      className="fixed inset-0 z-[110] bg-black/55 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-[110] bg-black/55 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-6 overflow-y-auto"
       onClick={() => !cancelling && onClose?.()}
     >
       <div
-        className="relative w-full max-w-3xl my-auto bg-white rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto booking-voucher-print"
+        className="relative w-full max-w-3xl sm:my-auto bg-white rounded-none sm:rounded-2xl shadow-2xl min-h-[100dvh] max-h-[100dvh] sm:min-h-0 sm:max-h-[92vh] overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-0 sm:pb-0 booking-voucher-print"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close + actions row */}

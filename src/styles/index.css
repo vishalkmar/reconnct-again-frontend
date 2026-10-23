@@ -256,3 +256,132 @@ h1, h2, h3, h4, h5 {
     overflow: visible !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Public landing site (app-parity) helpers. Gradients are the exact Figma
+   values the mobile app paints with PNGs (deal-card-grad, partner-grad,
+   scrim-grad, brand-grad).
+   ───────────────────────────────────────────────────────────────────────── */
+.rc-rail {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* No CSS smooth scrolling here: with snap it animates the initial snap
+     alignment, which Chrome counts as a scroll and stops measuring LCP.
+     The arrow buttons pass behavior:'smooth' themselves. */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rc-rail::-webkit-scrollbar { display: none; }
+.rc-rail > * { scroll-snap-align: start; flex: 0 0 auto; }
+.rc-no-scrollbar { scrollbar-width: none; }
+.rc-no-scrollbar::-webkit-scrollbar { display: none; }
+
+.rc-deal-grad { background: linear-gradient(180deg, #305BA4 0%, #141425 100%); }
+.rc-partner-grad { background: linear-gradient(180deg, #F5F3FF 0%, #305BA4 55%, #1A1A2E 100%); }
+.rc-scrim { background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.78) 100%); }
+.rc-brand-grad { background: linear-gradient(90deg, #FFB900 0%, #F9B402 100%); }
+.rc-hero-grad { background: linear-gradient(160deg, #FFC629 0%, #FFB900 45%, #F9B402 100%); }
+
+@keyframes rcShimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.rc-skeleton {
+  background: linear-gradient(90deg, #ECEEF1 0%, #F6F7F9 50%, #ECEEF1 100%);
+  background-size: 800px 100%;
+  animation: rcShimmer 1.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-skeleton { animation: none; }
+}
+
+/* Installed-app (PWA) feel — <html class="pwa"> is set by PwaContext. */
+html.pwa body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+html.pwa button, html.pwa a, html.pwa [role="button"] { -webkit-user-select: none; user-select: none; }
+
+/* Room for the app bottom tab bar (components/pwa/MobileBottomNav.jsx). */
+html.has-bottom-nav body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+/* Installed app: the fixed site header sits below the status bar. */
+html.pwa .rc-site-header { padding-top: env(safe-area-inset-top); }
+html.pwa .rc-hero-top { padding-top: calc(4rem + env(safe-area-inset-top)); }
+
+/* Form action bars that stay reachable on phones (above the tab bar). */
+@media (max-width: 767px) {
+  .rc-sticky-actions {
+    position: sticky; bottom: 0; z-index: 5;
+    margin-inline: -1.5rem; padding: 12px 1.5rem calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.96); backdrop-filter: blur(6px);
+  }
+  .rc-sticky-actions > button[type="submit"] { flex: 1; justify-content: center; min-height: 48px; }
+  html.has-bottom-nav .rc-sticky-actions { bottom: calc(64px + env(safe-area-inset-bottom)); padding-bottom: 12px; }
+}
+
+/* Support chat inside the app shell: fills the screen under the app bar
+   (the tab bar is hidden on chat screens), shrinking with the keyboard. */
+.rc-chat-shell { height: calc(100dvh - 3.75rem - env(safe-area-inset-top) - 0.5rem); }
+
+/* Slow zoom on the active hero slide. */
+@keyframes rcKenBurns {
+  from { transform: scale(1.06); }
+  to   { transform: scale(1); }
+}
+html.pwa main.pt-16 { padding-top: calc(4rem + env(safe-area-inset-top)); }
+
+/* Flip cards (FeaturedShowcase): front photo ⇄ back highlights.
+   Desktop: hover/focus flips. Touch: the ⓘ / ← buttons toggle .is-flipped. */
+.rc-flip { perspective: 1400px; }
+.rc-flip-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 750ms cubic-bezier(.2,.75,.2,1);
+}
+.rc-flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.rc-flip-back { transform: rotateY(180deg); }
+.rc-flip.is-flipped .rc-flip-inner { transform: rotateY(180deg); }
+@media (hover: hover) and (pointer: fine) {
+  .rc-flip:hover .rc-flip-inner,
+  .rc-flip:focus-within .rc-flip-inner { transform: rotateY(180deg); }
+  .rc-flip-touch { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-flip-inner { transition: none; }
+}
+
+/* Animated border sweep (PartnerShowcase cards): a light travels round the
+   frame. The wrapper's padding is the border; the conic gradient spins via
+   the registered --rc-angle so it animates smoothly. */
+@property --rc-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.rc-sweep {
+  position: relative;
+  background:
+    conic-gradient(from var(--rc-angle),
+      rgba(255,255,255,0.35) 0deg,
+      rgba(255,255,255,0.35) 250deg,
+      rgba(255,255,255,0.95) 300deg,
+      #ffffff 320deg,
+      rgba(255,255,255,0.95) 340deg,
+      rgba(255,255,255,0.35) 360deg);
+  box-shadow: 0 18px 40px -20px rgba(11,20,48,0.55);
+  animation: rcSweep 5s linear infinite;
+  animation-delay: var(--rc-sweep-delay, 0s);
+}
+.rc-sweep--gold {
+  background:
+    conic-gradient(from var(--rc-angle),
+      #F9B402 0deg, #FFD54A 90deg, #FFB900 180deg,
+      #FFF3C4 290deg, #ffffff 320deg, #FFF3C4 340deg, #F9B402 360deg);
+  box-shadow: 0 0 0 4px rgba(255,185,0,0.18), 0 0 34px -4px rgba(255,185,0,0.65), 0 24px 46px -18px rgba(11,20,48,0.55);
+  animation-duration: 3s;
+}
+@keyframes rcSweep { to { --rc-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .rc-sweep { animation: none; }
+}

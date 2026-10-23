@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const UserAuthContext = createContext(null);
@@ -39,7 +40,10 @@ export const UserAuthProvider = ({ children }) => {
   // sidebar/header can immediately reflect the signed-out state instead of
   // waiting for the next refresh.
   useEffect(() => {
-    const onExpired = () => setUser(null);
+    const onExpired = () => {
+      setUser(null);
+      toast.error('Your session expired — please sign in again', { id: 'session-expired' });
+    };
     window.addEventListener('user-auth:expired', onExpired);
     return () => window.removeEventListener('user-auth:expired', onExpired);
   }, []);

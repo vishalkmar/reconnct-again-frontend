@@ -181,9 +181,7 @@ export function CouponCard({ coupon }) {
 
       <div className="px-6 pt-5 pb-4">
         <div className="flex items-center justify-between">
-          <span className="font-display text-xl font-semibold tracking-tight">
-            reconn<span className="text-brand">ct</span>
-          </span>
+          <img src="/reconnct-logo.png" alt="reconnct" className="h-6 w-auto" />
           <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/60">
             <scope.icon size={11} /> {scope.label}
           </span>

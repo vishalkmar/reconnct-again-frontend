@@ -27,12 +27,32 @@ export default {
           DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
           alt: 'rgb(var(--surface-alt) / <alpha-value>)',
         },
+        // Fixed tokens copied from the mobile app (App/reconnct/src/theme.js) for
+        // the public landing site — deliberately NOT tied to the admin-editable
+        // CSS variables above, so the landing always matches the app exactly.
+        rc: {
+          brand: '#FFB900',
+          'brand-dark': '#F9B402',
+          'brand-soft': '#FDEFD3',
+          'brand-text': '#7A4E00',
+          navy: '#1A1A2E',
+          ink: '#1F2937',
+          'ink-muted': '#6B7280',
+          'ink-faint': '#9CA3AF',
+          bg: '#F3F4F6',
+          border: '#E5E7EB',
+          strike: '#FF2056',
+          'strike-dark': '#D4183D',
+          blue: '#305BA4',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         // Editorial serif for headings — matches the Reconnct brand look.
         display: ['Fraunces', 'Georgia', 'serif'],
         serif: ['Fraunces', 'Georgia', 'serif'],
+        // Handwritten accent on the landing hero ("More Meaningful Journeys").
+        script: ['"Great Vibes"', 'cursive'],
       },
       boxShadow: {
         // Crisper, layered card shadow — a tight edge shadow for definition

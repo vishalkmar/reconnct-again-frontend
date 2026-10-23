@@ -16,6 +16,7 @@ const TYPE_LABEL = {
   event: 'Event',
   addon: 'Add-on Activity',
   event_activity: 'Event / Activity',
+  experience: 'Experience',
 };
 
 const fmtMoney = (n, currency = 'INR') =>
@@ -82,7 +83,9 @@ export default function BookingPreviewPage() {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
-  const [specialRequests, setSpecialRequests] = useState('');
+  // The experience detail page passes the picked time slot as ?slot=; it rides
+  // in special requests exactly like the app's booking ("Preferred time: …").
+  const [specialRequests, setSpecialRequests] = useState(() => (params.get('slot') ? `Preferred time: ${params.get('slot')}` : ''));
 
   // Coupon + wallet — both are part of the preview payload so the backend's
   // pricing math is the only source of truth. Frontend just collects intent.
@@ -192,6 +195,17 @@ export default function BookingPreviewPage() {
         unitLabel: () => '',
       };
     }
+    if (type === 'experience') {
+      return {
+        showCheckOut: false,
+        scheduledLabel: 'Experience date',
+        scheduledEndLabel: null,
+        showGuestCount: true,
+        guestLabel: 'Guests',
+        guestMax: 30,
+        unitLabel: () => '',
+      };
+    }
     // addon
     return {
       showCheckOut: false,
@@ -228,6 +242,8 @@ export default function BookingPreviewPage() {
   // its own dependency array — no second trigger needed.
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    if (!navigator.onLine) { toast.error('You’re offline. Connect to the internet to book.'); return; }
     if (!guestName.trim()) { toast.error('Please enter the guest name'); return; }
     if (!guestPhone.trim()) { toast.error('Please enter a contact number'); return; }
 
@@ -253,7 +269,8 @@ export default function BookingPreviewPage() {
       const booking = res.data?.data?.booking;
       if (!booking) throw new Error('Booking did not return');
       toast.success('Booking created — proceeding to payment');
-      navigate(`/checkout/${booking.bookingCode}`);
+      // replace: Back from checkout must not land on this form and create a second booking.
+      navigate(`/checkout/${booking.bookingCode}`, { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not create booking');
     } finally {
@@ -285,8 +302,8 @@ export default function BookingPreviewPage() {
   const breadcrumb = TYPE_LABEL[type] || 'Booking';
 
   return (
-    <div className="min-h-screen bg-surface-alt pb-12">
-      <div className="bg-white border-b">
+    <div className="min-h-screen bg-surface-alt pb-32 lg:pb-12">
+      <div className="bg-white border-b" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="container-app py-4 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -668,6 +685,24 @@ export default function BookingPreviewPage() {
           </div>
         </aside>
       </div>
+
+      {/* Phones: total + Continue always in reach (the aside sits below the form) */}
+      {pricing && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t shadow-[0_-6px_20px_rgba(16,24,40,0.08)] px-4 pt-3 flex items-center gap-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] text-ink-muted">Total</div>
+            <div className="text-lg font-bold text-ink leading-tight">{fmtMoney(pricing.display?.total, pricing.currency)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || previewing}
+            className="h-12 px-6 rounded-full bg-brand text-white font-semibold disabled:opacity-60 inline-flex items-center gap-2"
+          >
+            {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Continue to payment'}
+          </button>
+        </div>
+      )}
 
       <style>{`
         .input {

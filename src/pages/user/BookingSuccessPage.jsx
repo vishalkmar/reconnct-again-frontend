@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   CheckCircle2, AlertCircle, Loader2, MapPin, Calendar, Users, Clock, CreditCard,
-  Printer, Download, ArrowRight, FileText, XCircle,
+  Printer, Download, ArrowRight, FileText, XCircle, Share2,
 } from 'lucide-react';
 import api, { fileUrl } from '../../services/api';
 
@@ -109,7 +109,7 @@ export default function BookingSuccessPage() {
 
   return (
     <div className="min-h-screen bg-surface-alt pb-12 print:bg-white">
-      <div className="container-app pt-6 max-w-4xl">
+      <div className="container-app pt-6 max-w-4xl" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
         {/* Status banner — success / failed / still-pending are three distinct
             states so a dead payment attempt never looks like an endless spinner. */}
         {paid ? (
@@ -170,6 +170,23 @@ export default function BookingSuccessPage() {
             Voucher <span className="font-mono font-bold text-ink">{booking.bookingCode}</span>
           </div>
           <div className="flex gap-2">
+            {typeof navigator !== 'undefined' && navigator.share && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.share({
+                      title: `Reconnct booking ${booking.bookingCode}`,
+                      text: `${item?.name || 'My booking'} — booking ${booking.bookingCode}`,
+                      url: `${window.location.origin}/dashboard/bookings`,
+                    });
+                  } catch { /* cancelled */ }
+                }}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-white text-sm font-medium"
+              >
+                <Share2 size={16} /> Share
+              </button>
+            )}
             <button
               type="button"
               onClick={() => window.print()}

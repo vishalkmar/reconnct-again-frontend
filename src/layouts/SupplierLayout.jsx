@@ -5,6 +5,8 @@ import {
   Menu, LogOut, X, LayoutDashboard, ListChecks, Wallet, Bell, Ticket, Clock, UserCog, CalendarCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MobileTopBar from '../components/pwa/MobileTopBar.jsx';
+import useAppShell from '../hooks/useAppShell';
 import { useSupplierAuth } from '../context/SupplierAuthContext.jsx';
 import api from '../services/api';
 
@@ -108,18 +110,49 @@ function SupplierSidebar({ open, onClose }) {
   );
 }
 
+const SUPPLIER_TITLES = [
+  [/^\/supplier\/listings\/new/, 'New listing'],
+  [/^\/supplier\/listings\/[^/]+\/edit/, 'Edit listing'],
+  [/^\/supplier\/listings\/[^/]+\/resolve/, 'Resolve objections'],
+  [/^\/supplier\/listings\/[^/]+\/bookings/, 'Listing bookings'],
+  [/^\/supplier\/listings\/[^/]+\/view/, 'Listing'],
+  [/^\/supplier\/listings/, 'My listings'],
+  [/^\/supplier\/all-bookings/, 'All bookings'],
+  [/^\/supplier\/bookings\//, 'Booking'],
+  [/^\/supplier\/transactions/, 'Transactions'],
+  [/^\/supplier\/notifications/, 'Notifications'],
+  [/^\/supplier\/account-manager/, 'Key account manager'],
+  [/^\/supplier\/account/, 'Profile'],
+  [/^\/supplier\/dashboard/, 'Supplier dashboard'],
+];
+
 export default function SupplierLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { supplier, logout } = useSupplierAuth();
   const navigate = useNavigate();
   const path = useLocation().pathname;
   const isWizard = /\/supplier\/listings\/(new|[^/]+\/edit)/.test(path);
+  const appShell = useAppShell();
 
   const handleLogout = () => {
     logout();
     toast.success('Signed out');
     navigate('/supplier/login', { replace: true });
   };
+
+  // Phone / installed app: app bar + bottom tabs (Profile tab = /supplier/account).
+  if (appShell) {
+    const title = SUPPLIER_TITLES.find(([re]) => re.test(path))?.[1] || 'Supplier';
+    const tabRoot = /^\/supplier\/(dashboard|listings|all-bookings|account)\/?$/.test(path);
+    return (
+      <div className="min-h-screen bg-surface-alt">
+        <MobileTopBar title={title} back={!tabRoot} right={<SupplierNotificationBell />} />
+        <main className={isWizard ? 'px-3' : 'px-4 pb-6'} style={{ paddingTop: `calc(${isWizard ? '3.75rem' : '4.5rem'} + env(safe-area-inset-top))` }}>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface-alt flex">

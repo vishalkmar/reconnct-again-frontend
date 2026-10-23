@@ -67,6 +67,13 @@ export default function UserLoginModal() {
     }
   }, [step, otp]);
 
+  // All 6 digits in (typed, pasted or autofilled) → verify straight away.
+  const otpCode = otp.join('');
+  useEffect(() => {
+    if (open && step === 'otp' && otpCode.length === OTP_LENGTH && !submitting) handleOtpSubmit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpCode]);
+
   // ESC to close (only when not actively submitting so we don't strand a request).
   useEffect(() => {
     if (!open) return undefined;
@@ -101,7 +108,19 @@ export default function UserLoginModal() {
   };
 
   const handleOtpChange = (idx, value) => {
-    const ch = value.replace(/\D/g, '').slice(0, 1);
+    const digits = value.replace(/\D/g, '');
+    // Autofill (autocomplete="one-time-code") or a keyboard suggestion can
+    // drop the whole code into one box — spread it across the boxes.
+    if (digits.length > 1) {
+      setOtp((prev) => {
+        const next = [...prev];
+        digits.slice(0, OTP_LENGTH - idx).split('').forEach((d, k) => { next[idx + k] = d; });
+        return next;
+      });
+      otpRefs.current[Math.min(idx + digits.length, OTP_LENGTH - 1)]?.focus();
+      return;
+    }
+    const ch = digits.slice(0, 1);
     setOtp((prev) => {
       const next = [...prev];
       next[idx] = ch;
@@ -228,6 +247,9 @@ export default function UserLoginModal() {
               type="email"
               required
               autoFocus
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint="go"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
@@ -275,7 +297,9 @@ export default function UserLoginModal() {
                   ref={(el) => { otpRefs.current[i] = el; }}
                   type="text"
                   inputMode="numeric"
-                  maxLength={1}
+                  pattern="[0-9]*"
+                  autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                  maxLength={i === 0 ? OTP_LENGTH : 1}
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
@@ -319,6 +343,7 @@ export default function UserLoginModal() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
+              autoComplete="name"
               autoFocus
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand/30 focus:border-brand outline-none mb-4"
               disabled={submitting}
@@ -328,6 +353,7 @@ export default function UserLoginModal() {
             <input
               type="tel"
               required
+              autoComplete="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 98765 43210"

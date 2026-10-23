@@ -4,6 +4,7 @@ import { Loader2, Save, User as UserIcon, Camera, Trash2, ShieldAlert } from 'lu
 import api from '../../services/api';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import DatePicker from '../../components/common/DatePicker.jsx';
+import { InstallAppButton } from '../../components/pwa/InstallApp.jsx';
 
 // Global rule: every image upload must be under 5MB.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -132,6 +133,19 @@ export default function UserProfilePage() {
         <p className="text-sm text-ink-muted mt-1">Keep your information up to date for faster bookings.</p>
       </div>
 
+      {/* Install the app — hidden automatically inside the installed app */}
+      <InstallAppButton
+        source="profile"
+        className="mb-6 flex items-center gap-3 bg-gradient-to-r from-[#FFC629] to-[#F9B402] text-white rounded-2xl p-4 shadow-soft"
+      >
+        <span className="text-2xl" aria-hidden="true">📱</span>
+        <span className="flex-1">
+          <span className="block font-bold">Install the Reconnct app</span>
+          <span className="block text-sm opacity-90">Book faster and open it from your home screen.</span>
+        </span>
+        <span className="text-sm font-bold bg-white/25 px-3 py-1.5 rounded-full">Install</span>
+      </InstallAppButton>
+
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-soft p-6 md:p-8 space-y-8">
         {/* Avatar */}
         <section className="flex items-center gap-5 pb-6 border-b">
@@ -256,7 +270,8 @@ export default function UserProfilePage() {
           </div>
         </section>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t">
+        {/* Sticky on phones so Save is always in reach above the keyboard / tab bar */}
+        <div className="rc-sticky-actions flex items-center justify-end gap-3 pt-4 border-t">
           <button
             type="submit"
             disabled={saving || uploading}

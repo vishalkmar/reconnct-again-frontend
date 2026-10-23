@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,6 +6,8 @@ import api from '../../services/api';
 import usePersistedForm from '../../hooks/usePersistedForm.js';
 import { validateExperience } from '../../utils/validateExperience.js';
 import { ActivityBlock, blankActivity } from '../admin/ExperienceFormPage.jsx';
+import useAppShell from '../../hooks/useAppShell';
+import FormStepNav from '../../components/pwa/FormStepNav.jsx';
 
 /*
   Host & Supplier "Create listing" — renders the EXACT same form body as the
@@ -108,6 +110,10 @@ const activityToHostForm = (a = {}) => ({
 });
 
 export default function HostListingFormPage({ basePath = '/host' }) {
+  const appShell = useAppShell();
+  const formRef = useRef(null);
+  // Height of the fixed app bar (3.5rem + status bar) for the sticky step bar.
+  const appBarH = 'calc(3.5rem + env(safe-area-inset-top))';
   const { id } = useParams();
   const editing = !!id;
   const navigate = useNavigate();
@@ -162,7 +168,7 @@ export default function HostListingFormPage({ basePath = '/host' }) {
   if (loading) return <div className="p-10 text-center text-ink-muted"><Loader2 className="animate-spin mx-auto text-brand" /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className={`max-w-6xl mx-auto ${appShell ? 'pb-28' : ''}`}>
       <div className="mb-6">
         <button onClick={() => navigate(`${basePath}/listings`)} className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand mb-3">
           <ArrowLeft size={16} /> Back to listings
@@ -171,15 +177,18 @@ export default function HostListingFormPage({ basePath = '/host' }) {
         <p className="text-sm text-ink-muted">Fill in the details below, then save a draft or submit for review. Everything auto-saves as a draft.</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 items-start">
+      {/* Phones / installed app: step bar under the app bar (wizard feel). */}
+      {appShell && <FormStepNav containerRef={formRef} top={appBarH} />}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Main column — the same form body as the BD "New experience", minus
-            the supplier section. */}
-        <div className="lg:col-span-2 space-y-5">
+            the supplier section. min-w-0 lets wide inner widgets shrink. */}
+        <div ref={formRef} className="lg:col-span-2 space-y-5 min-w-0">
           <ActivityBlock index={0} activity={act} total={1} editing={editing} onChange={patch} onRemove={() => {}} />
         </div>
 
         {/* Save — sticky sidebar (same place as the BD form). */}
-        <aside className="lg:col-span-1 lg:sticky lg:top-6 space-y-4">
+        <aside className="lg:col-span-1 lg:sticky lg:top-6 space-y-4 min-w-0">
           <div className="bg-white rounded-2xl shadow-soft p-5">
             <h3 className="font-semibold mb-3">Save</h3>
             <p className="text-xs text-ink-muted mb-4">This goes to Center Ops for review — it can’t be published directly from here.</p>
@@ -200,6 +209,18 @@ export default function HostListingFormPage({ basePath = '/host' }) {
           </div>
         </aside>
       </div>
+
+      {/* Phones: Save draft / Submit always in reach. */}
+      {appShell && (
+        <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t shadow-[0_-6px_20px_rgba(16,24,40,0.08)] px-3 pt-3 grid grid-cols-2 gap-2" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <button onClick={() => submit(false)} disabled={submitting} className="h-12 rounded-xl border border-gray-200 font-semibold disabled:opacity-60">
+            {submitting ? 'Saving…' : 'Save draft'}
+          </button>
+          <button onClick={() => submit(true)} disabled={submitting} className="h-12 rounded-xl bg-brand text-ink font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-60">
+            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Submit
+          </button>
+        </div>
+      )}
     </div>
   );
 }

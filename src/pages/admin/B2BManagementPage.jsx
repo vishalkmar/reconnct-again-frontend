@@ -401,7 +401,7 @@ function VoucherModal({ row, onClose }) {
           {/* Letterhead */}
           <div className="flex items-start justify-between gap-4 px-7 py-5 bg-ink text-white">
             <div>
-              <div className="font-display text-2xl font-bold tracking-tight">reconn<span className="text-brand">ct</span></div>
+              <img src="/reconnct-logo.png" alt="reconnct" className="h-7 w-auto" />
               <div className="text-xs text-white/60 mt-0.5">B2B Payment Voucher</div>
             </div>
             <div className="text-right">

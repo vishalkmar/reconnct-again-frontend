@@ -4,6 +4,9 @@ import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api.js';
 import { connectSupport, disconnectSupport } from '../../services/supportSocket.js';
 import { useVoiceRecorder } from '../../utils/voiceRecorder.js';
+import useAppShell from '../../hooks/useAppShell';
+
+const PAGE = 30; // backend support page size
 
 const fmtTime = (d) => new Date(d).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
 const dayLabel = (d) => {
@@ -25,6 +28,10 @@ export default function UserSupportPage({ queue = 'user' }) {
   const [pending, setPending] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [typingPeer, setTypingPeer] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const appShell = useAppShell();
+  const stickToEnd = useRef(true);
 
   const socketRef = useRef(null);
   const convIdRef = useRef(null);
@@ -47,6 +54,7 @@ export default function UserSupportPage({ queue = 'user' }) {
         setConv(d.conversation);
         convIdRef.current = d.conversation.id;
         setMessages(d.messages || []);
+        setHasOlder((d.messages || []).length >= PAGE);
       } catch {
         toast.error('Could not open support chat');
       } finally {
@@ -88,7 +96,49 @@ export default function UserSupportPage({ queue = 'user' }) {
     return () => { alive = false; disconnectSupport(); };
   }, []);
 
-  useEffect(() => { scrollEnd(); }, [messages, typingPeer, scrollEnd]);
+  // Keep the newest message in view — except right after loading older ones.
+  useEffect(() => {
+    if (stickToEnd.current) scrollEnd();
+    stickToEnd.current = true;
+  }, [messages, typingPeer, scrollEnd]);
+
+  // Phone apps get suspended in the background: when the app comes back,
+  // reconnect the socket and pull anything that arrived meanwhile.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || !convIdRef.current) return;
+      const s = socketRef.current;
+      if (s && !s.connected) s.connect();
+      api.get('/support/me/conversation', { params: { queue } })
+        .then(({ data }) => setMessages((prev) => {
+          const fresh = (data.data || data).messages || [];
+          const known = new Set(fresh.map((m) => m.id));
+          // keep older pages already loaded, replace the latest page
+          return [...prev.filter((m) => !known.has(m.id) && fresh.length && m.id < fresh[0].id), ...fresh];
+        }))
+        .catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [queue]);
+
+  const loadOlder = async () => {
+    const oldest = messages.find((m) => !m._pending && typeof m.id === 'number');
+    if (!oldest || loadingOlder) return;
+    setLoadingOlder(true);
+    const el = scrollRef.current;
+    const prevHeight = el ? el.scrollHeight : 0;
+    try {
+      const { data } = await api.get('/support/me/messages', { params: { conversationId: convIdRef.current, before: oldest.id } });
+      const older = (data.data || data).messages || [];
+      setHasOlder(older.length >= PAGE);
+      stickToEnd.current = false;
+      setMessages((prev) => [...older.filter((m) => !prev.some((x) => x.id === m.id)), ...prev]);
+      // hold the reading position after prepending
+      requestAnimationFrame(() => { if (el) el.scrollTop = el.scrollHeight - prevHeight; });
+    } catch { toast.error('Could not load earlier messages'); }
+    finally { setLoadingOlder(false); }
+  };
 
   const emitTyping = (typing) => {
     const s = socketRef.current;
@@ -164,8 +214,17 @@ export default function UserSupportPage({ queue = 'user' }) {
   });
 
   return (
-    <div className="h-[calc(100vh-1.25rem)]">
+    <div className={appShell ? 'rc-chat-shell' : 'h-[calc(100vh-1.25rem)]'}>
       <div className="flex flex-col h-full bg-white rounded-xl shadow-soft overflow-hidden border border-slate-200">
+        {appShell ? (
+          <div className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-200 bg-white">
+            <div className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0"><Globe size={18} /></div>
+            <div className="min-w-0">
+              <div className="font-bold text-ink text-sm">reconnct Support</div>
+              <div className="text-[11px] text-slate-400">{typingPeer ? 'typing…' : 'Official support channel'}</div>
+            </div>
+          </div>
+        ) : (
         <div className="flex flex-col items-center px-4 pt-5 pb-4 border-b border-slate-200 bg-white">
           <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center mb-2">
             <Globe size={24} />
@@ -174,8 +233,16 @@ export default function UserSupportPage({ queue = 'user' }) {
           <div className="text-xs text-slate-400 mt-0.5">{typingPeer ? 'typing…' : (queue === 'supplier' ? 'Host support team' : 'Chat with our team')}</div>
           <span className="mt-2.5 text-[11px] font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">Official reconnct support channel</span>
         </div>
+        )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#F7F7F5] space-y-1">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#F7F7F5] space-y-1 overscroll-contain">
+          {!loading && hasOlder && (
+            <div className="flex justify-center pb-2">
+              <button type="button" onClick={loadOlder} disabled={loadingOlder} className="text-xs font-semibold text-slate-500 bg-white rounded-full px-3 py-1.5 shadow-sm disabled:opacity-60">
+                {loadingOlder ? 'Loading…' : 'Load earlier messages'}
+              </button>
+            </div>
+          )}
           {loading ? (
             <div className="flex justify-center py-10 text-slate-400"><Loader2 className="animate-spin" size={20} /></div>
           ) : messages.length === 0 ? (
@@ -228,9 +295,9 @@ export default function UserSupportPage({ queue = 'user' }) {
           </div>
         )}
 
-        <div className="flex items-center gap-2 p-3 border-t border-slate-200/70 bg-white">
+        <div className="flex items-center gap-2 p-3 border-t border-slate-200/70 bg-white" style={appShell ? { paddingBottom: 'max(12px, env(safe-area-inset-bottom))' } : undefined}>
           <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onPickFile} />
-          <button onClick={() => fileRef.current?.click()} disabled={uploading} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 shrink-0" title="Attach">
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Attach a photo or PDF" className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 shrink-0" title="Attach">
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
           </button>
           <textarea
@@ -238,6 +305,7 @@ export default function UserSupportPage({ queue = 'user' }) {
             onChange={(e) => onInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             rows={1}
+            enterKeyHint="send"
             placeholder="Type a message…"
             className="flex-1 resize-none max-h-28 bg-slate-500/10 rounded-full px-4 py-2.5 text-sm outline-none"
           />
@@ -250,10 +318,11 @@ export default function UserSupportPage({ queue = 'user' }) {
             disabled={uploading}
             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 select-none disabled:opacity-40 ${recording ? 'bg-red-500 text-white animate-pulse' : 'text-slate-400 hover:bg-slate-100'}`}
             title="Hold to record a voice message"
+            aria-label="Hold to record a voice message"
           >
             <Mic size={18} />
           </button>
-          <button onClick={() => send()} disabled={!text.trim() && pending.length === 0} className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 disabled:opacity-40" title="Send">
+          <button onClick={() => send()} disabled={!text.trim() && pending.length === 0} className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 disabled:opacity-40" title="Send" aria-label="Send">
             <Send size={18} />
           </button>
         </div>

@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import api, { fileUrl } from '../../services/api';
 import { TYPE_LABEL, fmtMoney, fmtDate } from '../../components/user/bookingFormatters.js';
 
-const RECONNCT_LOGO = '/reconnct-logo-white.png';
+const RECONNCT_LOGO = '/reconnct-logo.png';
 const fmtFull = (iso) => {
   if (!iso) return '—';
   const d = new Date(iso);

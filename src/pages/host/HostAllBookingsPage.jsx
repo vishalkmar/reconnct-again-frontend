@@ -201,7 +201,42 @@ export default function HostAllBookingsPage({ basePath = '/host' }) {
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Phones: one card per booking (the 9-column table needs a wide screen). */}
+          <ul className="md:hidden divide-y divide-slate-100">
+            {shown.map((r) => (
+              <li key={r.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-ink truncate">{r.experienceName}</div>
+                    <div className="text-xs text-ink-muted mt-0.5">{fmtDate(r.scheduledFor)}{r.slot ? ` · ${r.slot}` : ''}</div>
+                  </div>
+                  <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_PILL[r.status] || 'bg-slate-100'}`}>{r.status}</span>
+                </div>
+                <div className="mt-2.5 flex items-center justify-between gap-3 text-sm">
+                  <div className="min-w-0">
+                    <div className="text-ink font-medium truncate">{r.guestName}</div>
+                    <div className="text-[11px] text-ink-muted flex items-center gap-2">
+                      {r.guestPhone && <a href={`tel:${r.guestPhone}`} className="underline-offset-2 hover:underline">{r.guestPhone}</a>}
+                      <span className="inline-flex items-center gap-0.5"><Users size={11} /> {r.guests}</span>
+                      {r.rating > 0 && <span className="inline-flex items-center gap-0.5 text-amber-600"><Star size={10} className="fill-amber-400 text-amber-400" /> {r.rating}</span>}
+                    </div>
+                  </div>
+                  <div className="font-bold text-ink whitespace-nowrap">{money(r.amount)}</div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => downloadVoucher(r)} disabled={downloading === r.id}
+                    className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg border border-gray-200 text-ink text-xs font-semibold disabled:opacity-60">
+                    {downloading === r.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Voucher PDF
+                  </button>
+                  <button onClick={() => navigate(`${basePath}/bookings/${r.id}`)}
+                    className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg bg-brand text-white text-xs font-semibold">
+                    <Eye size={13} /> View
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-ink-muted border-b border-slate-100">

@@ -33,6 +33,8 @@ export default function BookingCheckoutPage() {
 
   const handlePay = async () => {
     if (paying) return;
+    // Payments need a live connection — never start one offline (PWA).
+    if (!navigator.onLine) { toast.error('You’re offline. Connect to the internet to pay.'); return; }
     setPaying(true);
     try {
       // 1) Backend creates (or returns) a Cashfree order. We never expose the
@@ -99,8 +101,8 @@ export default function BookingCheckoutPage() {
   const isPending = booking.status === 'pending_payment';
 
   return (
-    <div className="min-h-screen bg-surface-alt pb-12">
-      <div className="bg-white border-b">
+    <div className={`min-h-screen bg-surface-alt ${isPending ? 'pb-32' : 'pb-12'} lg:pb-12`}>
+      <div className="bg-white border-b" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="container-app py-4 flex items-center justify-between flex-wrap gap-2">
           <div className="text-xs text-ink-muted">
             Booking <span className="font-mono font-bold text-ink">{booking.bookingCode}</span>
@@ -262,6 +264,24 @@ export default function BookingCheckoutPage() {
           </div>
         </aside>
       </div>
+      {/* Phones: Pay button always in reach */}
+      {isPending && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t shadow-[0_-6px_20px_rgba(16,24,40,0.08)] px-4 pt-3 flex items-center gap-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] text-ink-muted">Total</div>
+            <div className="text-lg font-bold text-ink leading-tight">{fmtMoney(pricing.total, booking.currency)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handlePay}
+            disabled={paying}
+            className="h-12 px-6 rounded-full bg-brand text-white font-semibold disabled:opacity-60 inline-flex items-center gap-2"
+          >
+            {paying ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
+            {paying ? 'Connecting…' : 'Pay now'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

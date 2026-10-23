@@ -1,0 +1,8 @@
+{
+  "available": false,
+  "versionName": null,
+  "versionCode": null,
+  "sizeMB": null,
+  "playUrl": null,
+  "note": "Set available=true and fill the fields when reconnct.apk is copied here (docs/web-pwa/playstore.md §6)."
+}

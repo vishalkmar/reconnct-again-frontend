@@ -1,12 +1,14 @@
 import LoginBrand from '../../components/auth/LoginBrand.jsx';
 import { useState } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { ArrowRight, Loader2, Lock, Mail, Eye, EyeOff, MailCheck } from 'lucide-react';
+import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
+import { usePwa } from '../../context/PwaContext.jsx';
+import { ArrowRight, ArrowLeft, Loader2, Lock, Mail, Eye, EyeOff, MailCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSupplierAuth } from '../../context/SupplierAuthContext.jsx';
 import api from '../../services/api';
 
 export default function SupplierLoginPage() {
+  const { isPwa } = usePwa();
   const { supplier, login, loading } = useSupplierAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,6 +55,12 @@ export default function SupplierLoginPage() {
 
   return (
     <div className="login-page">
+      {/* Installed app: way back to the member/partner chooser. */}
+      {isPwa && (
+        <Link to="/login" aria-label="Back" className="absolute left-4 grid place-items-center w-10 h-10 rounded-full bg-white shadow-soft text-ink" style={{ top: 'calc(16px + env(safe-area-inset-top))' }}>
+          <ArrowLeft size={18} />
+        </Link>
+      )}
       <div className="login-card">
         {mode === 'forgot' ? (
           <>

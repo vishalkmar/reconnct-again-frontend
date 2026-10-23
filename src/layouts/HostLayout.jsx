@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
-import { Menu, ExternalLink, LogOut, Bell, Ticket, Clock } from 'lucide-react';
+import {
+  Menu, ExternalLink, LogOut, Bell, Ticket, Clock, Wallet, UserCog, MessageCircle, UserRound,
+} from 'lucide-react';
+import MobileTopBar from '../components/pwa/MobileTopBar.jsx';
+import PartnerMenu from '../components/pwa/PartnerMenu.jsx';
+import useAppShell from '../hooks/useAppShell';
 import toast from 'react-hot-toast';
 import HostSidebar from '../components/host/HostSidebar.jsx';
 import { useUserAuth } from '../context/UserAuthContext.jsx';
@@ -72,6 +77,23 @@ function HostNotificationBell() {
   );
 }
 
+const HOST_TITLES = [
+  [/^\/host\/listings\/new/, 'New listing'],
+  [/^\/host\/listings\/[^/]+\/edit/, 'Edit listing'],
+  [/^\/host\/listings\/[^/]+\/resolve/, 'Resolve objections'],
+  [/^\/host\/listings\/[^/]+\/bookings/, 'Listing bookings'],
+  [/^\/host\/listings\/[^/]+\/view/, 'Listing'],
+  [/^\/host\/listings/, 'My listings'],
+  [/^\/host\/all-bookings/, 'All bookings'],
+  [/^\/host\/bookings\//, 'Booking'],
+  [/^\/host\/transactions/, 'Transactions'],
+  [/^\/host\/notifications/, 'Notifications'],
+  [/^\/host\/account-manager/, 'Key account manager'],
+  [/^\/host\/support/, 'Host support'],
+  [/^\/host\/profile/, 'Host profile'],
+  [/^\/host/, 'Host dashboard'],
+];
+
 export default function HostLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useUserAuth();
@@ -81,12 +103,52 @@ export default function HostLayout() {
   // tiny margin; everything else gets normal padding.
   const isWizard = /\/host\/listings\/(new|[^/]+\/edit)/.test(path);
   const isChat = path.startsWith('/host/support');
+  const appShell = useAppShell();
 
   const handleLogout = () => {
     logout();
     toast.success('Signed out');
     navigate('/', { replace: true });
   };
+
+  // Phone / installed app: app bar + bottom tabs; the Profile tab carries the
+  // rest of the sidebar as a menu (incl. switching back to member mode).
+  if (appShell) {
+    const title = HOST_TITLES.find(([re]) => re.test(path))?.[1] || 'Host mode';
+    const tabRoot = /^\/host(\/(listings|all-bookings|profile))?\/?$/.test(path);
+    return (
+      <div className="min-h-screen bg-surface-alt">
+        <MobileTopBar title={title} back={!tabRoot} right={<HostNotificationBell />} />
+        <main
+          className={isWizard ? 'px-3' : isChat ? 'px-2 pb-2 overflow-hidden' : 'px-4 pb-6'}
+          style={{ paddingTop: `calc(${isWizard || isChat ? '3.75rem' : '4.5rem'} + env(safe-area-inset-top))` }}
+        >
+          {path === '/host/profile' && (
+            <PartnerMenu
+              header={(
+                <div className="flex items-center gap-3 bg-white rounded-2xl shadow-soft p-4">
+                  <span className="grid place-items-center w-12 h-12 rounded-full bg-brand text-white font-bold">{(user?.name || 'H').charAt(0).toUpperCase()}</span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold uppercase tracking-wide text-brand-dark">Host mode</div>
+                    <div className="font-semibold text-ink truncate">{user?.name || 'Host'}</div>
+                  </div>
+                </div>
+              )}
+              items={[
+                { to: '/host/transactions', label: 'Transactions', icon: Wallet },
+                { to: '/host/notifications', label: 'Notifications', icon: Bell },
+                { to: '/host/account-manager', label: 'Key account manager', icon: UserCog },
+                { to: '/host/support', label: 'Host support', icon: MessageCircle },
+                { to: '/profile', label: 'Switch to member mode', icon: UserRound },
+              ]}
+              onLogout={handleLogout}
+            />
+          )}
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface-alt flex">

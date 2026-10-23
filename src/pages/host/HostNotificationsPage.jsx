@@ -8,14 +8,16 @@ const ICON = { host_booking: Ticket, reminder: Clock };
 const TINT = { host_booking: 'text-brand-dark bg-amber-100', reminder: 'text-blue-600 bg-blue-100' };
 
 // Host-side slice of the shared /api/notifications feed — bookings on the
-// host's own listings + same-day reminders. Real data only.
-export default function HostNotificationsPage() {
+// host's own listings + same-day reminders. Real data only. With
+// basePath="/supplier" it reads the supplier feed (/api/supplier/notifications,
+// the same one the app's supplier inbox uses) and links to supplier bookings.
+export default function HostNotificationsPage({ basePath = '/host' }) {
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    api.get('/notifications')
+    api.get(basePath === '/supplier' ? '/supplier/notifications' : '/notifications')
       .then(({ data }) => {
         if (!alive) return;
         const all = (data.data || data).notifications || [];
@@ -24,7 +26,7 @@ export default function HostNotificationsPage() {
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, []);
+  }, [basePath]);
 
   return (
     <div className="max-w-3xl">
@@ -55,7 +57,7 @@ export default function HostNotificationsPage() {
               </div>
             );
             return n.bookingId ? (
-              <Link key={n.id} to={`/host/bookings/${n.bookingId}`}>{Row}</Link>
+              <Link key={n.id} to={`${basePath}/bookings/${n.bookingId}`}>{Row}</Link>
             ) : (
               <div key={n.id}>{Row}</div>
             );

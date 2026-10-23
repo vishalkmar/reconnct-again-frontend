@@ -99,8 +99,8 @@ export default function SupplierAccountManagerPage({ basePath = '/supplier' }) {
 function Row({ label, value }) {
   return (
     <tr>
-      <th scope="row" className="text-left align-top font-medium text-ink-muted px-5 sm:px-6 py-3.5 w-48 whitespace-nowrap">{label}</th>
-      <td className="px-5 sm:px-6 py-3.5 text-ink break-words">{value}</td>
+      <th scope="row" className="text-left align-top font-medium text-ink-muted px-4 sm:px-6 py-3.5 w-32 sm:w-48 whitespace-nowrap">{label}</th>
+      <td className="px-4 sm:px-6 py-3.5 text-ink [overflow-wrap:anywhere]">{value}</td>
     </tr>
   );
 }

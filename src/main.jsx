@@ -10,6 +10,7 @@ import { TeamAuthProvider } from './context/TeamAuthContext.jsx';
 import { SupplierAuthProvider } from './context/SupplierAuthContext.jsx';
 import { UserAuthProvider } from './context/UserAuthContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
+import { PwaProvider } from './context/PwaContext.jsx';
 import './styles/index.css';
 
 // Every <input type="number"> defaults its display to "0" when its bound
@@ -24,9 +25,28 @@ document.addEventListener('focusin', (e) => {
   }
 });
 
+// Dev server never uses a service worker. Remove any left over from a
+// production preview on this origin (it would keep serving the old build).
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    if (!regs.length) return;
+    Promise.all(regs.map((r) => r.unregister()))
+      .then(() => (window.caches ? caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))) : null))
+      .then(() => window.location.reload());
+  }).catch(() => {});
+}
+
+// The browser can fire `beforeinstallprompt` before React mounts — park it so
+// PwaProvider can still offer "Install app" (see context/PwaContext.jsx).
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.__rcInstallPrompt = e;
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
+      <PwaProvider>
       <ThemeProvider>
         <AuthProvider>
           <TeamAuthProvider>
@@ -41,6 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </TeamAuthProvider>
         </AuthProvider>
       </ThemeProvider>
+      </PwaProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

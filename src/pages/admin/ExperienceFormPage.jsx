@@ -446,10 +446,12 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       )}
 
       {/* Per-activity: Who is this for? → audience-filtered category → type. */}
-      <ExperienceTaxonomyPicker value={{ audiences: value.audiences, categoryIds: value.categoryIds, typeIds: value.typeIds }} onChange={patch} />
+      <div data-form-section="Category">
+        <ExperienceTaxonomyPicker value={{ audiences: value.audiences, categoryIds: value.categoryIds, typeIds: value.typeIds }} onChange={patch} />
+      </div>
 
       {/* Basics */}
-      <div className="space-y-4 pt-2 border-t border-gray-100">
+      <div data-form-section="Basics" className="space-y-4 pt-2 border-t border-gray-100">
         <div>
           <label className="label">Name <span className="text-rose-500">*</span></label>
           <input className="input" value={value.name} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. Sunrise Himalayan Yoga Retreat" />
@@ -503,13 +505,13 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       </div>
 
       {/* About */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="About" className="pt-2 border-t border-gray-100">
         <label className="label">About this activity / event <span className="text-rose-500">*</span></label>
         <RichTextEditor value={value.about} onChange={(v) => patch({ about: v })} placeholder="Describe the experience…" />
       </div>
 
       {/* Media */}
-      <div className="pt-2 border-t border-gray-100 space-y-6">
+      <div data-form-section="Media" className="pt-2 border-t border-gray-100 space-y-6">
         <div>
           <label className="label">Main image <span className="text-rose-500">*</span></label>
           <Dropzone instant value={value.mainImage} onChange={(url) => patch({ mainImage: url })}
@@ -529,7 +531,7 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
 
       {/* B2B pricing — the WORKING price. Center Ops adds GST / discount /
           convenience fee on top of this at go-live → the final customer price. */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="B2B price" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">B2B pricing <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">The working price. Center Ops adds GST/discount/convenience fee on this at go-live — the result is what customers pay in the app.</p>
         <ExperiencePricing priceMethod={value.priceMethod} pricing={value.pricing} onChange={patch} gstIncluded />
@@ -537,7 +539,7 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
 
       {/* B2C pricing — reference only. Shown to Center Ops at go-live and saved
           in the DB; it does NOT drive booking. Source (name) sits right here. */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="B2C price" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">B2C pricing <span className="text-rose-500">*</span></h2>
         <ExperiencePricing
           priceMethod={value.b2cPriceMethod}
@@ -555,28 +557,28 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       </div>
 
       {/* Inclusions */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="Inclusions" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">Inclusions <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Add what's included — as a text block, or a title with an image.</p>
         <ExperienceInclusions value={value.inclusions} onChange={(v) => patch({ inclusions: v })} />
       </div>
 
       {/* Facilities */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="Facilities" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">Facilities <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Pick from the shared list or add your own.</p>
         <ExperienceFacilities value={value.facilities} onChange={(v) => patch({ facilities: v })} />
       </div>
 
       {/* Nearby places */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="Nearby" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">Nearby places <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Famous spots near the location and how far they are.</p>
         <NearbyPlacesEditor value={value.nearbyPlaces} onChange={(v) => patch({ nearbyPlaces: v })} />
       </div>
 
       {/* Availability & scheduling */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="Schedule" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-1">Availability &amp; scheduling <span className="text-rose-500">*</span></h2>
         <p className="text-sm text-ink-muted mb-4">Set the session duration, pick available dates, then build time slots per date.</p>
         <div className="mb-5">
@@ -604,13 +606,13 @@ export function ActivityBlock({ index, activity, total, editing, onChange, onRem
       </div>
 
       {/* FAQs */}
-      <div className="pt-2 border-t border-gray-100">
+      <div data-form-section="FAQs" className="pt-2 border-t border-gray-100">
         <h2 className="font-semibold text-lg mb-4">FAQs <span className="text-rose-500">*</span></h2>
         <FaqEditor value={value.faqs} onChange={(v) => patch({ faqs: v })} />
       </div>
 
       {/* Policies */}
-      <div className="pt-2 border-t border-gray-100 space-y-5">
+      <div data-form-section="Policies" className="pt-2 border-t border-gray-100 space-y-5">
         <h2 className="font-semibold text-lg">Policies &amp; terms <span className="text-rose-500">*</span></h2>
         <div>
           <label className="label">Terms &amp; Conditions <span className="text-rose-500">*</span></label>

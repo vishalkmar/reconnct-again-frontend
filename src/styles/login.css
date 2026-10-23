@@ -135,3 +135,17 @@
 @media (prefers-reduced-motion: reduce) {
   .login-card *, .login-card *::before, .login-card *::after { transition: none !important; animation: none !important; }
 }
+
+/* Phones + the installed app: the OTP login becomes a full-screen sheet that
+   respects the notch / gesture bar, and inputs stay above the keyboard. */
+@media (max-width: 600px) {
+  .login-overlay { padding: 0; align-items: stretch; background: #fff; backdrop-filter: none; }
+  .login-overlay .login-card {
+    max-width: none; min-height: 100%; min-height: 100dvh; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+    padding: calc(56px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom));
+  }
+  .login-overlay .login-card > button.absolute { top: calc(12px + env(safe-area-inset-top)); }
+  .login-card input { font-size: 16px; } /* no iOS zoom-on-focus */
+  .login-card .login-submit { min-height: 54px; }
+}
+html.pwa .login-otp input { height: 56px; font-size: 22px; }
