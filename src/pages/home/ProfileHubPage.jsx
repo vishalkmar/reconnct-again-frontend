@@ -5,7 +5,6 @@ import {
 import toast from 'react-hot-toast';
 import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import { useSupplierAuth } from '../../context/SupplierAuthContext.jsx';
-import { usePwa } from '../../context/PwaContext.jsx';
 import useDocumentMeta from '../../hooks/useDocumentMeta';
 import { InstallAppButton } from '../../components/pwa/InstallApp.jsx';
 
@@ -18,7 +17,6 @@ import { InstallAppButton } from '../../components/pwa/InstallApp.jsx';
 export default function ProfileHubPage() {
   const { user, isAuthenticated, loading, requestLogin, logout } = useUserAuth();
   const { supplier } = useSupplierAuth();
-  const { isPwa } = usePwa();
   const navigate = useNavigate();
   useDocumentMeta({ title: 'Profile · Reconnct', description: 'Your Reconnct account.' });
 
@@ -31,7 +29,7 @@ export default function ProfileHubPage() {
           <span className="mx-auto grid place-items-center w-16 h-16 rounded-full bg-rc-brand-soft text-rc-brand-text"><UserPen size={28} /></span>
           <h1 className="font-sans text-xl font-black text-rc-navy mt-4">Sign in to Reconnct</h1>
           <p className="text-sm text-rc-ink-muted mt-1">See your bookings, wishlist and rewards.</p>
-          <button type="button" onClick={() => (isPwa ? navigate('/login') : requestLogin({ redirectTo: '/profile' }))} className="mt-5 w-full h-12 rounded-full bg-rc-brand text-white font-extrabold">
+          <button type="button" onClick={() => requestLogin({ redirectTo: '/profile' })} className="mt-5 w-full h-12 rounded-full bg-rc-brand text-white font-extrabold">
             Sign in / Sign up
           </button>
           <Link to={supplier ? '/supplier/dashboard' : '/supplier/login'} className="mt-3 flex items-center justify-center gap-2 h-12 rounded-full border border-rc-border font-bold text-rc-ink">

@@ -57,7 +57,7 @@ export default function SupplierLoginPage() {
     <div className="login-page">
       {/* Installed app: way back to the member/partner chooser. */}
       {isPwa && (
-        <Link to="/login" aria-label="Back" className="absolute left-4 grid place-items-center w-10 h-10 rounded-full bg-white shadow-soft text-ink" style={{ top: 'calc(16px + env(safe-area-inset-top))' }}>
+        <Link to="/" aria-label="Back" className="absolute left-4 grid place-items-center w-10 h-10 rounded-full bg-white shadow-soft text-ink" style={{ top: 'calc(16px + env(safe-area-inset-top))' }}>
           <ArrowLeft size={18} />
         </Link>
       )}

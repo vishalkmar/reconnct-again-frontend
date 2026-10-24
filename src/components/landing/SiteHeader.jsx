@@ -119,7 +119,6 @@ function HeaderSearch() {
 
 function AccountArea() {
   const { user, isAuthenticated, requestLogin, logout } = useUserAuth();
-  const { isPwa } = usePwa();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
@@ -135,8 +134,7 @@ function AccountArea() {
     return (
       <button
         type="button"
-        // In the app, sign-in starts at the member/partner chooser.
-        onClick={() => (isPwa ? navigate('/login') : requestLogin())}
+        onClick={() => requestLogin()}
         className="h-10 lg:h-12 px-5 rounded-full text-sm font-bold bg-rc-brand text-rc-navy hover:bg-rc-brand-dark transition"
       >
         Sign in
@@ -230,7 +228,7 @@ function MobileDrawer({ onClose }) {
               <Link to="/host" onClick={onClose} className={link}><Building2 size={18} className="text-rc-ink-muted" />Switch to hosting</Link>
             </>
           ) : (
-            <button type="button" onClick={() => { onClose(); if (isPwa) navigate('/login'); else requestLogin(); }} className={`${link} w-full`}>
+            <button type="button" onClick={() => { onClose(); requestLogin(); }} className={`${link} w-full`}>
               <LayoutDashboard size={18} className="text-rc-ink-muted" />Sign in / Sign up
             </button>
           )}
