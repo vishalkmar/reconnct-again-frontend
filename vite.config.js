@@ -74,7 +74,7 @@ const devSwKillSwitch = {
 // the installed app, see docs/web-pwa/design.md §2). The same manifest feeds
 // the Play Store TWA build (docs/web-pwa/playstore.md).
 const pwa = VitePWA({
-  registerType: 'prompt',
+  registerType: 'prompt', // applied automatically by PwaStatus.jsx
   // Registered from the app (components/pwa/PwaStatus.jsx → useRegisterSW).
   injectRegister: false,
   includeAssets: ['offline.html', 'retreatlogo.png', 'reconnct-logo-white.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png', 'icons/favicon-16.png'],
