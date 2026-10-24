@@ -19,8 +19,6 @@ import CampaignVisitTracker from './components/CampaignVisitTracker.jsx';
 import PublicSiteLayout from './layouts/PublicSiteLayout.jsx';
 import PwaRouteGuard from './components/pwa/PwaRouteGuard.jsx';
 import PwaStatus from './components/pwa/PwaStatus.jsx';
-import MobileBottomNav from './components/pwa/MobileBottomNav.jsx';
-import IntroSlides from './components/pwa/IntroSlides.jsx';
 import HomeLandingPage from './pages/home/HomeLandingPage.jsx';
 const ExperiencesListPage = lazy(() => import('./pages/experiences/ExperiencesListPage.jsx'));
 const ExperienceDetailPage = lazy(() => import('./pages/experiences/ExperienceDetailPage.jsx'));
@@ -402,10 +400,6 @@ export default function App() {
       </Routes>
       </Suspense>
 
-      {/* App-style bottom tab bar (installed app + phone-width member/partner areas) */}
-      <MobileBottomNav />
-      {/* First launch of the installed app only */}
-      <IntroSlides />
 
       {/* Global OTP login modal — opened from anywhere via requestLogin(). */}
       <UserLoginModal />

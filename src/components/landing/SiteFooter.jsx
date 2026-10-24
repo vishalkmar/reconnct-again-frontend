@@ -75,7 +75,7 @@ export default function SiteFooter() {
           <div key={c.title}>
             <h3 className="font-sans text-sm font-bold text-white mb-3">{c.title}</h3>
             <ul className="space-y-2">
-              {c.links.map((l) => (
+              {c.links.filter((l) => !(isPwa && l.to === '/supplier/login')).map((l) => (
                 <li key={l.to}><Link to={l.to} className="text-sm hover:text-rc-brand transition">{l.label}</Link></li>
               ))}
             </ul>

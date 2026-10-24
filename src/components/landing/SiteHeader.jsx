@@ -232,9 +232,11 @@ function MobileDrawer({ onClose }) {
               <LayoutDashboard size={18} className="text-rc-ink-muted" />Sign in / Sign up
             </button>
           )}
+          {(supplier || !isPwa) && (
           <Link to={supplier ? '/supplier/dashboard' : '/supplier/login'} onClick={onClose} className={link}>
             <Store size={18} className="text-rc-ink-muted" />{supplier ? 'Supplier dashboard' : 'Partner login'}
           </Link>
+          )}
         </nav>
         {/* The app is Android-only, so the download entry shows on Android phones only. */}
         {!isPwa && isAndroid && (

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, X, Sparkles } from 'lucide-react';
 import { useGeo } from '../../../context/GeoContext.jsx';
-import { usePwa } from '../../../context/PwaContext.jsx';
 import publicApi from '../../../services/publicApi';
 import { optimizeImg } from '../../../utils/format';
 import { Section, SectionHead, Rail, RailSkeleton } from '../Rail.jsx';
@@ -13,10 +12,9 @@ import NearYouCard from '../cards/NearYouCard.jsx';
    Phones + the installed app only — hidden on the desktop website. */
 export function LocationOffBanner() {
   const { servicesOff, promptEnableLocation } = useGeo();
-  const { isPwa } = usePwa();
   if (!servicesOff) return null;
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 mt-3.5 ${isPwa ? '' : 'md:hidden'}`}>
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 mt-3.5 md:hidden`}>
       <button
         type="button"
         onClick={promptEnableLocation}

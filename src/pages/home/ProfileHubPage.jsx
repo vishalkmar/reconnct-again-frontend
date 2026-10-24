@@ -7,6 +7,7 @@ import { useUserAuth } from '../../context/UserAuthContext.jsx';
 import { useSupplierAuth } from '../../context/SupplierAuthContext.jsx';
 import useDocumentMeta from '../../hooks/useDocumentMeta';
 import { InstallAppButton } from '../../components/pwa/InstallApp.jsx';
+import { usePwa } from '../../context/PwaContext.jsx';
 
 /*
   /profile — the app's Profile tab: who you are + one list linking every
@@ -17,6 +18,7 @@ import { InstallAppButton } from '../../components/pwa/InstallApp.jsx';
 export default function ProfileHubPage() {
   const { user, isAuthenticated, loading, requestLogin, logout } = useUserAuth();
   const { supplier } = useSupplierAuth();
+  const { isPwa } = usePwa();
   const navigate = useNavigate();
   useDocumentMeta({ title: 'Profile · Reconnct', description: 'Your Reconnct account.' });
 
@@ -32,9 +34,12 @@ export default function ProfileHubPage() {
           <button type="button" onClick={() => requestLogin({ redirectTo: '/profile' })} className="mt-5 w-full h-12 rounded-full bg-rc-brand text-white font-extrabold">
             Sign in / Sign up
           </button>
-          <Link to={supplier ? '/supplier/dashboard' : '/supplier/login'} className="mt-3 flex items-center justify-center gap-2 h-12 rounded-full border border-rc-border font-bold text-rc-ink">
-            <Store size={16} />{supplier ? 'Supplier dashboard' : 'Partner login'}
-          </Link>
+          {/* In the app, suppliers sign in from the login modal's "Login as Supplier" link. */}
+          {(supplier || !isPwa) && (
+            <Link to={supplier ? '/supplier/dashboard' : '/supplier/login'} className="mt-3 flex items-center justify-center gap-2 h-12 rounded-full border border-rc-border font-bold text-rc-ink">
+              <Store size={16} />{supplier ? 'Supplier dashboard' : 'Partner login'}
+            </Link>
+          )}
         </div>
         <LegalList />
       </div>
