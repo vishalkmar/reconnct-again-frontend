@@ -19,6 +19,8 @@ import CampaignVisitTracker from './components/CampaignVisitTracker.jsx';
 import PublicSiteLayout from './layouts/PublicSiteLayout.jsx';
 import PwaRouteGuard from './components/pwa/PwaRouteGuard.jsx';
 import PwaStatus from './components/pwa/PwaStatus.jsx';
+import AppGate from './components/pwa/AppGate.jsx';
+import AppSplash from './components/pwa/AppSplash.jsx';
 import HomeLandingPage from './pages/home/HomeLandingPage.jsx';
 const ExperiencesListPage = lazy(() => import('./pages/experiences/ExperiencesListPage.jsx'));
 const ExperienceDetailPage = lazy(() => import('./pages/experiences/ExperienceDetailPage.jsx'));
@@ -28,6 +30,7 @@ const DownloadPage = lazy(() => import('./pages/download/DownloadPage.jsx'));
 const SearchPage = lazy(() => import('./pages/home/SearchPage.jsx'));
 const DestinationsPage = lazy(() => import('./pages/experiences/DestinationsPage.jsx'));
 const ProfileHubPage = lazy(() => import('./pages/home/ProfileHubPage.jsx'));
+const AppAuthPage = lazy(() => import('./pages/app/AppAuthPage.jsx'));
 const LoginChooserPage = lazy(() => import('./pages/auth/LoginChooserPage.jsx'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage.jsx'));
 const DeleteAccountPage = lazy(() => import('./pages/DeleteAccountPage.jsx'));
@@ -162,7 +165,10 @@ export default function App() {
       <CampaignVisitTracker />
       {/* Service worker updates + offline banner (installable app) */}
       <PwaStatus />
+      {/* Installed app only: launch splash + sign-in-first gate */}
+      <AppSplash />
       <Suspense fallback={<RouteFallback />}>
+      <AppGate>
       <Routes>
         {/* Public landing site — same sections + data as the app Home screen */}
         <Route element={<PublicSiteLayout />}>
@@ -186,6 +192,8 @@ export default function App() {
 
         {/* Sign-in chooser (member OTP / partner) — the app's entry screen */}
         <Route path="/login" element={<LoginChooserPage />} />
+        {/* Installed app's sign-in screens (member OTP + supplier) — app only */}
+        <Route path="/app/login" element={<AppAuthPage />} />
 
         {/* Opt-out target for occasion greeting emails — deliberately public. */}
         <Route path="/unsubscribe" element={<UnsubscribePage />} />
@@ -398,6 +406,7 @@ export default function App() {
         {/* Anything else → landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </AppGate>
       </Suspense>
 
 
