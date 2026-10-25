@@ -51,7 +51,7 @@ export default function SiteHeader() {
     <header className={`rc-site-header fixed top-0 inset-x-0 z-40 bg-white border-b border-rc-border transition-shadow ${scrolled ? 'shadow-[0_4px_20px_rgba(16,24,40,0.06)]' : ''}`}>
       <div className="px-4 sm:px-6 lg:px-10 2xl:px-20 h-16 lg:h-[88px] flex items-center gap-3 lg:gap-6">
         <Link to="/" aria-label="Reconnct home" className="shrink-0">
-          <BrandMark className="h-7 w-32 lg:h-9 lg:w-44" />
+          <BrandMark by className="w-32 lg:w-44" bySize="text-[10.5px] lg:text-[13px]" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-9 ml-6" aria-label="Main">
@@ -211,7 +211,7 @@ function MobileDrawer({ onClose }) {
       <button type="button" aria-label="Close menu" className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-[min(320px,86vw)] bg-white shadow-card flex flex-col">
         <div className="flex items-center justify-between px-4 h-16 border-b border-rc-border">
-          <BrandMark className="h-6 w-28" />
+          <BrandMark by className="w-28" bySize="text-[10px]" />
           <button type="button" onClick={onClose} aria-label="Close menu" className="grid place-items-center w-9 h-9 rounded-full hover:bg-rc-bg"><X size={20} /></button>
         </div>
         <div className="p-4"><CityPicker /></div>

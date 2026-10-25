@@ -69,7 +69,7 @@ export default function TeamLayout() {
     <div className={`h-full flex flex-col bg-white border-r border-[#F1ECE3] w-[272px] ${collapsed ? 'lg:w-[88px]' : ''} transition-all duration-200`}>
       <div className={`flex items-center justify-between h-[88px] shrink-0 ${collapsed ? 'lg:justify-center lg:px-0 px-6' : 'px-6'}`}>
         <div className={`flex flex-col items-start gap-1 ${collapsed ? 'lg:hidden' : ''}`}>
-          <BrandMark className="h-7 w-[136px]" />
+          <BrandMark by className="w-[136px]" />
           <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-rc-navy/60">Team Portal</span>
         </div>
         <button
@@ -137,7 +137,7 @@ export default function TeamLayout() {
           <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#F1ECE3]">
             <div className="flex items-center gap-3 px-4 md:px-8 h-[76px] lg:h-[88px]">
               <button onClick={() => setOpen(true)} className="lg:hidden grid place-items-center w-10 h-10 rounded-full bg-[#F4F2EE] text-rc-navy" aria-label="Open menu"><Menu size={20} /></button>
-              <span className="lg:hidden"><BrandMark className="h-6 w-28" /></span>
+              <span className="lg:hidden"><BrandMark by className="w-28" bySize="text-[10px]" /></span>
               <div className="hidden lg:flex items-center gap-3 min-w-0">
                 {roleLabel && <span className="inline-flex items-center h-8 px-3.5 rounded-full bg-[#FFF1CC] text-[#B07800] text-[12px] font-bold tracking-[0.08em] uppercase whitespace-nowrap">{roleLabel}</span>}
                 <h2 className="font-sans text-[22px] font-extrabold text-rc-navy truncate">Welcome, {firstName}</h2>

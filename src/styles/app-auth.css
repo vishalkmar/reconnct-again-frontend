@@ -37,6 +37,7 @@
   animation: aa-rise 0.7s ease-out 0.25s both;
 }
 .app-auth__logo { display: block; width: calc(var(--u) * 255); height: calc(var(--u) * 47); }
+.app-auth__logo--by { display: inline-flex; height: auto; }
 .app-auth__tagline {
   position: relative; display: inline-block; margin-top: 1px; margin-left: calc(var(--u) * 15);
   font-size: calc(var(--u) * 22); line-height: calc(var(--u) * 26); color: #6B7280;

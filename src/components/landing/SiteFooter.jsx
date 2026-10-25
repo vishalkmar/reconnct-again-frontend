@@ -66,7 +66,7 @@ export default function SiteFooter() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.3fr_repeat(4,1fr)]">
         <div className="col-span-2 md:col-span-1">
-          <BrandMark className="h-7 w-32" />
+          <BrandMark by byTone="dark" className="w-36" bySize="text-[12px]" />
           <p className="text-sm mt-4 leading-relaxed max-w-xs">
             Curated experiences for every relationship — friends, family, partner, kids, and yourself.
           </p>

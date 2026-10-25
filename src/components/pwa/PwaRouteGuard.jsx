@@ -20,7 +20,7 @@ export default function PwaRouteGuard() {
   return (
     <div className="min-h-screen grid place-items-center bg-rc-bg px-6 text-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="max-w-sm w-full bg-white rounded-3xl shadow-card p-8">
-        <BrandMark className="h-7 w-32 mx-auto" />
+        <BrandMark by className="w-36 mx-auto" bySize="text-[12px]" />
         <span className="mx-auto mt-6 grid place-items-center w-16 h-16 rounded-2xl bg-rc-brand-soft text-rc-brand-text">
           <ShieldOff size={30} />
         </span>

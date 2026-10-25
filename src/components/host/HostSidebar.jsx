@@ -47,7 +47,7 @@ export default function HostSidebar({ open, onClose, collapsed = false, onToggle
       >
         <div className={`flex items-center justify-between h-[88px] shrink-0 ${collapsed ? 'lg:justify-center lg:px-0 px-6' : 'px-6'}`}>
           <Link to="/host" className={`flex flex-col items-start gap-1 ${collapsed ? 'lg:hidden' : ''}`} onClick={onClose}>
-            <BrandMark className="h-7 w-[136px]" />
+            <BrandMark by className="w-[136px]" />
             <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-rc-navy/60">Host Center</span>
           </Link>
           <button

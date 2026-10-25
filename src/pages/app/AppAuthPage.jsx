@@ -30,7 +30,7 @@ function Header() {
       <div className="app-auth__circle-big" aria-hidden="true" />
       <div className="app-auth__circle-small" aria-hidden="true" />
       <div className="app-auth__brand">
-        <BrandMark color="#F9B402" className="app-auth__logo" />
+        <BrandMark by color="#F9B402" className="app-auth__logo app-auth__logo--by" bySize="text-[13px]" />
         <span className="app-auth__tagline">
           with your <b>loved ones</b>
           <svg className="app-auth__squiggle" viewBox="0 0 100 8" fill="none" aria-hidden="true">
