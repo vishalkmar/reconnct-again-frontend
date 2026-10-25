@@ -30,7 +30,7 @@ export default function BrandMark({
   return (
     <span role="img" aria-label="Reconnct by Traveon" className={`inline-flex flex-col items-end shrink-0 align-middle ${className.replace(/\b(lg:|sm:|md:)?h-\[?[\w.]+\]?/g, '').trim()}`}>
       {mark}
-      <span className={`${bySize} leading-none -mt-[0.1em] pr-[1%] whitespace-nowrap tracking-tight`} aria-hidden="true">
+      <span className={`${bySize} leading-none mt-[5px] pr-[1%] whitespace-nowrap tracking-tight`} aria-hidden="true">
         <span className={`font-medium ${dark ? 'text-white/70' : 'text-[#8A8F9C]'}`}>by </span>
         <span className={`font-extrabold ${dark ? 'text-white' : 'text-rc-navy'}`}>traveon</span>
       </span>
